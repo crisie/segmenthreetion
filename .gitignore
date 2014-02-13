@@ -11,3 +11,10 @@
 *.lai
 *.la
 *.a
+
+# Our folders
+
+build/
+xbuild/
+Data/
+data/

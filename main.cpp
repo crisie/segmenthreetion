@@ -1,0 +1,72 @@
+//
+//  main.cpp
+//  Segmenthreetion
+//
+//  Created by Albert Clapés on 20/04/13.
+//  Copyright (c) 2013 Albert Clapés. All rights reserved.
+//
+
+#include "TrimodalSegmentator.h"
+#include "ColorParametrization.h"
+#include "MotionParametrization.h"
+#include "ThermalParametrization.h"
+#include "DepthParametrization.h"
+
+#include <opencv2/opencv.hpp>
+
+#include <iostream>
+
+int main(int argc, const char* argv[])
+{
+    //
+    // Parametrization
+    //
+    
+    const unsigned int hp = 2; // partitions in height
+    const unsigned int wp = 2; // partitions in width
+
+    int numClusters = 1; // pre-clusterization parameter (training step)
+	int numMixtures = 3; // classification parameter (training step)
+
+    // Feature extraction parametrization
+    
+    MotionParametrization mParam;
+    mParam.hoofbins = 8;
+    mParam.pyr_scale = 0.5;
+    mParam.levels = 3;
+    mParam.winsize = 15;
+    mParam.iterations = 3;
+    mParam.poly_n = 5;
+    mParam.poly_sigma = 1.2;
+    mParam.flags = 0;
+    
+    ColorParametrization cParam;
+    cParam.winSizeX = 64;
+    cParam.winSizeY = 128;
+    cParam.blockSizeX = 32;
+    cParam.blockSizeY = 32;
+    cParam.cellSizeX = 16;
+    cParam.cellSizeY = 16;
+    cParam.nbins = 9;
+
+    ThermalParametrization tParam;
+    tParam.ibins    = 8;
+    tParam.oribins  = 8;
+    
+    DepthParametrization dParam;
+    dParam.thetaBins        = 8;
+    dParam.phiBins          = 8;
+    dParam.normalsRadius    = 0.02;
+    
+    //
+    // Execution
+    //
+    
+    TrimodalSegmentator tms(hp, wp, numClusters, numMixtures, cParam, mParam, dParam, tParam);
+    tms.setDataPath("../../Data/Scene3/");
+
+    tms.segment();
+
+    return 0;
+}
+
