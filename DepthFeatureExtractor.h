@@ -9,51 +9,43 @@
 #ifndef __Segmenthreetion__DepthFeatureExtractor__
 #define __Segmenthreetion__DepthFeatureExtractor__
 
-#include <opencv2/opencv.hpp>
+#include "FeatureExtractor.h"
+
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 #include <iostream>
 
 #include "GridMat.h"
-#include "DepthParametrization.h"
+#include "DepthParametrization.hpp"
 
 using namespace std;
 
-class DepthFeatureExtractor
+class DepthFeatureExtractor : public FeatureExtractor
 {
 public:
     DepthFeatureExtractor(int hp, int wp);
 	DepthFeatureExtractor(int hp, int wp, DepthParametrization dParam);
     
-    void setData(vector<GridMat> grids, vector<GridMat> masks);
     void setParam(DepthParametrization dParam);
 
-    void describe(GridMat & descriptions);
-    void describe(GridMat & subjectDescriptions, GridMat & objectDescriptions);
+    void describe(vector<GridMat> grids, vector<GridMat> masks, GridMat & descriptors);
+    void describe(vector<GridMat> grids, vector<GridMat> masks,
+                  GridMat & subDescriptors, GridMat & objDescriptors, GridMat & unkDescriptors);
     
 private:
     /*
      * Class attributes
      */
     
-    int m_hp;
-    int m_wp;
-    
-    vector<GridMat> m_DepthGrids;
-    
-    vector<GridMat> m_DepthMasks;
-    
     DepthParametrization m_DepthParam;
-
-    GridMat m_DepthDescriptions;
     
     /*
      * Private methods
      */
     
     void describeNormalsOrients(const cv::Mat grid, const cv::Mat mask, cv::Mat & tNormalsOrientsHist);
-    
-    // Normalize a descriptor (hypercube, i.e. f: (-inf, inf) --> [0, 1]
-    void hypercubeNorm(cv::Mat & src, cv::Mat & dst);
 };
 
 #endif /* defined(__Segmenthreetion__DepthFeatureExtractor__) */

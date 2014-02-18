@@ -14,8 +14,7 @@
 class DepthParametrization
 {
 public:
-	DepthParametrization();
-    DepthParametrization(int thetaBins, int phiBins, float normalsRadius);
+	DepthParametrization() {}
 
 	int thetaBins;
     int phiBins;

@@ -9,13 +9,17 @@
 #ifndef __Segmenthreetion__GridMat__
 #define __Segmenthreetion__GridMat__
 
-#include <opencv2/opencv.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 #include <iostream>
 
+using namespace std;
+
 class GridMat
 {
-    friend std::ostream& operator<<( std::ostream&, const GridMat& );
+    friend ostream& operator<<( ostream&, const GridMat& );
     
 public:
     /*
@@ -46,18 +50,18 @@ public:
     
     void set(cv::Mat cell, unsigned int i, unsigned int j);
     
-	void saveFS(const std::string & filename);
+	void saveFS(const string & filename);
     void show(const char* namedWindow);
 
     void release();
     
-    enum { NO_TYPE = 0, SUBJECT = 1, OBJECT = 2 };
+    enum { UNKNOWN = -1, OBJECT = 0, SUBJECT = 1 };
 
 private:
     /*
      * Class attributes
      */
-    std::vector<cv::Mat>     m_grid;
+    vector<cv::Mat>     m_grid;
     unsigned int    m_crows; // Num of cell rows
     unsigned int    m_ccols; // Num of cell cols
     unsigned int    m_rows;
@@ -69,9 +73,7 @@ private:
     void init(GridMat & gridMat);
     bool isEmpty();
     
-    bool accessible(unsigned int i, unsigned int j) const;
-//    ostream& operator << (ostream& os, GridMat& gm);
-    
+    bool accessible(unsigned int i, unsigned int j) const;    
 };
 
 

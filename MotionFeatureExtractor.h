@@ -9,53 +9,40 @@
 #ifndef __segmenthreetion__MotionFeatureExtractor__
 #define __segmenthreetion__MotionFeatureExtractor__
 
+#include "FeatureExtractor.h"
+
 #include <iostream>
 
-#include <opencv2/opencv.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 #include "GridMat.h"
-#include "MotionParametrization.h"
+#include "MotionParametrization.hpp"
 
 using namespace std;
 
-class MotionFeatureExtractor
+class MotionFeatureExtractor : public FeatureExtractor
 {
 public:
-    MotionFeatureExtractor(int hp, int wp);
-	MotionFeatureExtractor(int hp, int wp, MotionParametrization dParam);
+    MotionFeatureExtractor(const unsigned int hp, const unsigned int wp);
+	MotionFeatureExtractor(const unsigned int hp, const unsigned int wp, MotionParametrization mParam);
     
-    void setData(vector<GridMat> grids, vector<GridMat> masks);
-    void setParam(MotionParametrization dParam);
+    void setParam(const MotionParametrization param);
     
-    void describe(GridMat & descriptions);
-    void describe(GridMat & subjectDescriptions, GridMat & objectDescriptions);
+    void describe(vector<GridMat> grids, vector<GridMat> masks, GridMat & descriptors);
+    void describe(vector<GridMat> grids, vector<GridMat> masks,
+                  GridMat & subDescriptors, GridMat & objDescriptors, GridMat & unkDescriptors);
     
     cv::Mat get_hogdescriptor_visu(cv::Mat origImg, cv::Mat mask, vector<float> descriptorValues);
     
 private:
-    /*
-     * Class attributes
-     */
+    MotionParametrization m_Param;
     
-    int m_hp;
-    int m_wp;
-    
-    vector<GridMat> m_MotionGrids;
-    vector<GridMat> m_MotionMasks;
-    
-    MotionParametrization m_MotionParam;
-    
-    GridMat m_MotionDescriptions;
-    
-    /*
-     * Private methods
-     */
-    
-    void describeMotion(GridMat & descriptions);
     void describeMotionOrientedFlow(const cv::Mat grid, const cv::Mat mask, cv::Mat & mOrientedFlowHist);
     
-    // Normalize a descriptor (hypercube, i.e. f: (-inf, inf) --> [0, 1]
-    void hypercubeNorm(cv::Mat & src, cv::Mat & dst);
+    // Auxiliary
+    void computeOpticalFlow(vector<cv::Mat> colorFrames, vector<cv::Mat> & motionFrames);
 };
 
 #endif /* defined(__segmenthreetion__MotionFeatureExtractor__) */

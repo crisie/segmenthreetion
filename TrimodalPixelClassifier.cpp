@@ -18,13 +18,12 @@
 
 #define __PI 3.14159265
 
-using namespace cv;
 using namespace std;
 
 TrimodalPixelClassifier::TrimodalPixelClassifier(unsigned int classes) : m_classes(classes)
 { }
 
-//void TrimodalPixelClassifier::preprocessThermalTrainData(vector<GridMat> tGridMats, vector<GridMat> masksGridMats, Mat indices, int numClusters, vector<Mat> cellsClusterLabels, vector<GridMat> & tTrain)
+//void TrimodalPixelClassifier::preprocessThermalTrainData(vector<GridMat> tGridMats, vector<GridMat> masksGridMats, cv::Mat indices, int numClusters, vector<Mat> cellsClusterLabels, vector<GridMat> & tTrain)
 //{
 //    /*
 //     * The cell grids had been already clusterized (the cells in the same image grid can have different labels).
@@ -46,7 +45,7 @@ TrimodalPixelClassifier::TrimodalPixelClassifier(unsigned int classes) : m_class
 //        {
 //            int clusterLabel =  cellsClusterLabels[k].at<int>(i,j);
 //            
-//            Mat tDescriptorsMatrix;
+//            cv::Mat tDescriptorsMatrix;
 //            describeThermalCell(tGridMat.at(i,j), mask.at(i,j), tDescriptorsMatrix);
 //            
 //            tTrain[clusterLabel].vconcat(tDescriptorsMatrix, i, j);
@@ -58,14 +57,14 @@ TrimodalPixelClassifier::TrimodalPixelClassifier(unsigned int classes) : m_class
 //{
 //    for (int i = 0; i < tGridMat.crows(); i++) for (int j = 0; j < tGridMat.ccols(); j++)
 //    {
-//        Mat tDescriptorsMatrix;
+//        cv::Mat tDescriptorsMatrix;
 //        describeThermalCell(tGridMat.at(i,j), mask.at(i,j), tDescriptorsMatrix);
 //        tTest.vconcat(tDescriptorsMatrix, i, j);
 //        tDescriptorsMatrix.release();
 //    }
 //}
 //
-//void TrimodalPixelClassifier::describeThermalCell(const Mat & c, const Mat & m, Mat & tDescriptorsMatrix)
+//void TrimodalPixelClassifier::describeThermalCell(const cv::Mat & c, const cv::Mat & m, cv::Mat & tDescriptorsMatrix)
 //{
 //    //
 //    // Extend the cell borders or mask borders to properly convolve a patch
@@ -79,7 +78,7 @@ TrimodalPixelClassifier::TrimodalPixelClassifier(unsigned int classes) : m_class
 ////    cpsize = psize - (psize % 2) + 1;
 ////    margin = (cpsize - 1) / 2;
 //    
-////    Mat cell, mask;
+////    cv::Mat cell, mask;
 ////    
 ////    copyMakeBorder(c, cell, margin, margin, margin, margin, BORDER_CONSTANT, 0);
 ////    copyMakeBorder(m, mask, margin, margin, margin, margin, BORDER_CONSTANT, 0);
@@ -92,8 +91,8 @@ TrimodalPixelClassifier::TrimodalPixelClassifier(unsigned int classes) : m_class
 ////    {
 ////        if (mask.at<uchar>(i,j) == 0) continue;
 //////        cout << Rect(i-d, j-d, cpsize, cpsize) << endl;
-////        Mat patch = Mat(cell, Rect(j-margin, i-margin, cpsize, cpsize)); // Rect(x,y), x are columns
-////        Mat maskPatch = Mat(mask, Rect(j-margin, i-margin, cpsize, cpsize));
+////        cv::Mat patch = cv::Mat(cell, Rect(j-margin, i-margin, cpsize, cpsize)); // Rect(x,y), x are columns
+////        cv::Mat maskPatch = cv::Mat(mask, Rect(j-margin, i-margin, cpsize, cpsize));
 ////        
 ////        // Create an histogram for the cell region of blurred intensity values
 ////        int histSize[] = { (int) m_cellbins };
@@ -101,7 +100,7 @@ TrimodalPixelClassifier::TrimodalPixelClassifier(unsigned int classes) : m_class
 ////        float tranges[] = { 0, 256 }; // thermal intensity values range: [0, 256)
 ////        const float* ranges[] = { tranges };
 ////        
-////        Mat tHist;
+////        cv::Mat tHist;
 ////        calcHist(&patch, 1, channels, maskPatch, tHist, 1, histSize, ranges, true, false);
 ////        patch.release();
 ////        maskPatch.release();
@@ -109,7 +108,7 @@ TrimodalPixelClassifier::TrimodalPixelClassifier(unsigned int classes) : m_class
 ////        double minVal, maxVal;
 ////        minMaxLoc(tHist, &minVal, &maxVal);
 ////
-////        Mat tHistNorm ((tHist - minVal) / (maxVal - minVal));
+////        cv::Mat tHistNorm ((tHist - minVal) / (maxVal - minVal));
 ////        transpose(tHistNorm, tHist);
 ////        tHistNorm.release();
 ////        
@@ -124,8 +123,8 @@ TrimodalPixelClassifier::TrimodalPixelClassifier(unsigned int classes) : m_class
 ////    {
 ////        if (mask.at<uchar>(i,j) == 0) continue;
 ////        //        cout << Rect(i-d, j-d, cpsize, cpsize) << endl;
-////        Mat patch = Mat(cell, Rect(j-margin, i-margin, cpsize, cpsize)); // Rect(x,y), x are columns
-////        Mat maskPatch = Mat(mask, Rect(j-margin, i-margin, cpsize, cpsize));
+////        cv::Mat patch = cv::Mat(cell, Rect(j-margin, i-margin, cpsize, cpsize)); // Rect(x,y), x are columns
+////        cv::Mat maskPatch = cv::Mat(mask, Rect(j-margin, i-margin, cpsize, cpsize));
 //    
 //        // Create an histogram for the cell region of blurred intensity values
 //        int histSize[] = { (int) m_cellbins };
@@ -133,7 +132,7 @@ TrimodalPixelClassifier::TrimodalPixelClassifier(unsigned int classes) : m_class
 //        float tranges[] = { 0, 256 }; // thermal intensity values range: [0, 256)
 //        const float* ranges[] = { tranges };
 //        
-//        Mat tHist;
+//        cv::Mat tHist;
 //        calcHist(&c, 1, channels, m, tHist, 1, histSize, ranges, true, false);
 ////        patch.release();
 ////        maskPatch.release();
@@ -141,8 +140,8 @@ TrimodalPixelClassifier::TrimodalPixelClassifier(unsigned int classes) : m_class
 //        double minVal, maxVal;
 //        minMaxLoc(tHist, &minVal, &maxVal);
 //        
-////        Mat tHistNorm ((tHist - minVal) / (maxVal - minVal));
-//        Mat tHistNorm (tHist / sum(tHist).val[0]);
+////        cv::Mat tHistNorm ((tHist - minVal) / (maxVal - minVal));
+//        cv::Mat tHistNorm (tHist / sum(tHist).val[0]);
 //        transpose(tHistNorm, tHist);
 //        tHistNorm.release();
 //        
@@ -174,12 +173,12 @@ void TrimodalPixelClassifier::train(GridMat descriptions, GridMat labels, GridMa
     
     for (int k = 0; k < m_TEMMatrix.size(); k++)
     {
-        vector<EM> tEMArray; // The GMMs of a pose
+        vector<cv::EM> tEMArray; // The GMMs of a pose
         tEMArray.resize(hp * wp);
         
         for (int i = 0; i < hp; i++) for (int j = 0; j < wp; j++)
         {
-            Mat t;
+            cv::Mat t;
             for (int d = 0; d < m_TrainDescriptions.at(i,j).rows; d++) //(0,0).rows; d++)
             {
                 if (k == m_TrainLabels.at(i,j).at<int>(d,0))
@@ -194,12 +193,12 @@ void TrimodalPixelClassifier::train(GridMat descriptions, GridMat labels, GridMa
             
 			
 			cv::TermCriteria term;//(CV_TERMCRIT_ITER, 10000000, 0.000001);
-			EM em(3, EM::COV_MAT_GENERIC); // The GMM of a pose grid's cell
+            cv::EM em(3, cv::EM::COV_MAT_GENERIC); // The GMM of a pose grid's cell
             
 			cv::Mat train_loglikelihoods, train_probs;
-            bool success = em.train(t, train_loglikelihoods, noArray(), train_probs);
+            bool success = em.train(t, train_loglikelihoods, cv::noArray(), train_probs);
             t.release();
-			FileStorage fs;
+            cv::FileStorage fs;
 			fs.open("likelihoods.yml", cv::FileStorage::WRITE);
 			fs << "likelihoods" << train_loglikelihoods;
 			//cout << train_probs << endl;
@@ -245,7 +244,7 @@ void TrimodalPixelClassifier::train(GridMat descriptions, GridMat labels, GridMa
 //            cout << "Training cluster " << k << ", GMM (" << i << ","  << j << ") ..." << endl;
 //            
 //            EM::EM em(m_patchclusters); // The GMM of a pose grid's cell
-////            Mat cellTrain;
+////            cv::Mat cellTrain;
 ////            transpose(tGridsTrain[k].at(i,j), cellTrain);
 //            bool success = em.train(tGridsTrain[k].at(i,j));
 //            cout << success << " " << em.isTrained() << endl;
@@ -278,16 +277,16 @@ void TrimodalPixelClassifier::modelLogLikelihoodsPDFs(const GridMat descriptors,
 		for (int d = 0; d < descriptors.at(i,j).rows; d++)
 		{          
 			int clusterIdx = labels.at(i,j).at<int>(d,0);
-            const EM & em = m_TEMMatrix[clusterIdx][i * descriptors.ccols() + j];
+            const cv::EM & em = m_TEMMatrix[clusterIdx][i * descriptors.ccols() + j];
 
-			Mat probs, likes;
+            cv::Mat probs, likes;
 //            Vec2d prediction = em.predict( descriptors.at(i,j).row(d), probs, likes );
 
-            Vec2d prediction = em.predict( descriptors.at(i,j).row(d), probs );
+            cv::Vec2d prediction = em.predict( descriptors.at(i,j).row(d), probs );
 
 			cv::Mat_<double> logLikelihood (1,1);
 			logLikelihood.at<double>(0,0) = prediction.val[0];
-			clustersLogLikelihoods[clusterIdx][prediction.val[1]].vconcat(logLikelihood, i, j);
+			//clustersLogLikelihoods[clusterIdx][prediction.val[1]].vconcat(logLikelihood, i, j); //TODO: fix
 		}
 	}
 
@@ -308,19 +307,19 @@ void TrimodalPixelClassifier::test(GridMat descriptors, GridMat labels, GridMat 
     for (int i = 0; i < descriptors.crows(); i++) for (int j = 0; j < descriptors.ccols(); j++)
     {
 		cout << endl;
-        Mat C = Mat(descriptors.at(i,j).rows, 1, DataType<int>::type);
-        Mat P = Mat(descriptors.at(i,j).rows, 1, DataType<double>::type);
-		Mat L = Mat(descriptors.at(i,j).rows, 1, DataType<double>::type);
+        cv::Mat C = cv::Mat(descriptors.at(i,j).rows, 1, cv::DataType<int>::type);
+        cv::Mat P = cv::Mat(descriptors.at(i,j).rows, 1, cv::DataType<double>::type);
+        cv::Mat L = cv::Mat(descriptors.at(i,j).rows, 1, cv::DataType<double>::type);
         
         for (int d = 0; d < descriptors.at(i,j).rows; d++)
         {
             cout << m_TEMMatrix.size() << endl;
             
-            const EM & em = m_TEMMatrix[labels.at(i,j).at<int>(d,0)][i * descriptors.ccols() + j];
+            const cv::EM & em = m_TEMMatrix[labels.at(i,j).at<int>(d,0)][i * descriptors.ccols() + j];
 
-            Mat probs, likes;
+            cv::Mat probs, likes;
 //            Vec2d prediction = em.predict( descriptors.at(i,j).row(d), probs, likes );
-            Vec2d prediction = em.predict( descriptors.at(i,j).row(d), probs );
+            cv::Vec2d prediction = em.predict( descriptors.at(i,j).row(d), probs );
             C.at<int>(d,0) = prediction.val[1];
             P.at<double>(d,0) = probs.at<double>(0, prediction.val[1]);
 			L.at<double>(d,0) = likes.at<double>(0, prediction.val[1]);
@@ -348,17 +347,17 @@ void TrimodalPixelClassifier::test2(GridMat descriptors, GridMat labels, GridMat
     for (int i = 0; i < descriptors.crows(); i++) for (int j = 0; j < descriptors.ccols(); j++)
     {
 		cout << endl;
-        Mat C = Mat(descriptors.at(i,j).rows, 1, DataType<int>::type);
-        Mat P = Mat(descriptors.at(i,j).rows, 1, DataType<double>::type);
-		Mat L = Mat(descriptors.at(i,j).rows, 1, DataType<double>::type);
+        cv::Mat C = cv::Mat(descriptors.at(i,j).rows, 1, cv::DataType<int>::type);
+        cv::Mat P = cv::Mat(descriptors.at(i,j).rows, 1, cv::DataType<double>::type);
+        cv::Mat L = cv::Mat(descriptors.at(i,j).rows, 1, cv::DataType<double>::type);
         
         for (int d = 0; d < descriptors.at(i,j).rows; d++)
         {
             cout << m_TEMMatrix.size() << endl;
             
-            const EM & em = m_TEMMatrix[labels.at(i,j).at<int>(d,0)][i * descriptors.ccols() + j];
+            const cv::EM & em = m_TEMMatrix[labels.at(i,j).at<int>(d,0)][i * descriptors.ccols() + j];
             
-//            Mat probs, likes;
+//            cv::Mat probs, likes;
 //            Vec2d prediction = em.predict( descriptors.at(i,j).row(d), probs, likes );
 //            C.at<int>(d,0) = prediction.val[1];
 //            P.at<double>(d,0) = probs.at<double>(0, prediction.val[1]);
@@ -371,26 +370,26 @@ void TrimodalPixelClassifier::test2(GridMat descriptors, GridMat labels, GridMat
 //            printf("%d, %.4f, %.6f\n", C.at<int>(d,0), prediction.val[0], P.at<double>(d,0));
             
 			int nclusters = em.get<int>("nclusters");
-			Mat probs = Mat::zeros(1, nclusters, DataType<int>::type);
+            cv::Mat probs = cv::Mat::zeros(1, nclusters, cv::DataType<int>::type);
             
-			Mat x = descriptors.at(i,j).row(d);
+            cv::Mat x = descriptors.at(i,j).row(d);
 			cout << x.type() << endl;
             
-            Mat weights = em.get<Mat>("weights");
-			Mat means = em.get<Mat>("means");
-			vector<Mat> covs = em.get<vector<Mat> >("covs");
+            cv::Mat weights = em.get<cv::Mat>("weights");
+            cv::Mat means = em.get<cv::Mat>("means");
+			vector<cv::Mat> covs = em.get<vector<cv::Mat> >("covs");
             
             double maxProb = std::numeric_limits<double>::min();
 			for (int m = 0; m < nclusters; m++)
 			{
-				Mat diff, dblx;
+                cv::Mat diff, dblx;
 				x.convertTo(dblx, CV_64F);
 				cv::subtract(dblx, means.row(m), diff);
             
-				Mat diffT, invcovs;
+                cv::Mat diffT, invcovs;
 				transpose(diff, diffT);
 				invert(covs[m], invcovs);
-				Mat prod = (diff * invcovs) * diffT;
+                cv::Mat prod = (diff * invcovs) * diffT;
 			
                 double mahalDist = /*weights.at<double>(0,m) **/ exp(-0.5 * prod.at<double>(0,0));
                 double prob = ( 1.0 / sqrt(pow(2.0*__PI, k)) * determinant(covs[m]) ) * mahalDist;
@@ -406,7 +405,7 @@ void TrimodalPixelClassifier::test2(GridMat descriptors, GridMat labels, GridMat
     }
 }
 
-//void TrimodalPixelClassifier::predict(GridMat & grid, GridMat & mask, Mat cellsLabels, GridMat & cellsFeatures)
+//void TrimodalPixelClassifier::predict(GridMat & grid, GridMat & mask, cv::Mat cellsLabels, GridMat & cellsFeatures)
 //{
 //    namedWindow("cell");
 //    const unsigned int hp = cellsLabels.rows; // Get the 0-indexed attributes, they are all the same
@@ -419,11 +418,11 @@ void TrimodalPixelClassifier::test2(GridMat descriptors, GridMat labels, GridMat
 //        int cellLabel = cellsLabels.at<int>(i,j);
 //        EM & em = m_TEMMatrix[cellLabel][i * wp + j];
 //        
-//        Mat maxProbs ( cellsFeatures.at(i,j).rows, 1, DataType<float>::type );
-//        Mat classes ( cellsFeatures.at(i,j).rows, 1, DataType<uchar>::type );
+//        cv::Mat maxProbs ( cellsFeatures.at(i,j).rows, 1, DataType<float>::type );
+//        cv::Mat classes ( cellsFeatures.at(i,j).rows, 1, DataType<uchar>::type );
 //        for (int k = 0; k < cellsFeatures.at(i,j).rows; k++)
 //        {
-//            Mat probs;
+//            cv::Mat probs;
 //               
 //            Vec2d prediction = em.predict( cellsFeatures.at(i,j).row(k), probs );
 //            
@@ -445,7 +444,7 @@ void TrimodalPixelClassifier::test2(GridMat descriptors, GridMat labels, GridMat
 //        float tranges[] = { 0, 1 + 0.01 }; // thermal intensity values range: [0, 1)
 //        const float* ranges[] = { tranges };
 //        
-//        Mat probsHist;
+//        cv::Mat probsHist;
 //        calcHist(&maxProbs, 1, channels, noArray(), probsHist, 1, histSize, ranges, true, false);
 //        maxProbs.release();
 //        
@@ -457,7 +456,7 @@ void TrimodalPixelClassifier::test2(GridMat descriptors, GridMat labels, GridMat
 //        float atranges[] = { 0, static_cast<float>(m_patchclusters)}; // thermal intensity values range: [0, 1)
 //        const float* aranges[] = { atranges };
 //        
-//        Mat classHist;
+//        cv::Mat classHist;
 //        calcHist(&classes, 1, achannels, noArray(), classHist, 1, ahistSize, aranges, true, false);
 //        classes.release();
 //        

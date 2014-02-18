@@ -30,9 +30,9 @@ void TrimodalClusterer::trainClusters(GridMat descriptors, GridMat & labels, Gri
     
     for (int i = 0; i < descriptors.crows(); i++) for (int j = 0; j < descriptors.ccols(); j++)
     {      
-        Mat cellLabels;
-        Mat cellCenters;// = Mat::zeros(m_C, descriptors.at(i,j).cols, CV_32F);
-        kmeans(descriptors.get(i,j), m_C, cellLabels, TermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS, 100, 0.001), 5, KMEANS_PP_CENTERS, cellCenters);
+        cv::Mat cellLabels;
+        cv::Mat cellCenters;// = Mat::zeros(m_C, descriptors.at(i,j).cols, CV_32F);
+        cv::kmeans(descriptors.get(i,j), m_C, cellLabels, cv::TermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS, 100, 0.001), 5, cv::KMEANS_PP_CENTERS, cellCenters);
         
         labels.set(cellLabels, i, j);
         centers.set(cellCenters, i, j);
@@ -180,8 +180,8 @@ void TrimodalClusterer::predictClusters(GridMat descriptors, GridMat centers, Gr
     for (int i = 0; i < descriptors.crows(); i++) for (int j = 0; j < descriptors.ccols(); j++)
     {
 		cout << descriptors.at(i,j) << endl;
-        const Mat cellDescriptors = descriptors.at(i,j);
-        Mat cellLabels = Mat(cellDescriptors.rows, 1, DataType<int>::type);
+        const cv::Mat cellDescriptors = descriptors.at(i,j);
+        cv::Mat cellLabels = cv::Mat(cellDescriptors.rows, 1, cv::DataType<int>::type);
         for (int d = 0; d < cellDescriptors.rows; d++)
         {
             cellLabels.at<int>(d,0) = closestClusterCenter(cellDescriptors.row(d), centers.at(i,j));
@@ -192,7 +192,7 @@ void TrimodalClusterer::predictClusters(GridMat descriptors, GridMat centers, Gr
 }
 
 
-int TrimodalClusterer::closestClusterCenter(Mat point, Mat centers)
+int TrimodalClusterer::closestClusterCenter(cv::Mat point, cv::Mat centers)
 {
     // Compare to corresponding cell's cluster centers  
     int closest;
@@ -200,8 +200,8 @@ int TrimodalClusterer::closestClusterCenter(Mat point, Mat centers)
     
     for (int c = 0; c < centers.rows; c++)
     {
-        Mat elemwiseDist;
-        subtract(point, centers.row(c), elemwiseDist);
+        cv::Mat elemwiseDist;
+        cv::subtract(point, centers.row(c), elemwiseDist);
         float dist = sum(elemwiseDist)[0];
         elemwiseDist.release();
         if (dist < mindist)

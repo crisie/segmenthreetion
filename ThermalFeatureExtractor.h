@@ -9,40 +9,37 @@
 #ifndef __Segmenthreetion__ThermalFeatureExtractor__
 #define __Segmenthreetion__ThermalFeatureExtractor__
 
-#include <opencv2/opencv.hpp>
+#include "FeatureExtractor.h"
+
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 #include <iostream>
 
 #include "GridMat.h"
-#include "ThermalParametrization.h"
+#include "ThermalParametrization.hpp"
 
 using namespace std;
 
-class ThermalFeatureExtractor
+class ThermalFeatureExtractor : public FeatureExtractor
 {
 public:
     ThermalFeatureExtractor(int hp, int wp);
 	ThermalFeatureExtractor(int hp, int wp, ThermalParametrization tParam);
     
-    void setData(vector<GridMat> grids, vector<GridMat> masks);
     void setParam(ThermalParametrization tParam);
 
-    void describe(GridMat & descriptionsThermal);
-    void describe(GridMat & subjectDescriptors, GridMat & objectDescriptors);
+    void describe(vector<GridMat> grids, vector<GridMat> masks, GridMat & descriptors);
+    void describe(vector<GridMat> grids, vector<GridMat> masks,
+                  GridMat & subDescriptors, GridMat & objDescriptors, GridMat & unkDescriptors);
     
 private:
     /*
      * Class attributes
      */
     
-    int m_hp;
-    int m_wp;
-    
-    vector<GridMat> m_ThermalGrids;
-    vector<GridMat> m_ThermalMasks;
     ThermalParametrization m_ThermalParam;
-    
-    GridMat m_ThermalDescriptions;
     
     /*
      * Private methods
@@ -50,9 +47,6 @@ private:
     
     void describeThermalIntesities(const cv::Mat grid, const cv::Mat mask, cv::Mat & tIntensityHist);
     void describeThermalGradOrients(const cv::Mat grid, const cv::Mat mask, cv::Mat & tGradOrientsHist);
-    
-    // Normalize a descriptor (hypercube, i.e. f: (-inf, inf) --> [0, 1]
-    void hypercubeNorm(cv::Mat & src, cv::Mat & dst);
 };
 
 #endif /* defined(__Segmenthreetion__ThermalFeatureExtractor__) */

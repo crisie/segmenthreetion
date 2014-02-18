@@ -13,7 +13,7 @@
 class MotionParametrization
 {
 public:
-    MotionParametrization();
+    MotionParametrization() {}
     
     int hoofbins;      // Bins in the histogram of oriented optical flows
     

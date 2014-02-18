@@ -16,12 +16,11 @@
 /****************************************************************************************\
 *                              Expectation - Maximization                                *
 \****************************************************************************************/
-namespace cv
-{
-class CV_EXPORTS_W EM30 : public Algorithm
+
+class CV_EXPORTS_W EM30 : public cv::Algorithm
 {
 public:
-    // Type of covariation matrices
+    // Type of covariation cv::Matrices
     enum {COV_MAT_SPHERICAL=0, COV_MAT_DIAGONAL=1, COV_MAT_GENERIC=2, COV_MAT_DEFAULT=COV_MAT_DIAGONAL};
 
     // Default parameters
@@ -30,53 +29,53 @@ public:
     // The initial step
     enum {START_E_STEP=1, START_M_STEP=2, START_AUTO_STEP=0};
 
-    CV_WRAP EM30(int nclusters=EM::DEFAULT_NCLUSTERS, int covMatType=EM::COV_MAT_DIAGONAL,
-       const TermCriteria& termCrit=TermCriteria(TermCriteria::COUNT+
-                                                 TermCriteria::EPS,
-                                                 EM::DEFAULT_MAX_ITERS, FLT_EPSILON));
+    CV_WRAP EM30(int nclusters=cv::EM::DEFAULT_NCLUSTERS, int covMatType=cv::EM::COV_MAT_DIAGONAL,
+                 const cv::TermCriteria& termCrit = cv::TermCriteria(cv::TermCriteria::COUNT+
+                                                                    cv::TermCriteria::EPS,
+                                                                     cv::EM::DEFAULT_MAX_ITERS, FLT_EPSILON));
     
     virtual ~EM30();
     CV_WRAP virtual void clear();
 
-    CV_WRAP virtual bool train(InputArray samples,
-                       OutputArray logLikelihoods=noArray(),
-                       OutputArray labels=noArray(),
-                       OutputArray probs=noArray());
+    CV_WRAP virtual bool train(cv::InputArray samples,
+                               cv::OutputArray logLikelihoods=cv::noArray(),
+                               cv::OutputArray labels=cv::noArray(),
+                               cv::OutputArray probs=cv::noArray());
     
-    CV_WRAP virtual bool trainE(InputArray samples,
-                        InputArray means0,
-                        InputArray covs0=noArray(),
-                        InputArray weights0=noArray(),
-                        OutputArray logLikelihoods=noArray(),
-                        OutputArray labels=noArray(),
-                        OutputArray probs=noArray());
+    CV_WRAP virtual bool trainE(cv::InputArray samples,
+                        cv::InputArray means0,
+                                cv::InputArray covs0=cv::noArray(),
+                        cv::InputArray weights0= cv::noArray(),
+                        cv::OutputArray logLikelihoods= cv::noArray(),
+                        cv::OutputArray labels= cv::noArray(),
+                        cv::OutputArray probs= cv::noArray());
     
-    CV_WRAP virtual bool trainM(InputArray samples,
-                        InputArray probs0,
-                        OutputArray logLikelihoods=noArray(),
-                        OutputArray labels=noArray(),
-                        OutputArray probs=noArray());
+    CV_WRAP virtual bool trainM(cv::InputArray samples,
+                        cv::InputArray probs0,
+                        cv::OutputArray logLikelihoods= cv::noArray(),
+                        cv::OutputArray labels= cv::noArray(),
+                        cv::OutputArray probs= cv::noArray());
     
-    CV_WRAP Vec2d predict(InputArray sample,
-                OutputArray probs=noArray(), OutputArray loglikelihoods=noArray()) const;
+    CV_WRAP cv::Vec2d predict(cv::InputArray sample,
+                              cv::OutputArray probs= cv::noArray(), cv::OutputArray loglikelihoods=cv::noArray()) const;
 
     CV_WRAP bool isTrained() const;
 
     //AlgorithmInfo* info() const;
-    virtual void read(const FileNode& fn);
+    virtual void read(const cv::FileNode& fn);
 
 protected:
     
-    virtual void setTrainData(int startStep, const Mat& samples,
-                              const Mat* probs0,
-                              const Mat* means0,
-                              const vector<Mat>* covs0,
-                              const Mat* weights0);
+    virtual void setTrainData(int startStep, const cv::Mat& samples,
+                              const cv::Mat* probs0,
+                              const cv::Mat* means0,
+                              const std::vector<cv::Mat>* covs0,
+                              const cv::Mat* weights0);
 
     bool doTrain(int startStep,
-                 OutputArray logLikelihoods,
-                 OutputArray labels,
-                 OutputArray probs);
+                 cv::OutputArray logLikelihoods,
+                 cv::OutputArray labels,
+                 cv::OutputArray probs);
     virtual void eStep();
     virtual void mStep();
 
@@ -84,30 +83,29 @@ protected:
     void decomposeCovs();
     void computeLogWeightDivDet();
 
-    Vec2d computeProbabilities(const Mat& sample, Mat* probs, Mat* logLikelihoods) const;
+    cv::Vec2d computeProbabilities(const cv::Mat& sample, cv::Mat* probs, cv::Mat* logLikelihoods) const;
 
-    // all inner matrices have type CV_64FC1
+    // all inner cv::Matrices have type CV_64FC1
     CV_PROP_RW int nclusters;
     CV_PROP_RW int covMatType;
     CV_PROP_RW int maxIters;
     CV_PROP_RW double epsilon;
 
-    Mat trainSamples;
-    Mat trainProbs;
-    Mat trainLogLikelihoods;
-    Mat trainLabels;
+    cv::Mat trainSamples;
+    cv::Mat trainProbs;
+    cv::Mat trainLogLikelihoods;
+    cv::Mat trainLabels;
 
-	Mat maxLogLilelihoodsPerLabel;
+    cv::Mat maxLogLilelihoodsPerLabel;
 
-    CV_PROP Mat weights;
-    CV_PROP Mat means;
-    CV_PROP vector<Mat> covs;
+    CV_PROP cv::Mat weights;
+    CV_PROP cv::Mat means;
+    CV_PROP std::vector<cv::Mat> covs;
 
-    vector<Mat> covsEigenValues;
-    vector<Mat> covsRotateMats;
-    vector<Mat> invCovsEigenValues;
-    Mat logWeightDivDet;
+    std::vector<cv::Mat> covsEigenValues;
+    std::vector<cv::Mat> covsRotateMats;
+    std::vector<cv::Mat> invCovsEigenValues;
+    cv::Mat logWeightDivDet;
 };
-} // namespace cv
 
 #endif /* defined(__Segmenthreetion__GridMat__) */

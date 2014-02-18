@@ -11,12 +11,10 @@
 
 #include <iostream>
 
-
 class ThermalParametrization
 {
 public:
-    ThermalParametrization();
-    ThermalParametrization(int ibins, int oribins);
+    ThermalParametrization() {}
     
     int ibins;      // Bins in the intensity histograms
     int oribins;    // Bins in the gradient orientation histograms

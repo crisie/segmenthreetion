@@ -14,12 +14,10 @@
 #include "DepthFeatureExtractor.h"
 #include "ThermalFeatureExtractor.h"
 
-#include "ColorParametrization.h"
-#include "MotionParametrization.h"
-#include "DepthParametrization.h"
-#include "ThermalParametrization.h"
-
 #include "GridMat.h"
+
+#include "StatTools.h"
+#include "DebugTools.h"
 
 #include <sys/stat.h>
 #include <string>
@@ -36,98 +34,67 @@ using namespace std;
  * Constructor
  */
 
-TrimodalSegmentator::TrimodalSegmentator(const unsigned int hp, const unsigned int wp, const int numClusters, const int numMixtures, const ColorParametrization cParam, const MotionParametrization mParam, const DepthParametrization dParam, const ThermalParametrization tParam)
-: m_hp(hp), m_wp(wp), m_NumClusters(numClusters), m_NumMixtures(numMixtures), m_ColorParam(cParam), m_MotionParam(mParam), m_DepthParam(dParam), m_ThermalParam(tParam)
+TrimodalSegmentator::TrimodalSegmentator(const unsigned char offsetID)
+    : m_OffsetID(offsetID)
 { }
 
-double phi(double x)
-{
-    // constants
-    double a1 =  0.254829592;
-    double a2 = -0.284496736;
-    double a3 =  1.421413741;
-    double a4 = -1.453152027;
-    double a5 =  1.061405429;
-    double p  =  0.3275911;
-    
-    // Save the sign of x
-    int sign = 1;
-    if (x < 0)
-        sign = -1;
-    x = fabs(x)/sqrt(2.0);
-    
-    // A&S formula 7.1.26
-    double t = 1.0/(1.0 + p*x);
-    double y = 1.0 - (((((a5*t + a4)*t) + a3)*t + a2)*t + a1)*t*exp(-x*x);
-    
-    return 0.5*(1.0 + sign*y);
-}
 
-/**
- * DEBUG (Auxiliary function)
- * Visualizes in an OpenCV window the sequence of masks surrounded by their corresponding bounding boxes.
- * To check whether the masks and bounding rects have been loaded correctly.
- */
-void visualizeMasksWithinRects(vector<Mat> masks, vector<vector<Rect> > rects)
+void TrimodalSegmentator::extractFeatures(const unsigned int hp, const unsigned int wp,
+                                          const ColorParametrization cParam, const MotionParametrization mParam,
+                                          const DepthParametrization dParam, const ThermalParametrization tParam)
 {
-    namedWindow("Bounded masks sequence visualization");
-    for (int i = 0; i < masks.size(); i++)
+    m_hp = hp;
+    m_wp = wp;
+    
+    // Feature extractors
+    
+    ColorFeatureExtractor   cFE(m_hp, m_wp, cParam);
+    MotionFeatureExtractor  mFE(m_hp, m_wp, mParam);
+    DepthFeatureExtractor   dFE(m_hp, m_wp, dParam);
+    ThermalFeatureExtractor tFE(m_hp, m_wp, tParam);
+    
+    // Descriptions
+    
+    GridMat cSubDescriptors(m_hp, m_wp, GridMat::SUBJECT);
+    GridMat cObjDescriptors(m_hp, m_wp, GridMat::OBJECT);
+    GridMat cUnkDescriptors(m_hp, m_wp, GridMat::UNKNOWN);
+    
+    GridMat mSubDescriptors(m_hp, m_wp, GridMat::SUBJECT);
+    GridMat mObjDescriptors(m_hp, m_wp, GridMat::OBJECT);
+    GridMat mUnkDescriptors(m_hp, m_wp, GridMat::UNKNOWN);
+    
+    GridMat dSubDescriptors(m_hp, m_wp, GridMat::SUBJECT);
+    GridMat dObjDescriptors(m_hp, m_wp, GridMat::OBJECT);
+    GridMat dUnkDescriptors(m_hp, m_wp, GridMat::UNKNOWN);
+    
+    GridMat tSubDescriptors(m_hp, m_wp, GridMat::SUBJECT);
+    GridMat tObjDescriptors(m_hp, m_wp, GridMat::OBJECT);
+    GridMat tUnkDescriptors(m_hp, m_wp, GridMat::UNKNOWN);
+    
+    for (int i = 0; i < m_ScenesPaths.size(); i++)
     {
-        cout << i << " rects: " << rects[i].size() << endl;
-        Mat gimg (masks[i]);
-        Mat img;
-        cvtColor(gimg, img, CV_GRAY2RGB);
-        bool any = false;
-        for (int j = 0; j < rects[i].size(); j++)
-        {
-            Rect r = rects[i][j];
-            rectangle(img, Point(r.x, r.y), Point(r.x+r.width, r.y+r.height), Scalar(255,0,0));
-            any = true;
-        }
-        imshow("Bounded masks sequence visualization", img);
-        
-        if (any)
-            waitKey();
-        else
-            waitKey(10);
+        //extractModalityFeatures(m_ScenesPaths[i], "Color", cParam, cDescriptors);
+        //extractModalityFeatures(m_ScenesPaths[i], "Motion" mParam, mDescriptors);
+        //extractModalityFeatures(m_ScenesPaths[i], "Depth", dParam, dDescriptors);
+        extractModalityFeatures(m_ScenesPaths[i], "Thermal", &
+                                tFE, tSubDescriptors, tObjDescriptors, tUnkDescriptors);
     }
 }
 
-/**
- * DEBUG (Auxiliary function)
- * Visualize gridmats
- */
-void visualizeGridmats(vector<GridMat> gridmats)
-{
-    namedWindow("Gridmats sequence visualization");
-    for (int i = 0; i < gridmats.size(); i++)
-    {
-        gridmats[i].show("Gridmats sequence visualization");
-        
-        waitKey(100);
-    }
-}
 
-void TrimodalSegmentator::segment()
-{
-    segmentColor();
-    segmentMotion();
-    segmentDepth();
-    segmentThermal();
-}
-
-void TrimodalSegmentator::segmentColor()
+void TrimodalSegmentator::extractModalityFeatures(string scenePath, string modality, FeatureExtractor* fe,
+                                                  GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
 {
     // Load data from disk: frames, masks, and rectangular bounding boxes
     
 	vector<cv::Mat> frames;
 	vector<cv::Mat> masks;
-    vector< vector<Rect> > boundingRects;
+    vector< vector<cv::Rect> > boundingRects;
     vector< vector<int> > tags;
     
-    loadDataToMats   (m_DataPath + string("Frames/Color/"), "jpg", frames);
-	loadDataToMats   (m_DataPath + string("Masks/Color/"), "png", masks);
-	loadBoundingRects(m_DataPath + string("Masks/color.yml"), boundingRects, tags);
+    loadDataToMats   (scenePath + "Frames/" + modality + "/", "jpg", frames);
+	loadDataToMats   (scenePath + "Masks/" + modality + "/", "png", masks);
+	loadBoundingRects(scenePath + "Masks/" + modality + ".yml", boundingRects, tags);
     //visualizeMasksWithinRects(masks, bounding_rects); // DEBUG
     
     // Grid frames and masks
@@ -137,102 +104,19 @@ void TrimodalSegmentator::segmentColor()
 	grid(frames, boundingRects, tags, m_hp, m_wp, gFramesTrain);
 	grid(masks, boundingRects, tags, m_hp, m_wp, gMasksTrain);
     //visualizeGridmats(gframes_train); // DEBUG
-    //visualizeGridmats(gmasks_train);
+    //visualizeGridmats(gmasks_train); // DEBUG
     
 	//
 	// Feature extraction
 	//
-	
-    GridMat descriptors;
     
-	ColorFeatureExtractor colorFeatureExtractor(m_hp, m_wp, m_ColorParam);
-    colorFeatureExtractor.setData(gFramesTrain, gMasksTrain);
-    colorFeatureExtractor.describe(descriptors); // framews dimensionality reduced to the description dimensionality
-	// DEBUG: save to a file
-    boost::posix_time::ptime t = boost::posix_time::second_clock::local_time();
-    std::stringstream ss;
-    ss << t;
-    descriptors.saveFS(std::string("color_descriptors_") + ss.str() + std::string(".yml")); // DEBUG: save to a file
-}
+    fe->describe(gFramesTrain, gMasksTrain, subDescriptors, objDescriptors, unkDescriptors); // framews dimensionality reduced to the description dimensionality
 
-void TrimodalSegmentator::segmentColor()
-{
-    // Load data from disk: frames, masks, and rectangular bounding boxes
-    
-	vector<cv::Mat> frames;
-	vector<cv::Mat> masks;
-    vector< vector<Rect> > boundingRects;
-    vector< vector<int> > tags;
-    
-    loadDataToMats   (m_DataPath + string("Frames/Color/"), "jpg", frames);
-	loadDataToMats   (m_DataPath + string("Masks/Color/"), "png", masks);
-	loadBoundingRects(m_DataPath + string("Masks/color.yml"), boundingRects, tags);
-    //visualizeMasksWithinRects(masks, bounding_rects); // DEBUG
-    
-    // Grid frames and masks
-    
-    vector<GridMat> gFramesTrain, gMasksTrain; // the ones used to train
-    
-	grid(frames, boundingRects, tags, m_hp, m_wp, gFramesTrain);
-	grid(masks, boundingRects, tags, m_hp, m_wp, gMasksTrain);
-    //visualizeGridmats(gframes_train); // DEBUG
-    //visualizeGridmats(gmasks_train);
-    
-	//
-	// Feature extraction
-	//
-	
-    GridMat descriptors;
-    
-	ColorFeatureExtractor colorFeatureExtractor(m_hp, m_wp, m_ColorParam);
-    colorFeatureExtractor.setData(gFramesTrain, gMasksTrain);
-    colorFeatureExtractor.describe(descriptors); // framews dimensionality reduced to the description dimensionality
-	// DEBUG: save to a file
-    boost::posix_time::ptime t = boost::posix_time::second_clock::local_time();
-    std::stringstream ss;
-    ss << t;
-    descriptors.saveFS(std::string("color_descriptors_") + ss.str() + std::string(".yml")); // DEBUG: save to a file
-}
-
-void TrimodalSegmentator::segmentMotion()
-{
-    // Load data from disk: frames, masks, and rectangular bounding boxes
-    
-	vector<cv::Mat> frames;
-	vector<cv::Mat> masks;
-    vector< vector<Rect> > boundingRects;
-    vector< vector<int> > tags;
-
-    loadDataToMats   (m_DataPath + string("Frames/Color/"), "jpg", frames);
-	loadDataToMats   (m_DataPath + string("Masks/Color/"), "png", masks);
-	loadBoundingRects(m_DataPath + string("Masks/color.yml"), boundingRects, tags);
-    //visualizeMasksWithinRects(masks, bounding_rects); // DEBUG
-    
-    // Grid frames and masks
-    
-    vector<GridMat> gFramesTrain, gMasksTrain; // the ones used to train
-
-	grid(frames, boundingRects, tags, m_hp, m_wp, gFramesTrain);
-	grid(masks, boundingRects, tags, m_hp, m_wp, gMasksTrain);
-    //visualizeGridmats(gframes_train); // DEBUG
-    //visualizeGridmats(gmasks_train);
-    
-	//
-	// Feature extraction
-	//
-	
-    GridMat descriptors;
-    
-	MotionFeatureExtractor motionFeatureExtractor(m_hp, m_wp, m_MotionParam);
-    motionFeatureExtractor.setData(gFramesTrain, gMasksTrain);
-    
-    motionFeatureExtractor.describe(descriptors); // framews dimensionality reduced to the description dimensionality
-	// DEBUG: save to a file
-    boost::posix_time::ptime t = boost::posix_time::second_clock::local_time();
-    std::stringstream ss;
-    ss << t;
-    descriptors.saveFS(std::string("motion_descriptors_") + ss.str() + std::string(".yml")); // DEBUG: save to a file
-
+//	// DEBUG
+//    boost::posix_time::ptime t = boost::posix_time::second_clock::local_time();
+//    std::stringstream ss;
+//    ss << t;
+//    descriptors.saveFS(std::string("color_descriptors_") + ss.str() + std::string(".yml")); // DEBUG: save to a file
 //	//
 //    // Clusterize people
 //    // -----------------
@@ -277,8 +161,8 @@ void TrimodalSegmentator::segmentMotion()
 //    
 //    for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
 //    {
-//        cv::Scalar mean, stddev;
-//        cv::meanStdDev(logLikelihoods.at(i,j), mean, stddev);
+//        Scalar mean, stddev;
+//        meanStdDev(logLikelihoods.at(i,j), mean, stddev);
 //        means.at<double>(i,j) = mean.val[0];
 //        stddevs.at<double>(i,j) = stddev.val[0];
 //    }
@@ -296,8 +180,8 @@ void TrimodalSegmentator::segmentMotion()
 //    
 //    for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
 //    {
-//        Mat & c = znormLogLikelihoods.get(i,j);
-//        Mat p (c.rows, c.cols, CV_32FC1);
+//        cv::Mat & c = znormLogLikelihoods.get(i,j);
+//        cv::Mat p (c.rows, c.cols, CV_32FC1);
 //        for (int k = 0; k < c.rows; k++)
 //        {
 //            p.at<float>(k,0) = (float) phi(c.at<double>(k,0));
@@ -311,8 +195,8 @@ void TrimodalSegmentator::segmentMotion()
 //        float tranges[] = { 0, 1 + 0.01 }; // thermal intensity values range: [0, 1)
 //        const float* ranges[] = { tranges };
 //
-//        Mat probsHist;
-//        cv::calcHist(&p, 1, channels, noArray(), probsHist, 1, histSize, ranges, true, false);
+//        cv::Mat probsHist;
+//        calcHist(&p, 1, channels, noArray(), probsHist, 1, histSize, ranges, true, false);
 ////        maxProbs.release();
 //        cout << "hist (" << i << "," << j <<")" << probsHist << endl;
 //    }
@@ -372,50 +256,13 @@ void TrimodalSegmentator::segmentMotion()
 //
 }
 
-void TrimodalSegmentator::segmentDepth()
-{
-    // Load data from disk: frames, masks, and rectangular bounding boxes
-	vector<cv::Mat> frames;
-	vector<cv::Mat> masks;
-    vector< vector<Rect> > boundingRects;
-    vector< vector<int> > tags;
-    
-    loadDataToMats   (m_DataPath + string("Frames/DepthReg/"), "png", frames);
-	loadDataToMats   (m_DataPath + string("Masks/Color/"), "png", masks); // since depth frames are registered to color modality
-	loadBoundingRects(m_DataPath + string("Masks/color.yml"), boundingRects, tags);
-    //visualizeMasksWithinRects(masks, bounding_rects); // DEBUG
-    
-    // Grid frames and masks
-    
-    vector<GridMat> gFramesTrain, gMasksTrain; // the ones used to train
-    
-	grid(frames, boundingRects, tags, m_hp, m_wp, gFramesTrain);
-	grid( masks, boundingRects, tags, m_hp, m_wp, gMasksTrain);
-    //visualizeGridmats(gframes_train); // DEBUG
-    //visualizeGridmats(gmasks_train);
-    
-	//
-	// Feature extraction
-	//
-	
-    GridMat descriptors;
-    
-	DepthFeatureExtractor depthFeatureExtractor(m_hp, m_wp, m_DepthParam);
-    depthFeatureExtractor.setData(gFramesTrain, gMasksTrain);
-    depthFeatureExtractor.describe(descriptors); // framews dimensionality reduced to the description dimensionality
-	
-    boost::posix_time::ptime t = boost::posix_time::second_clock::local_time();
-    std::stringstream ss;
-    ss << t;
-    descriptors.saveFS(std::string("depth_descriptors_") + ss.str() + std::string(".yml"));
-}
 
 /*
-void TrimodalSegmentator::segmentDepth()
+void TrimodalSegmentator::extractDepthFeatures()
 {
     // Load data from disk: frames, masks, and rectangular bounding boxes
-	vector<cv::Mat> frames;
-	vector<cv::Mat> masks;
+	vector<Mat> frames;
+	vector<Mat> masks;
     vector< vector<Rect> > bounding_rects;
     vector< vector<int> > tags;
     
@@ -435,9 +282,9 @@ void TrimodalSegmentator::segmentDepth()
     const unsigned int nTrain  = n - nTest;
     
     RNG randgen(m_Seed);
-    Mat indices = shuffled(0, n-1, randgen);
-    Mat trainIndices (indices, Rect(0, 0, 1, nTrain));
-    Mat testIndices (indices, Rect(0, nTrain, 1, nTest));
+    cv::Mat indices = shuffled(0, n-1, randgen);
+    cv::Mat trainIndices (indices, Rect(0, 0, 1, nTrain));
+    cv::Mat testIndices (indices, Rect(0, nTrain, 1, nTest));
     
 	//
 	// Pre-processing
@@ -501,8 +348,8 @@ void TrimodalSegmentator::segmentDepth()
     
     for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
     {
-        cv::Scalar mean, stddev;
-        cv::meanStdDev(logLikelihoods.at(i,j), mean, stddev);
+        Scalar mean, stddev;
+        meanStdDev(logLikelihoods.at(i,j), mean, stddev);
         means.at<double>(i,j) = mean.val[0];
         stddevs.at<double>(i,j) = stddev.val[0];
     }
@@ -520,8 +367,8 @@ void TrimodalSegmentator::segmentDepth()
     
     for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
     {
-        Mat & c = znormLogLikelihoods.get(i,j);
-        Mat p (c.rows, c.cols, CV_32FC1);
+        cv::Mat & c = znormLogLikelihoods.get(i,j);
+        cv::Mat p (c.rows, c.cols, CV_32FC1);
         for (int k = 0; k < c.rows; k++)
         {
             p.at<float>(k,0) = (float) phi(c.at<double>(k,0));
@@ -535,8 +382,8 @@ void TrimodalSegmentator::segmentDepth()
         float tranges[] = { 0, 1 + 0.01 }; // thermal intensity values range: [0, 1)
         const float* ranges[] = { tranges };
         
-        Mat probsHist;
-        cv::calcHist(&p, 1, channels, noArray(), probsHist, 1, histSize, ranges, true, false);
+        cv::Mat probsHist;
+        calcHist(&p, 1, channels, noArray(), probsHist, 1, histSize, ranges, true, false);
         //        maxProbs.release();
         cout << "hist (" << i << "," << j <<")" << probsHist << endl;
     }
@@ -610,8 +457,8 @@ void TrimodalSegmentator::segmentDepth()
 //    
 //    // The not-so-right way to divide it (for debuggin purposes)
 //    
-//    //    Mat trainIndices (8,1, DataType<int>::type);
-//    //    Mat testIndices (2,1, DataType<int>::type);
+//    //    cv::Mat trainIndices (8,1, DataType<int>::type);
+//    //    cv::Mat testIndices (2,1, DataType<int>::type);
 //    //
 //    //    trainIndices.at<int>(0,0) = 1;
 //    //    trainIndices.at<int>(1,0) = 2;
@@ -749,7 +596,7 @@ void TrimodalSegmentator::segmentDepth()
 /*
  * Trim subimages, defined by rects (bounding boxes), from image frames
  */
-void TrimodalSegmentator::grid(vector<Mat> frames, vector< vector<Rect> > rects, vector< vector<int> > tags, unsigned int crows, unsigned int ccols, vector<GridMat> & grids)
+void TrimodalSegmentator::grid(vector<cv::Mat> frames, vector< vector<cv::Rect> > rects, vector< vector<int> > tags, unsigned int crows, unsigned int ccols, vector<GridMat> & grids)
 {
     //namedWindow("grided subject");
     // Seek in each frame ..
@@ -760,8 +607,8 @@ void TrimodalSegmentator::grid(vector<Mat> frames, vector< vector<Rect> > rects,
         {
             if (rects[f][r].height >= m_hp && rects[f][r].width >= m_wp)
             {
-                Mat subject (frames[f], rects[f][r]); // Get a roi in frame defined by the rectangle.
-                Mat maskedSubject = (subject == (m_Offset + r));
+                cv::Mat subject (frames[f], rects[f][r]); // Get a roi in frame defined by the rectangle.
+                cv::Mat maskedSubject = (subject == (m_OffsetID + r));
                 subject.release();
                 
                 GridMat g (maskedSubject, crows, ccols);
@@ -774,7 +621,7 @@ void TrimodalSegmentator::grid(vector<Mat> frames, vector< vector<Rect> > rects,
 /*
  *    < < <   DEBUG   > > >
  */
-void TrimodalSegmentator::loadDebugTestData(const char* path, vector<Mat> & test, vector<Mat> & testmasks, vector< vector<Rect> > & testrects)
+void TrimodalSegmentator::loadDebugTestData(const char* path, vector<cv::Mat> & test, vector<cv::Mat> & testmasks, vector< vector<cv::Rect> > & testrects)
 {
     if (path == NULL)
     {
@@ -908,7 +755,7 @@ void TrimodalSegmentator::loadDebugTestData(const char* path, vector<Mat> & test
 //        if (S_ISDIR( filestat.st_mode ))         continue;
 //        if (filename.compare(".DS_Store") == 0)  continue;
 //        
-//        Mat img = imread(filepath, CV_LOAD_IMAGE_ANYDEPTH);
+//        cv::Mat img = imread(filepath, CV_LOAD_IMAGE_ANYDEPTH);
 //        frames.push_back(img);
 //    }
 //    
@@ -916,11 +763,11 @@ void TrimodalSegmentator::loadDebugTestData(const char* path, vector<Mat> & test
 //}
 
 /**
- * Load data to opencv's mats
+ * Load data to opencv's cv::Mats
  *
  * This method uses OpenCV and Boost.
  */
-void TrimodalSegmentator::loadDataToMats(string dir, const char* format, vector<Mat> & frames)
+void TrimodalSegmentator::loadDataToMats(string dir, const char* format, vector<cv::Mat> & frames)
 {
     const char* path = dir.c_str();
 	if( exists( path ) )
@@ -933,7 +780,7 @@ void TrimodalSegmentator::loadDataToMats(string dir, const char* format, vector<
 			if ( !is_directory( *iter ) && iter->path().extension().string().compare(".DS_Store") != 0 && iter->path().filename().string().compare("renamer.py") != 0)
 			{
                 //std::cout << iter->path().string() << std::endl;
-				Mat img = imread( iter->path().string(), CV_LOAD_IMAGE_ANYDEPTH );
+				cv::Mat img = cv::imread( iter->path().string(), CV_LOAD_IMAGE_ANYDEPTH );
 				frames.push_back(img);
 			}
 		}
@@ -943,7 +790,7 @@ void TrimodalSegmentator::loadDataToMats(string dir, const char* format, vector<
 /*
  * Load the people data (bounding boxes coordinates)
  */
-void TrimodalSegmentator::loadBoundingRects(string file, vector< vector<Rect> > & rects, vector< vector<int> >& tags)
+void TrimodalSegmentator::loadBoundingRects(string file, vector< vector<cv::Rect> > & rects, vector< vector<int> >& tags)
 {
     cv::FileStorage fs;
     fs.open(file.c_str(), cv::FileStorage::READ);
@@ -963,7 +810,7 @@ void TrimodalSegmentator::loadBoundingRects(string file, vector< vector<Rect> > 
         for (int j = 0; j < v.size(); j++)
             cout << v[j] << ",";
         cout << endl; */        
-        vector<Rect> frame_rects;
+        vector<cv::Rect> frame_rects;
         for (int j = 0; j < v.size() / 4; j++)
         {
             int x0 = v[j*4];
@@ -971,7 +818,7 @@ void TrimodalSegmentator::loadBoundingRects(string file, vector< vector<Rect> > 
             int x1 = v[j*4+2];
             int y1 = v[j*4+3];
             
-            frame_rects.push_back( Rect(x0, y0, x1 - x0, y1 - y0) );
+            frame_rects.push_back( cv::Rect(x0, y0, x1 - x0, y1 - y0) );
         }
         //cout << i << " rects: " << frame_rects.size() << endl;
         rects.push_back(frame_rects);
@@ -1038,9 +885,9 @@ void TrimodalSegmentator::loadBoundingRects(string file, vector< vector<Rect> > 
      */
 }
 
-Mat TrimodalSegmentator::shuffled(int a, int b, RNG randGen)
+cv::Mat TrimodalSegmentator::shuffled(int a, int b, cv::RNG randGen)
 {
-    Mat vec (b-a+1, 1, DataType<int>::type);
+    cv::Mat vec (b-a+1, 1, cv::DataType<int>::type);
     for (int i = a; i <= b; i++)
     {
         vec.at<int>(i-a, 0) = i;
@@ -1063,4 +910,25 @@ void TrimodalSegmentator::select(vector<GridMat> grids, vector<int> indices, vec
 void TrimodalSegmentator::setDataPath(string dataPath)
 {
     m_DataPath = dataPath;
+    
+    const char* path = m_DataPath.c_str();
+	if( exists( path ) )
+	{
+		directory_iterator end;
+		directory_iterator iter(path);
+		for( ; iter != end ; ++iter )
+		{
+			if ( is_directory( *iter ) )
+			{
+                string scenePath = iter->path().string();
+				m_ScenesPaths.push_back(scenePath);
+                
+                cout << "Scene found: " << scenePath << endl;
+			}
+		}
+	}
+    else
+    {
+        cerr << "Data path is not containing any scene(s)!" << endl;
+    }
 }

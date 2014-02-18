@@ -21,7 +21,7 @@
 //
 //   * Redistribution's in binary form must reproduce the above copyright notice,
 //     this list of conditions and the following disclaimer in the documentation
-//     and/or other materials provided with the distribution.
+//     and/or other cv::Materials provided with the distribution.
 //
 //   * The name of Intel Corporation may not be used to endorse or promote products
 //     derived from this software without specific prior written permission.
@@ -40,22 +40,22 @@
 //M*/
 
 #include "em30.h"
-#include <opencv2/opencv.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/ml/ml.hpp>
 
 const double minEigenValue = DBL_EPSILON;
 
-using namespace cv;
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-EM30::EM30(int _nclusters, int _covMatType, const TermCriteria& _termCrit)
+EM30::EM30(int _nclusters, int _covMatType, const cv::TermCriteria& _termCrit)
 {
     nclusters = _nclusters;
     covMatType = _covMatType;
-    maxIters = (_termCrit.type & TermCriteria::MAX_ITER) ? _termCrit.maxCount : DEFAULT_MAX_ITERS;
-    epsilon = (_termCrit.type & TermCriteria::EPS) ? _termCrit.epsilon : 0;
+    maxIters = (_termCrit.type & cv::TermCriteria::MAX_ITER) ? _termCrit.maxCount : DEFAULT_MAX_ITERS;
+    epsilon = (_termCrit.type & cv::TermCriteria::EPS) ? _termCrit.epsilon : 0;
 }
 
 EM30::~EM30()
@@ -82,70 +82,70 @@ void EM30::clear()
 }
 
     
-bool EM30::train(InputArray samples,
-               OutputArray logLikelihoods,
-               OutputArray labels,
-               OutputArray probs)
+bool EM30::train( cv::InputArray samples,
+                cv::OutputArray logLikelihoods,
+                cv::OutputArray labels,
+                cv::OutputArray probs)
 {
-    Mat samplesMat = samples.getMat();
+    cv::Mat samplesMat = samples.getMat();
     setTrainData(START_AUTO_STEP, samplesMat, 0, 0, 0, 0);
     return doTrain(START_AUTO_STEP, logLikelihoods, labels, probs);
 }
 
-bool EM30::trainE(InputArray samples,
-                InputArray _means0,
-                InputArray _covs0,
-                InputArray _weights0,
-                OutputArray logLikelihoods,
-                OutputArray labels,
-                OutputArray probs)
+bool EM30::trainE( cv::InputArray samples,
+                 cv::InputArray _means0,
+                 cv::InputArray _covs0,
+                 cv::InputArray _weights0,
+                 cv::OutputArray logLikelihoods,
+                 cv::OutputArray labels,
+                 cv::OutputArray probs)
 {
-    Mat samplesMat = samples.getMat();
-    vector<Mat> covs0;
+    cv::Mat samplesMat = samples.getMat();
+    std::vector<cv::Mat> covs0;
     _covs0.getMatVector(covs0);
     
-    Mat means0 = _means0.getMat(), weights0 = _weights0.getMat();
+    cv::Mat means0 = _means0.getMat(), weights0 = _weights0.getMat();
 
     setTrainData(START_E_STEP, samplesMat, 0, !_means0.empty() ? &means0 : 0,
                  !_covs0.empty() ? &covs0 : 0, _weights0.empty() ? &weights0 : 0);
     return doTrain(START_E_STEP, logLikelihoods, labels, probs);
 }
 
-bool EM30::trainM(InputArray samples,
-                InputArray _probs0,
-                OutputArray logLikelihoods,
-                OutputArray labels,
-                OutputArray probs)
+bool EM30::trainM( cv::InputArray samples,
+                 cv::InputArray _probs0,
+                 cv::OutputArray logLikelihoods,
+                 cv::OutputArray labels,
+                 cv::OutputArray probs)
 {
-    Mat samplesMat = samples.getMat();
-    Mat probs0 = _probs0.getMat();
+    cv::Mat samplesMat = samples.getMat();
+    cv::Mat probs0 = _probs0.getMat();
     
     setTrainData(START_M_STEP, samplesMat, !_probs0.empty() ? &probs0 : 0, 0, 0, 0);
     return doTrain(START_M_STEP, logLikelihoods, labels, probs);
 }
 
     
-Vec2d EM30::predict(InputArray _sample, OutputArray _probs, OutputArray _loglikelihoods) const
+cv::Vec2d EM30::predict( cv::InputArray _sample,  cv::OutputArray _probs,  cv::OutputArray _loglikelihoods) const
 {
-    Mat sample = _sample.getMat();
+    cv::Mat sample = _sample.getMat();
     CV_Assert(isTrained());
 
     CV_Assert(!sample.empty());
     if(sample.type() != CV_64FC1)
     {
-        Mat tmp;
+        cv::Mat tmp;
         sample.convertTo(tmp, CV_64FC1);
         sample = tmp;
     }
     sample.reshape(1, 1);
 
-    Mat probs;
+    cv::Mat probs;
     if( _probs.needed() )
     {
         _probs.create(1, nclusters, CV_64FC1);
         probs = _probs.getMat();
     }
-	Mat loglikelihoods;
+    cv::Mat loglikelihoods;
     if( _loglikelihoods.needed() )
     {
         _loglikelihoods.create(1, nclusters, CV_64FC1);
@@ -162,9 +162,9 @@ bool EM30::isTrained() const
 
 
 static
-void checkTrainData(int startStep, const Mat& samples,
-                    int nclusters, int covMatType, const Mat* probs, const Mat* means,
-                    const vector<Mat>* covs, const Mat* weights)
+void checkTrainData(int startStep, const cv::Mat& samples,
+                    int nclusters, int covMatType, const cv::Mat* probs, const cv::Mat* means,
+                    const std::vector<cv::Mat>* covs, const cv::Mat* weights)
 {
     // Check samples.
     CV_Assert(!samples.empty());
@@ -203,10 +203,10 @@ void checkTrainData(int startStep, const Mat& samples,
          static_cast<int>(covs->size()) == nclusters));
     if(covs)
     {
-        const Size covSize(dim, dim);
+        const cv::Size covSize(dim, dim);
         for(size_t i = 0; i < covs->size(); i++)
         {
-            const Mat& m = (*covs)[i];
+            const cv::Mat& m = (*covs)[i];
             CV_Assert(!m.empty() && m.size() == covSize && (m.channels() == 1));
         }
     }
@@ -222,7 +222,7 @@ void checkTrainData(int startStep, const Mat& samples,
 }
 
 static
-void preprocessSampleData(const Mat& src, Mat& dst, int dstType, bool isAlwaysClone)
+void preprocessSampleData(const cv::Mat& src, cv::Mat& dst, int dstType, bool isAlwaysClone)
 {
     if(src.type() == dstType && !isAlwaysClone)
         dst = src;
@@ -231,29 +231,29 @@ void preprocessSampleData(const Mat& src, Mat& dst, int dstType, bool isAlwaysCl
 }
 
 static
-void preprocessProbability(Mat& probs)
+void preprocessProbability(cv::Mat& probs)
 {
     max(probs, 0., probs);
 
     const double uniformProbability = (double)(1./probs.cols);
     for(int y = 0; y < probs.rows; y++)
     {
-        Mat sampleProbs = probs.row(y);
+        cv::Mat sampleProbs = probs.row(y);
 
         double maxVal = 0;
         minMaxLoc(sampleProbs, 0, &maxVal);
         if(maxVal < FLT_EPSILON)
             sampleProbs.setTo(uniformProbability);
         else
-            normalize(sampleProbs, sampleProbs, 1, 0, NORM_L1);
+            normalize(sampleProbs, sampleProbs, 1, 0, cv::NORM_L1);
     }
 }
 
-void EM30::setTrainData(int startStep, const Mat& samples,
-                      const Mat* probs0,
-                      const Mat* means0,
-                      const vector<Mat>* covs0,
-                      const Mat* weights0)
+void EM30::setTrainData(int startStep, const cv::Mat& samples,
+                      const cv::Mat* probs0,
+                      const cv::Mat* means0,
+                      const std::vector<cv::Mat>* covs0,
+                      const cv::Mat* weights0)
 {
     clear();
 
@@ -302,12 +302,12 @@ void EM30::decomposeCovs()
     {
         CV_Assert(!covs[clusterIndex].empty());
 
-        SVD svd(covs[clusterIndex], SVD::MODIFY_A + SVD::FULL_UV);
+        cv::SVD svd(covs[clusterIndex], cv::SVD::MODIFY_A + cv::SVD::FULL_UV);
 
         if(covMatType == EM30::COV_MAT_SPHERICAL)
         {
             double maxSingularVal = svd.w.at<double>(0);
-            covsEigenValues[clusterIndex] = Mat(1, 1, CV_64FC1, Scalar(maxSingularVal));
+            covsEigenValues[clusterIndex] = cv::Mat(1, 1, CV_64FC1, cv::Scalar(maxSingularVal));
         }
         else if(covMatType == EM30::COV_MAT_DIAGONAL)
         {
@@ -330,7 +330,7 @@ void EM30::clusterTrainSamples()
     // Cluster samples, compute/update means
 
     // Convert samples and means to 32F, because kmeans requires this type.
-    Mat trainSamplesFlt, meansFlt;
+    cv::Mat trainSamplesFlt, meansFlt;
     if(trainSamples.type() != CV_32FC1)
         trainSamples.convertTo(trainSamplesFlt, CV_32FC1);
     else
@@ -343,30 +343,30 @@ void EM30::clusterTrainSamples()
             meansFlt = means;
     }
 
-    Mat labels;
-    kmeans(trainSamplesFlt, nclusters, labels,  TermCriteria(TermCriteria::COUNT, means.empty() ? 10 : 1, 0.5), 10, KMEANS_PP_CENTERS, meansFlt);
+    cv::Mat labels;
+    cv::kmeans(trainSamplesFlt, nclusters, labels, cv::TermCriteria(cv::TermCriteria::COUNT, means.empty() ? 10 : 1, 0.5), 10, cv::KMEANS_PP_CENTERS, meansFlt);
 
     // Convert samples and means back to 64F.
     CV_Assert(meansFlt.type() == CV_32FC1);
     if(trainSamples.type() != CV_64FC1)
     {
-        Mat trainSamplesBuffer;
+        cv::Mat trainSamplesBuffer;
         trainSamplesFlt.convertTo(trainSamplesBuffer, CV_64FC1);
         trainSamples = trainSamplesBuffer;
     }
     meansFlt.convertTo(means, CV_64FC1);
 
     // Compute weights and covs
-    weights = Mat(1, nclusters, CV_64FC1, Scalar(0));
+    weights = cv::Mat(1, nclusters, CV_64FC1, cv::Scalar(0));
     covs.resize(nclusters);
     for(int clusterIndex = 0; clusterIndex < nclusters; clusterIndex++)
     {
-        Mat clusterSamples;
+        cv::Mat clusterSamples;
         for(int sampleIndex = 0; sampleIndex < nsamples; sampleIndex++)
         {
             if(labels.at<int>(sampleIndex) == clusterIndex)
             {
-                const Mat sample = trainSamples.row(sampleIndex);
+                const cv::Mat sample = trainSamples.row(sampleIndex);
                 clusterSamples.push_back(sample);
             }
         }
@@ -384,7 +384,7 @@ void EM30::computeLogWeightDivDet()
 {
     CV_Assert(!covsEigenValues.empty());
 
-    Mat logWeights;
+    cv::Mat logWeights;
     cv::max(weights, DBL_MIN, weights);
     log(weights, logWeights);
 
@@ -401,7 +401,7 @@ void EM30::computeLogWeightDivDet()
     }
 }
 
-bool EM30::doTrain(int startStep, OutputArray logLikelihoods, OutputArray labels, OutputArray probs)
+bool EM30::doTrain(int startStep,  cv::OutputArray logLikelihoods,  cv::OutputArray labels,  cv::OutputArray probs)
 {
     int dim = trainSamples.cols;
     // Precompute the empty initial train data in the cases of EM30::START_E_STEP and START_AUTO_STEP
@@ -456,11 +456,11 @@ bool EM30::doTrain(int startStep, OutputArray logLikelihoods, OutputArray labels
         if(covMatType == EM30::COV_MAT_SPHERICAL)
         {
             covs[clusterIndex].create(dim, dim, CV_64FC1);
-            setIdentity(covs[clusterIndex], Scalar(covsEigenValues[clusterIndex].at<double>(0)));
+            setIdentity(covs[clusterIndex], cv::Scalar(covsEigenValues[clusterIndex].at<double>(0)));
         }
         else if(covMatType == EM30::COV_MAT_DIAGONAL)
         {
-            covs[clusterIndex] = Mat::diag(covsEigenValues[clusterIndex]);
+            covs[clusterIndex] = cv::Mat::diag(covsEigenValues[clusterIndex]);
         }
     }
     
@@ -479,7 +479,7 @@ bool EM30::doTrain(int startStep, OutputArray logLikelihoods, OutputArray labels
     return true;
 }
 
-Vec2d EM30::computeProbabilities(const Mat& sample, Mat* probs, Mat* logLikelihoods) const
+cv::Vec2d EM30::computeProbabilities(const cv::Mat& sample, cv::Mat* probs, cv::Mat* logLikelihoods) const
 {
     // L_ik = log(weight_k) - 0.5 * log(|det(cov_k)|) - 0.5 *(x_i - mean_k)' cov_k^(-1) (x_i - mean_k)]
     // q = arg(max_k(L_ik))
@@ -494,14 +494,14 @@ Vec2d EM30::computeProbabilities(const Mat& sample, Mat* probs, Mat* logLikeliho
 
     int dim = sample.cols;
 
-	Mat L (1, nclusters, CV_64FC1);
+    cv::Mat L (1, nclusters, CV_64FC1);
 
     int label = 0;
     for(int clusterIndex = 0; clusterIndex < nclusters; clusterIndex++)
     {
-        const Mat centeredSample = sample - means.row(clusterIndex);
+        const cv::Mat centeredSample = sample - means.row(clusterIndex);
 
-        Mat rotatedCenteredSample = covMatType != EM30::COV_MAT_GENERIC ?
+        cv::Mat rotatedCenteredSample = covMatType != EM30::COV_MAT_GENERIC ?
                 centeredSample : centeredSample * covsRotateMats[clusterIndex];
 
         double Lval = 0;
@@ -519,7 +519,7 @@ Vec2d EM30::computeProbabilities(const Mat& sample, Mat* probs, Mat* logLikeliho
     }
 
     double maxLVal = L.at<double>(label);
-    Mat expL_Lmax;
+    cv::Mat expL_Lmax;
 	L.copyTo(expL_Lmax); // exp(L_ij - L_iq)
     for(int i = 0; i < L.cols; i++)
         expL_Lmax.at<double>(i) = std::exp(L.at<double>(i) - maxLVal);
@@ -548,7 +548,7 @@ Vec2d EM30::computeProbabilities(const Mat& sample, Mat* probs, Mat* logLikeliho
 		//std::cout << std::endl;
 	}
 
-    Vec2d res;
+    cv::Vec2d res;
     res[0] = std::log(expDiffSum)  + maxLVal - 0.5 * dim * CV_LOG2PI;
     res[1] = label;
 
@@ -569,9 +569,9 @@ void EM30::eStep()
 
     for(int sampleIndex = 0; sampleIndex < trainSamples.rows; sampleIndex++)
     {
-        Mat sampleProbs = trainProbs.row(sampleIndex);
-		Mat sampleLogLikelihoods (1, nclusters, CV_64FC1);
-        Vec2d res = computeProbabilities(trainSamples.row(sampleIndex), &sampleProbs, &sampleLogLikelihoods);
+        cv::Mat sampleProbs = trainProbs.row(sampleIndex);
+        cv::Mat sampleLogLikelihoods (1, nclusters, CV_64FC1);
+        cv::Vec2d res = computeProbabilities(trainSamples.row(sampleIndex), &sampleProbs, &sampleLogLikelihoods);
         trainLogLikelihoods.at<double>(sampleIndex) = res[0];
         trainLabels.at<int>(sampleIndex) = static_cast<int>(res[1]);
     }
@@ -588,7 +588,7 @@ void EM30::mStep()
 
     // Update means
     means.create(nclusters, dim, CV_64FC1);
-    means = Scalar(0);
+    means = cv::Scalar(0);
 
     const double minPosWeight = trainSamples.rows * DBL_EPSILON;
     double minWeight = DBL_MAX;
@@ -604,7 +604,7 @@ void EM30::mStep()
             minWeightClusterIndex = clusterIndex;
         }
 
-        Mat clusterMean = means.row(clusterIndex);
+        cv::Mat clusterMean = means.row(clusterIndex);
         for(int sampleIndex = 0; sampleIndex < trainSamples.rows; sampleIndex++)
             clusterMean += trainProbs.at<double>(sampleIndex, clusterIndex) * trainSamples.row(sampleIndex);
         clusterMean /= weights.at<double>(clusterIndex);
@@ -629,12 +629,12 @@ void EM30::mStep()
         if(covMatType == EM30::COV_MAT_GENERIC)
             covs[clusterIndex].create(dim, dim, CV_64FC1);
 
-        Mat clusterCov = covMatType != EM30::COV_MAT_GENERIC ?
+        cv::Mat clusterCov = covMatType != EM30::COV_MAT_GENERIC ?
             covsEigenValues[clusterIndex] : covs[clusterIndex];
 
-        clusterCov = Scalar(0);
+        clusterCov = cv::Scalar(0);
 
-        Mat centeredSample;
+        cv::Mat centeredSample;
         for(int sampleIndex = 0; sampleIndex < trainSamples.rows; sampleIndex++)
         {
             centeredSample = trainSamples.row(sampleIndex) - means.row(clusterIndex);
@@ -660,7 +660,7 @@ void EM30::mStep()
         // Update covsRotateMats for EM30::COV_MAT_GENERIC only
         if(covMatType == EM30::COV_MAT_GENERIC)
         {
-            SVD svd(covs[clusterIndex], SVD::MODIFY_A + SVD::FULL_UV);
+            cv::SVD svd(covs[clusterIndex], cv::SVD::MODIFY_A + cv::SVD::FULL_UV);
             covsEigenValues[clusterIndex] = svd.w;
             covsRotateMats[clusterIndex] = svd.u;
         }
@@ -675,7 +675,7 @@ void EM30::mStep()
     {
         if(weights.at<double>(clusterIndex) <= minPosWeight)
         {
-            Mat clusterMean = means.row(clusterIndex);
+            cv::Mat clusterMean = means.row(clusterIndex);
             means.row(minWeightClusterIndex).copyTo(clusterMean);
             covs[minWeightClusterIndex].copyTo(covs[clusterIndex]);
             covsEigenValues[minWeightClusterIndex].copyTo(covsEigenValues[clusterIndex]);
@@ -689,7 +689,7 @@ void EM30::mStep()
     weights /= trainSamples.rows;
 }
 
-void EM30::read(const FileNode& fn)
+void EM30::read(const cv::FileNode& fn)
 {
     Algorithm::read(fn);
 

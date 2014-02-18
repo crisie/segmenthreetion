@@ -16,5 +16,7 @@
 
 build/
 xbuild/
+xbuild.old/
 Data/
 data/
+Sequences/

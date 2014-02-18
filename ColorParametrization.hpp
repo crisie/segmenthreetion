@@ -10,14 +10,15 @@
 #define __Segmenthreetion__ColorParametrization__
 
 #include <iostream>
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv/cvaux.h"
-#include "opencv2/opencv.hpp"
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+
 
 class ColorParametrization
 {
 public:
-    ColorParametrization();
+    ColorParametrization() {};
     
     int gridSizeX; //= 64;
     int gridSizeY; // = 128;

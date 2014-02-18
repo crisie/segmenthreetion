@@ -8,69 +8,85 @@
 
 #include "MotionFeatureExtractor.h"
 
+#include <opencv2/video/video.hpp>
 
-void TrimodalSegmentator::computeOpticalFlow(vector<Mat> colorFrames, vector<Mat> & motionFrames){
-    
-	Mat frame, prev_frame;
-	//Mat tmpFrame, tmpPrev_frame;
-    
-	vector<Mat> tempColorFrames = colorFrames;
-	tempColorFrames.push_back(colorFrames[colorFrames.size() - 1]);
-    
-	//CHANGE!!!
-	double pyr_scale = 0.5;
-	int levels = 3;
-    int winsize = 2;
-	//int winsize = 15;
-	int iterations = 3;
-	int poly_n = 5;
-    double poly_sigma = 1.1;
-	//double poly_sigma = 1.2;
-	int flags = 0;
-	//for(int it = 250; it < 500; it++) {
-	for(int it = 0;it < tempColorFrames.size(); it++) {
-        cout << it << endl;
-		Mat tmpFrame, tmpPrev_frame;
-		frame.release();
-		tempColorFrames[it].copyTo(frame);
-		//imshow("current frame", frame);
-		if(prev_frame.empty())
-		{
-			frame.copyTo(prev_frame);
-		} else {
-			if(!frame.empty() && !prev_frame.empty()) {
-                //imshow("previous frame", prev_frame);
-                
-                cvtColor(frame, tmpFrame, CV_RGB2GRAY);
-                cvtColor(prev_frame, tmpPrev_frame, CV_RGB2GRAY);
-                
-                //optical flow from previous frame to current frame (forward)
-                Mat flow;
-                calcOpticalFlowFarneback(tmpPrev_frame,tmpFrame, flow, pyr_scale, levels,
-                                         winsize, iterations, poly_n, poly_sigma, flags);
-                
-                motionFrames.push_back(flow);
-                flow.release();
-			}
-			prev_frame.release();
-			frame.copyTo(prev_frame);
-		}
-		if(waitKey(30)>= 0)  {break;}
-		tmpFrame.release();
-		tmpPrev_frame.release();
+
+MotionFeatureExtractor::MotionFeatureExtractor(const unsigned hp, const unsigned wp)
+    : FeatureExtractor(hp, wp)
+{}
+
+
+MotionFeatureExtractor::MotionFeatureExtractor(const unsigned hp, const unsigned wp, const MotionParametrization param)
+    : FeatureExtractor(hp, wp), m_Param(param)
+{}
+
+
+void MotionFeatureExtractor::setParam(const MotionParametrization param)
+{
+    m_Param = param;
+}
+
+
+void MotionFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> masks, GridMat & descriptors)
+{
+	for(int k = 0; k < grids.size(); k++)
+	{
+		cout << "k : " << k <<  endl;
+        
+        GridMat & grid = grids[k];
+        GridMat & mask = masks[k];
+        
+        for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
+        {
+            cv::Mat & cell = grid.get(i,j);
+            cv::Mat & tmpCellMask = mask.get(i,j);
+            cv::Mat cellMask = cv::Mat::zeros(tmpCellMask.rows, tmpCellMask.cols, CV_8UC1);
+            cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);
+            threshold(tmpCellMask,tmpCellMask,1,255,CV_THRESH_BINARY);
+            tmpCellMask.convertTo(cellMask, CV_8UC1);
+            
+            cv::Mat mOrientedFlowHist;
+            describeMotionOrientedFlow(cell, cellMask, mOrientedFlowHist);
+            
+            descriptors.vconcat(mOrientedFlowHist, i, j);
+        }
 	}
-	//flow vector would have motionFrames.size()-1, so add a last flow frame = 0 ??????
-	//Mat last_flow  (frame.rows, frame.cols, frame.depth());
-    
-	//last_flow.release();
-	frame.release();
-	prev_frame.release();
+}
+
+
+void MotionFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> masks,
+                                      GridMat & subDescriptors, GridMat & objDescriptors, GridMat & unkDescriptors)
+{
+	for(int k = 0; k < grids.size(); k++)
+	{
+		cout << "k : " << k <<  endl;
+        
+        GridMat & grid = grids[k];
+        GridMat & mask = masks[k];
+        
+        for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
+        {
+            cv::Mat & cell = grid.get(i,j);
+            cv::Mat & tmpCellMask = mask.get(i,j);
+            cv::Mat cellMask = cv::Mat::zeros(tmpCellMask.rows, tmpCellMask.cols, CV_8UC1);
+            cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);
+            threshold(tmpCellMask,tmpCellMask,1,255,CV_THRESH_BINARY);
+            tmpCellMask.convertTo(cellMask, CV_8UC1);
+            
+            cv::Mat mOrientedFlowHist;
+            describeMotionOrientedFlow(cell, cellMask, mOrientedFlowHist);
+            
+            if (grid.type() == GridMat::SUBJECT)  subDescriptors.vconcat(mOrientedFlowHist, i, j); // row in a matrix of descriptors
+            else if (grid.type() == GridMat::OBJECT) objDescriptors.vconcat(mOrientedFlowHist, i, j);
+            else if (grid.type() == GridMat::UNKNOWN) unkDescriptors.vconcat(mOrientedFlowHist, i, j);
+        }
+	}
 }
 
 
 void MotionFeatureExtractor::describeMotionOrientedFlow(const cv::Mat cell, const cv::Mat cellMask, cv::Mat & tOrientedFlowHist)
 {
-	int ofbins = m_MotionParam.hoofbins;
+	int ofbins = m_Param.hoofbins;
 	//imshow("cell", cell);
     cv::Mat cellSeg = cv::Mat::zeros(cell.rows, cell.cols, cell.type());
 	cell.copyTo(cellSeg, cellMask);
@@ -122,33 +138,61 @@ void MotionFeatureExtractor::describeMotionOrientedFlow(const cv::Mat cell, cons
     
 }
 
-void MotionFeatureExtractor::describeMotion(GridMat & descriptors)
+
+void MotionFeatureExtractor::computeOpticalFlow(vector<cv::Mat> colorFrames, vector<cv::Mat> & motionFrames)
 {
-	for(int k = 0; k < m_MotionGrids.size(); k++)
-	{
-		cout << "k : " << k <<  endl;
-        
-		//if(m_MotionLabels[k] != -1) {
-        
-        GridMat & grid = m_MotionGrids[k];
-        GridMat & mask = m_MotionMasks[k];
-        
-        for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
-        {
-            cv::Mat & cell = grid.get(i,j);
-            cv::Mat & tmpCellMask = mask.get(i,j);
-            cv::Mat cellMask = cv::Mat::zeros(tmpCellMask.rows, tmpCellMask.cols, CV_8UC1);
-            cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);
-            threshold(tmpCellMask,tmpCellMask,1,255,CV_THRESH_BINARY);
-            tmpCellMask.convertTo(cellMask, CV_8UC1);
-            
-            cv::Mat tOrientedFlowHist;
-            describeMotionOrientedFlow(cell, cellMask, tOrientedFlowHist);
-            
-            //if(m_MotionLabels[k] == 0) objectDescriptors.vconcat(tOrientedFlowHist, i, j); // row in a matrix of descriptors
-            //if(m_MotionLabels[k] == 1) personDescriptors.vconcat(tOrientedFlowHist, i, j);
-            descriptors.vconcat(tOrientedFlowHist, i, j);
-        }
-		//}
-	}    
+	cv::Mat frame, prev_frame;
+	//Mat tmpFrame, tmpPrev_frame;
+    
+	vector<cv::Mat> tempColorFrames = colorFrames;
+	tempColorFrames.push_back(colorFrames[colorFrames.size() - 1]);
+    
+	//CHANGE!!!
+	double pyr_scale = 0.5;
+	int levels = 3;
+    int winsize = 2;
+	//int winsize = 15;
+	int iterations = 3;
+	int poly_n = 5;
+    double poly_sigma = 1.1;
+	//double poly_sigma = 1.2;
+	int flags = 0;
+	//for(int it = 250; it < 500; it++) {
+	for(int it = 0;it < tempColorFrames.size(); it++) {
+        cout << it << endl;
+		cv::Mat tmpFrame, tmpPrev_frame;
+		frame.release();
+		tempColorFrames[it].copyTo(frame);
+		//imshow("current frame", frame);
+		if(prev_frame.empty())
+		{
+			frame.copyTo(prev_frame);
+		} else {
+			if(!frame.empty() && !prev_frame.empty()) {
+                //imshow("previous frame", prev_frame);
+                
+                cvtColor(frame, tmpFrame, CV_RGB2GRAY);
+                cvtColor(prev_frame, tmpPrev_frame, CV_RGB2GRAY);
+                
+                //optical flow from previous frame to current frame (forward)
+                cv::Mat flow;
+                calcOpticalFlowFarneback(tmpPrev_frame,tmpFrame, flow, pyr_scale, levels,
+                                         winsize, iterations, poly_n, poly_sigma, flags);
+                
+                motionFrames.push_back(flow);
+                flow.release();
+			}
+			prev_frame.release();
+			frame.copyTo(prev_frame);
+		}
+		if(cv::waitKey(30)>= 0)  {break;}
+		tmpFrame.release();
+		tmpPrev_frame.release();
+	}
+	//flow vector would have motionFrames.size()-1, so add a last flow frame = 0 ??????
+	//Mat last_flow  (frame.rows, frame.cols, frame.depth());
+    
+	//last_flow.release();
+	frame.release();
+	prev_frame.release();
 }

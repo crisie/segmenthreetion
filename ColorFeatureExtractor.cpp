@@ -7,27 +7,234 @@
 //
 
 #include "ColorFeatureExtractor.h"
-#include "ColorParametrization.h"
+#include "ColorParametrization.hpp"
 
 
 ColorFeatureExtractor::ColorFeatureExtractor(int hp, int wp)
-    : m_hp(hp), m_wp(wp)
+    : FeatureExtractor(hp, wp)
 { }
 
-ColorFeatureExtractor::ColorFeatureExtractor(int hp, int wp, ColorParametrization dParam)
-    : m_hp(hp), m_wp(wp), m_ColorParam(dParam)
+
+ColorFeatureExtractor::ColorFeatureExtractor(int hp, int wp, ColorParametrization cParam)
+    : FeatureExtractor(hp, wp), m_ColorParam(cParam)
 { }
 
-void ColorFeatureExtractor::setData(vector<GridMat> grids, vector<GridMat> masks)
-{
-    m_ColorGrids = grids;
-    m_ColorMasks = masks;
-}
 
 void ColorFeatureExtractor::setParam(ColorParametrization ColorParam)
 {
     m_ColorParam = ColorParam;
 }
+
+
+
+void ColorFeatureExtractor::describeColorHog(const cv::Mat cell, const cv::Mat cellMask, cv::Mat & cOrientedGradsHist)
+{
+    
+	//TODO change to manual HOG
+    
+	/*Following R-HoG descriptor (Dalal-Triggs 2005) except that the image patch is variance-normalized before
+     binning into the histogram, making the descriptor less sensitive to illumination changes.
+     
+     Basic pipeline:
+     1. Variance normalize the image patch
+     2. Convolve the image patch with k = [-1 0 1] both horizontally and vertically
+     3. Subdivide the image patch into cells
+     4. For each cell compute the unsigned or signed gradient angle (unsigned seems to work better) for
+     all the pixels in the cell as well as some neighbouring cells (determined by the block size).
+     - Accumulate local histogram “energy” over a larger regions (“blocks”) to normalize
+     all of the cells in the block.
+     5. Bin the gradient magnitude into a bin based on the computational angle, weighted by a gaussian
+     kernel centered on the cell's center (thus pixels further away get less weight).
+     6. Normalize that cell's histogram
+     */
+    
+    cv::Size gridSize = cv::Size(m_ColorParam.winSizeX,m_ColorParam.winSizeY);
+    
+    cv::Mat tmpCell, tmpCellMask;
+	resize(cell, tmpCell, gridSize);
+	resize(cellMask, tmpCellMask, gridSize);
+    
+    int cellSizeX = m_ColorParam.cellSizeX; //cellgridsize
+    int cellSizeY = m_ColorParam.cellSizeY;
+    int blockSizeX = m_ColorParam.blockSizeX;
+    int blockSizeY = m_ColorParam.blockSizeY;
+    int hogbins = m_ColorParam.nbins;
+    
+    int nBlocksX = tmpCell.rows/blockSizeX;
+    int nBlocksY = tmpCell.cols/blockSizeY;
+    
+    int nCellsX = blockSizeX/cellSizeX;
+    int nCellsY = blockSizeY/cellSizeY;
+    
+    int lengthDescriptor = hogbins * nCellsX * nCellsY * nBlocksX * nBlocksY;
+    
+	vector<cv::Mat> rgbCell;
+	split(tmpCell,rgbCell); //b,g,r
+    
+	vector<cv::Mat> maskCellDervX(3), maskCellDervY(3), cellGradOrients(3);
+	for(unsigned int c = 0; c < 3; c++) {
+	    // First derivatives
+        cv::Mat cellDervX, cellDervY;
+        
+        //Compute gradients with [-1,0,1] kernel
+		Sobel(rgbCell[c], cellDervX, CV_32F, 1, 0);
+		Sobel(rgbCell[c], cellDervY, CV_32F, 0, 1);
+        
+		//Apply masks
+        maskCellDervX[c] = cv::Mat::zeros(cellDervX.rows, cellDervX.cols, cellDervX.type());
+        maskCellDervY[c] = cv::Mat::zeros(cellDervY.rows, cellDervY.cols, cellDervY.type());
+		cellDervX.copyTo(maskCellDervX[c], tmpCellMask);
+		cellDervY.copyTo(maskCellDervY[c], tmpCellMask);
+        
+		// Compute gradient angles
+		phase(maskCellDervX[c], maskCellDervY[c], cellGradOrients[c], true);
+	}
+    
+    cv::Mat tmpHist(0,lengthDescriptor, cv::DataType<float>::type);
+    
+    //Subdivide the image patch into blocks
+    for (int b_r = 0; b_r < cellGradOrients[1].rows; b_r+=blockSizeX)
+    	for (int b_c = 0; b_c < cellGradOrients[1].cols; b_c+=blockSizeY)
+        {
+            cv::Mat block = cellGradOrients[1](cv::Range(b_r, min(b_r+blockSizeX, cellGradOrients[1].rows)),
+                                               cv::Range(b_c, min(b_c+blockSizeY, cellGradOrients[1].cols))).clone();
+            //    	imshow("block", block);
+            cv::Mat cellHist = cv::Mat::zeros(nCellsX*nCellsY, hogbins, cv::DataType<float>::type);
+            // Subdivide block into cells
+            int nCell = 0;
+            for (int c_r = 0; c_r < block.rows; c_r+=cellSizeX) for (int c_c = 0; c_c < block.cols; c_c+=cellSizeY)
+            {
+                cv::Mat tile = block(cv::Range(c_r, min(c_r+cellSizeX, cellGradOrients[1].rows)),
+                                     cv::Range(c_c, min(c_c+cellSizeY, cellGradOrients[1].cols))).clone();
+                //    		imshow("tile", tile);
+                
+                for (int i = b_r+c_r; i < b_r+c_r+tile.rows; i++) for (int j = b_c+c_c; j < b_c+c_c+tile.cols; j++)
+                {
+                    float magnitudeTemp = -0.1;
+                    int channel = -1;
+                    for(unsigned int c = 0; c < 3; c++) {
+                        float g_x = maskCellDervX[c].at<unsigned short>(i,j);
+                        float g_y = maskCellDervY[c].at<unsigned short>(i,j);
+                        
+                        float magnitude = sqrtf(g_x * g_x + g_y * g_y);
+                        
+                        if(magnitude > magnitudeTemp)  {
+                            magnitudeTemp = magnitude;
+                            channel = c;
+                        }
+                    }
+                    
+                    float g_x = maskCellDervX[channel].at<unsigned short>(i,j);
+                    float g_y = maskCellDervY[channel].at<unsigned short>(i,j);
+                    
+                    float orientation = cellGradOrients[channel].at<float>(i,j);
+                    if(orientation == 360.0) {
+                        cout << orientation << endl;
+                    }
+                    if(orientation > 180.0) orientation = orientation - 180.0;
+                    float bin = static_cast<int>((orientation/180.0) * hogbins) % hogbins;
+                    cellHist.at<float>(nCell, bin) += sqrtf(g_x * g_x + g_y * g_y);
+                    //                    cout << "orientation : " << orientation << endl;
+                    //                    cout << "magnitude : " << cellHist.at<float>(nCell, bin) << endl;
+                }
+                nCell++;
+                tile.release();
+                //    		destroyWindow("tile");
+            }
+            
+            cv::Mat normCellHist;
+            cv::Mat vCellHist = cellHist.reshape(0,1).clone();
+            normalize(vCellHist, normCellHist);
+            tmpHist.push_back(normCellHist.row(0));
+            
+            //            cout << "normalized block dimensions: " << normCellHist.cols << " width x " << normCellHist.rows << "height" << endl;
+            //            cout << "tmpHist: " << tmpHist.cols << " width x " << tmpHist.rows << "height" << endl;
+            
+            vCellHist.release();
+            normCellHist.release();
+            block.release();
+            cellHist.release();
+            //    	destroyWindow("block");
+        }
+    //    destroyWindow("cellGradOrients");
+    //    destroyWindow("maskCellDervX");
+    //    destroyWindow("maskCellDervY");
+    //    destroyWindow("cellDervX");
+    //    destroyWindow("cellDervY");
+    //    destroyWindow("Cell");
+    //    destroyWindow("CellMask");
+    //    destroyWindow("Gray Cell");
+    cv::Mat vTmpHist = tmpHist.reshape(0,1).clone();
+    hypercubeNorm(vTmpHist, cOrientedGradsHist);
+    //Mat visu = get_hogdescriptor_visu(tmpCell, tmpCellMask, descriptor);
+    //imshow("hog visualization", visu);
+    //if(waitKey(30)>= 0)  {}
+    //cout << "descriptor dimensions: " << tOrientedGradsHist.cols << " width x " << tOrientedGradsHist.rows << "height" << endl;
+	//cout << "Found " << tOrientedGradsHist.size() << " descriptor values" << endl;
+    vTmpHist.release();
+	tmpHist.release();
+}
+
+
+void ColorFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> masks, GridMat & descriptors)
+{
+	for (int k = 0; k < grids.size(); k++)
+	{
+		cout << "k : " << k <<  endl;
+        
+        GridMat & grid = grids[k];
+        GridMat & mask = masks[k];
+        
+        for(int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
+        {
+            cv::Mat & cell = grid.get(i,j);
+            cv::Mat & tmpCellMask = mask.get(i,j);
+            cv::Mat cellMask = cv::Mat::zeros(tmpCellMask.rows, tmpCellMask.cols, CV_8UC1);
+            cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);
+            threshold(tmpCellMask,tmpCellMask,1,255,CV_THRESH_BINARY);
+            tmpCellMask.convertTo(cellMask, CV_8UC1);
+            
+            //HOG descriptor
+            cv::Mat cOrientedGradsHist;
+            describeColorHog(cell, cellMask, cOrientedGradsHist);
+            
+            descriptors.vconcat(cOrientedGradsHist, i, j);
+        }
+	}
+}
+
+
+void ColorFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> masks,
+                                     GridMat & subDescriptors, GridMat & objDescriptors, GridMat & unkDescriptors)
+{
+	for (int k = 0; k < grids.size(); k++)
+	{
+		cout << "k : " << k <<  endl;
+        
+        GridMat & grid = grids[k];
+        GridMat & mask = masks[k];
+        
+        for(int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
+        {
+            cv::Mat & cell = grid.get(i,j);
+            cv::Mat & tmpCellMask = mask.get(i,j);
+            cv::Mat cellMask = cv::Mat::zeros(tmpCellMask.rows, tmpCellMask.cols, CV_8UC1);
+            cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);
+            threshold(tmpCellMask,tmpCellMask,1,255,CV_THRESH_BINARY);
+            tmpCellMask.convertTo(cellMask, CV_8UC1);
+            
+            //HOG descriptor
+            cv::Mat cOrientedGradsHist;
+            describeColorHog(cell, cellMask, cOrientedGradsHist);
+
+            if (grid.type() == GridMat::SUBJECT)  subDescriptors.vconcat(cOrientedGradsHist, i, j); // row in a matrix of descriptors
+            else if (grid.type() == GridMat::OBJECT) objDescriptors.vconcat(cOrientedGradsHist, i, j);
+            else if (grid.type() == GridMat::UNKNOWN) unkDescriptors.vconcat(cOrientedGradsHist, i, j);
+            
+        }
+	}
+}
+
 
 cv::Mat ColorFeatureExtractor::get_hogdescriptor_visu(cv::Mat origImg, cv::Mat mask, vector<float> descriptorValues)
 {
@@ -195,189 +402,3 @@ cv::Mat ColorFeatureExtractor::get_hogdescriptor_visu(cv::Mat origImg, cv::Mat m
     
 } // get_hogdescriptor_visu
 
-void ColorFeatureExtractor::describeColorHog(const cv::Mat cell, const cv::Mat cellMask, cv::Mat & cOrientedGradsHist)
-{
-    
-	//TODO change to manual HOG
-    
-	/*Following R-HoG descriptor (Dalal-Triggs 2005) except that the image patch is variance-normalized before
-     binning into the histogram, making the descriptor less sensitive to illumination changes.
-     
-     Basic pipeline:
-     1. Variance normalize the image patch
-     2. Convolve the image patch with k = [-1 0 1] both horizontally and vertically
-     3. Subdivide the image patch into cells
-     4. For each cell compute the unsigned or signed gradient angle (unsigned seems to work better) for
-     all the pixels in the cell as well as some neighbouring cells (determined by the block size).
-     - Accumulate local histogram “energy” over a larger regions (“blocks”) to normalize
-     all of the cells in the block.
-     5. Bin the gradient magnitude into a bin based on the computational angle, weighted by a gaussian
-     kernel centered on the cell's center (thus pixels further away get less weight).
-     6. Normalize that cell's histogram
-     */
-    
-    cv::Size gridSize = cv::Size(m_ColorParam.winSizeX,m_ColorParam.winSizeY);
-    
-    cv::Mat tmpCell, tmpCellMask;
-	resize(cell, tmpCell, gridSize);
-	resize(cellMask, tmpCellMask, gridSize);
-    
-    int cellSizeX = m_ColorParam.cellSizeX; //cellgridsize
-    int cellSizeY = m_ColorParam.cellSizeY;
-    int blockSizeX = m_ColorParam.blockSizeX;
-    int blockSizeY = m_ColorParam.blockSizeY;
-    int hogbins = m_ColorParam.nbins;
-    
-    int nBlocksX = tmpCell.rows/blockSizeX;
-    int nBlocksY = tmpCell.cols/blockSizeY;
-    
-    int nCellsX = blockSizeX/cellSizeX;
-    int nCellsY = blockSizeY/cellSizeY;
-    
-    int lengthDescriptor = hogbins * nCellsX * nCellsY * nBlocksX * nBlocksY;
-    
-	vector<cv::Mat> rgbCell;
-	split(tmpCell,rgbCell); //b,g,r
-    
-	vector<cv::Mat> maskCellDervX(3), maskCellDervY(3), cellGradOrients(3);
-	for(unsigned int c = 0; c < 3; c++) {
-	    // First derivatives
-        cv::Mat cellDervX, cellDervY;
-        
-        //Compute gradients with [-1,0,1] kernel
-		Sobel(rgbCell[c], cellDervX, CV_32F, 1, 0);
-		Sobel(rgbCell[c], cellDervY, CV_32F, 0, 1);
-        
-		//Apply masks
-        maskCellDervX[c] = cv::Mat::zeros(cellDervX.rows, cellDervX.cols, cellDervX.type());
-        maskCellDervY[c] = cv::Mat::zeros(cellDervY.rows, cellDervY.cols, cellDervY.type());
-		cellDervX.copyTo(maskCellDervX[c], tmpCellMask);
-		cellDervY.copyTo(maskCellDervY[c], tmpCellMask);
-        
-		// Compute gradient angles
-		phase(maskCellDervX[c], maskCellDervY[c], cellGradOrients[c], true);
-	}
-    
-    cv::Mat tmpHist(0,lengthDescriptor, cv::DataType<float>::type);
-    
-    //Subdivide the image patch into blocks
-    for (int b_r = 0; b_r < cellGradOrients[1].rows; b_r+=blockSizeX)
-    	for (int b_c = 0; b_c < cellGradOrients[1].cols; b_c+=blockSizeY)
-        {
-            cv::Mat block = cellGradOrients[1](cv::Range(b_r, min(b_r+blockSizeX, cellGradOrients[1].rows)),
-                                               cv::Range(b_c, min(b_c+blockSizeY, cellGradOrients[1].cols))).clone();
-            //    	imshow("block", block);
-            cv::Mat cellHist = cv::Mat::zeros(nCellsX*nCellsY, hogbins, cv::DataType<float>::type);
-            // Subdivide block into cells
-            int nCell = 0;
-            for (int c_r = 0; c_r < block.rows; c_r+=cellSizeX) for (int c_c = 0; c_c < block.cols; c_c+=cellSizeY)
-            {
-                cv::Mat tile = block(cv::Range(c_r, min(c_r+cellSizeX, cellGradOrients[1].rows)),
-                                     cv::Range(c_c, min(c_c+cellSizeY, cellGradOrients[1].cols))).clone();
-                //    		imshow("tile", tile);
-                
-                for (int i = b_r+c_r; i < b_r+c_r+tile.rows; i++) for (int j = b_c+c_c; j < b_c+c_c+tile.cols; j++)
-                {
-                    float magnitudeTemp = -0.1;
-                    int channel = -1;
-                    for(unsigned int c = 0; c < 3; c++) {
-                        float g_x = maskCellDervX[c].at<unsigned short>(i,j);
-                        float g_y = maskCellDervY[c].at<unsigned short>(i,j);
-                        
-                        float magnitude = sqrtf(g_x * g_x + g_y * g_y);
-                        
-                        if(magnitude > magnitudeTemp)  {
-                            magnitudeTemp = magnitude;
-                            channel = c;
-                        }
-                    }
-                    
-                    float g_x = maskCellDervX[channel].at<unsigned short>(i,j);
-                    float g_y = maskCellDervY[channel].at<unsigned short>(i,j);
-                    
-                    float orientation = cellGradOrients[channel].at<float>(i,j);
-                    if(orientation == 360.0) {
-                        cout << orientation << endl;
-                    }
-                    if(orientation > 180.0) orientation = orientation - 180.0;
-                    float bin = static_cast<int>((orientation/180.0) * hogbins) % hogbins;
-                    cellHist.at<float>(nCell, bin) += sqrtf(g_x * g_x + g_y * g_y);
-                    //                    cout << "orientation : " << orientation << endl;
-                    //                    cout << "magnitude : " << cellHist.at<float>(nCell, bin) << endl;
-                }
-                nCell++;
-                tile.release();
-                //    		destroyWindow("tile");
-            }
-            
-            cv::Mat normCellHist;
-            cv::Mat vCellHist = cellHist.reshape(0,1).clone();
-            normalize(vCellHist, normCellHist);
-            tmpHist.push_back(normCellHist.row(0));
-            
-            //            cout << "normalized block dimensions: " << normCellHist.cols << " width x " << normCellHist.rows << "height" << endl;
-            //            cout << "tmpHist: " << tmpHist.cols << " width x " << tmpHist.rows << "height" << endl;
-            
-            vCellHist.release();
-            normCellHist.release();
-            block.release();
-            cellHist.release();
-            //    	destroyWindow("block");
-        }
-    //    destroyWindow("cellGradOrients");
-    //    destroyWindow("maskCellDervX");
-    //    destroyWindow("maskCellDervY");
-    //    destroyWindow("cellDervX");
-    //    destroyWindow("cellDervY");
-    //    destroyWindow("Cell");
-    //    destroyWindow("CellMask");
-    //    destroyWindow("Gray Cell");
-    cv::Mat vTmpHist = tmpHist.reshape(0,1).clone();
-    hypercubeNorm(vTmpHist, cOrientedGradsHist);
-    //Mat visu = get_hogdescriptor_visu(tmpCell, tmpCellMask, descriptor);
-    //imshow("hog visualization", visu);
-    //if(waitKey(30)>= 0)  {}
-    //cout << "descriptor dimensions: " << tOrientedGradsHist.cols << " width x " << tOrientedGradsHist.rows << "height" << endl;
-	//cout << "Found " << tOrientedGradsHist.size() << " descriptor values" << endl;
-    vTmpHist.release();
-	tmpHist.release();
-}
-
-void ColorFeatureExtractor::describeColor(GridMat & descriptors)
-{	int n = 0; //DEBUG PURPOSES
-	int m = 0;
-	for (int k = 0; k < m_ColorGrids.size(); k++)
-	{
-		cout << "k : " << k <<  endl;
-        
-		//if(m_ColorLabels[k] != -1) {
-        GridMat & grid = m_ColorGrids[k];
-        GridMat & mask = m_ColorMasks[k];
-        
-        for(int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
-        {
-            cv::Mat & cell = grid.get(i,j);
-            cv::Mat & tmpCellMask = mask.get(i,j);
-            cv::Mat cellMask = cv::Mat::zeros(tmpCellMask.rows, tmpCellMask.cols, CV_8UC1);
-            cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);
-            threshold(tmpCellMask,tmpCellMask,1,255,CV_THRESH_BINARY);
-            tmpCellMask.convertTo(cellMask, CV_8UC1);
-            
-            //            cout << cellMask.type() << endl;
-            
-            //HOG descriptor
-            cv::Mat cOrientedGradsHist;
-            describeColorHog(cell, cellMask, cOrientedGradsHist);
-            //cout << tOrientedGradsHist << endl;
-            // Consider the descriptor only if does not contain nans
-            //  if (checkRange(tOrientedGradsHist))
-            //  {
-            n++;
-            descriptors.vconcat(cOrientedGradsHist, i, j);
-            //if(m_ColorLabels[k] == 0) objectDescriptors.vconcat(tOrientedGradsHist, i, j); // row in a matrix of descriptors
-            //if(m_ColorLabels[k] == 1) personDescriptors.vconcat(tOrientedGradsHist, i, j);
-            
-        }
-		//}
-	}
-}

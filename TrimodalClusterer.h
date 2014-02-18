@@ -14,10 +14,11 @@
 #include <iostream>
 #include <vector>
 
-#include <opencv2/opencv.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 using namespace std;
-using namespace cv;
 
 class TrimodalClusterer
 {
@@ -54,7 +55,7 @@ private:
      */
 
     // Closest cluster center at a point
-    int closestClusterCenter(Mat point, Mat centers);
+    int closestClusterCenter(cv::Mat point, cv::Mat centers);
 };
 
 #endif /* defined(__Segmenthreetion__TrimodalClusterer__) */
