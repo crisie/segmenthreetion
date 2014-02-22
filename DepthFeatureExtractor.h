@@ -30,7 +30,7 @@ public:
     
     void setParam(DepthParametrization dParam);
 
-    void describe(vector<GridMat> grids, vector<GridMat> masks, GridMat & descriptors);
+    void describe(vector<GridMat> grids, vector<GridMat> gmasks, vector<cv::Mat> gtags, GridMat & descriptors, GridMat & tags);
     void describe(vector<GridMat> grids, vector<GridMat> masks,
                   GridMat & subDescriptors, GridMat & objDescriptors, GridMat & unkDescriptors);
     

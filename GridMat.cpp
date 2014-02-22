@@ -201,9 +201,7 @@ void GridMat::hconcat(cv::Mat mat, unsigned int i, unsigned int j)
 
 void GridMat::vconcat(cv::Mat mat, unsigned int i, unsigned int j)
 {
-    int rows = this->at(i,j).rows;
-    int cols = this->at(i,j).cols;
-    if (rows == 0 && cols == 0)
+    if (this->at(i,j).rows == 0 && this->at(i,j).cols == 0)
         this->set(mat,i,j);
     else
     {

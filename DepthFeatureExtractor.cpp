@@ -179,19 +179,20 @@ void DepthFeatureExtractor::describeNormalsOrients(const cv::Mat cell, const cv:
 }
 
 
-void DepthFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> masks, GridMat & descriptors)
+void DepthFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> gmasks, vector<cv::Mat> gtags, GridMat & descriptors, GridMat & tags)
 {
     //    namedWindow("god");
     
     for (int k = 0; k < grids.size(); k++)
     {
         GridMat & grid = grids[k];
-        GridMat & mask = masks[k];
+        GridMat & gmask = gmasks[k];
+        cv::Mat & gtag = gtags[k];
         
         for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
         {
             cv::Mat & cell = grid.get(i,j);
-            cv::Mat & cellMask = mask.get(i,j);
+            cv::Mat & cellMask = gmask.get(i,j);
 
             // Normals orientation descriptor
             cv::Mat dNormalsOrientsHist(1, (m_DepthParam.thetaBins + m_DepthParam.phiBins), CV_32F);
@@ -199,6 +200,9 @@ void DepthFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> mask
             describeNormalsOrients(cell, cellMask, dNormalsOrientsHist);
             
             descriptors.vconcat(dNormalsOrientsHist, i, j); // row in a matrix of descriptors
+            
+            GridMat t (gtag, grid.crows(), grid.ccols());
+            tags.vconcat(t);
         }
     }
 }

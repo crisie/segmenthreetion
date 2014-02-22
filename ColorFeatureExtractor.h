@@ -30,8 +30,8 @@ public:
     
     void setParam(const ColorParametrization dParam);
     
-    void describe(vector<GridMat> grids, vector<GridMat> masks, GridMat & descriptors);
-    void describe(vector<GridMat> grids, vector<GridMat> masks,
+    void describe(vector<GridMat> grids, vector<GridMat> gmasks, vector<cv::Mat> gtags, GridMat & descriptors, GridMat & tags);
+    void describe(vector<GridMat> grids, vector<GridMat> gmasks,
                   GridMat & subDescriptors, GridMat & objDescriptors, GridMat & unkDescriptors);
     
     cv::Mat get_hogdescriptor_visu(cv::Mat origImg, cv::Mat mask, vector<float> descriptorValues);

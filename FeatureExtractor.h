@@ -26,9 +26,9 @@ public:
     FeatureExtractor(const unsigned int hp, const unsigned int wp);
     
     // Describe grids at cell-level
-    virtual void describe(vector<GridMat> grids, vector<GridMat> masks, GridMat & descriptions) = 0;
+    virtual void describe(vector<GridMat> grids, vector<GridMat> gmasks, vector<cv::Mat> gtags, GridMat & descriptions, GridMat & tags) = 0;
     // Describe grids at cell-level (and return descriptions of subjects, objects, and unknowns separately)
-    virtual void describe(vector<GridMat> grids, vector<GridMat> masks,
+    virtual void describe(vector<GridMat> grids, vector<GridMat> gmasks,
                           GridMat & subDescriptions, GridMat & objDescriptions, GridMat & unkDescriptions) = 0;
     
 protected:

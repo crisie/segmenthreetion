@@ -32,3 +32,20 @@ double phi(double x)
     
     return 0.5*(1.0 + sign*y);
 }
+
+void histogram(cv::Mat mat, int nbins, cv::Mat & hist)
+{
+    double min, max;
+    cv::minMaxIdx(mat, &min, &max);
+    
+    if (nbins > (max-min+1))
+        return;
+    
+    // Create an histogram for the cell region of blurred intensity values
+    int histSize[] = { (int) nbins };
+    int channels[] = { 0 }; // 1 channel, number 0
+    float tranges[] = { min, max }; // thermal intensity values range: [0, 256)
+    const float* ranges[] = { tranges };
+    
+    cv::calcHist(&mat, 1, channels, cv::noArray(), hist, 1, histSize, ranges, true, false);
+}

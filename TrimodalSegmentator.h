@@ -30,7 +30,7 @@ public:
     /*
      * Constructors
      */
-    TrimodalSegmentator(const unsigned char offsetID);
+    TrimodalSegmentator(const unsigned int hp, const unsigned int wp, const unsigned char offsetID);
     
     /*
      * Public methods
@@ -39,9 +39,15 @@ public:
     // Set the path containing the sequence in which the segmentation will be performed
     void setDataPath(string dataPath);
     
-    // Run the program
-    void extractFeatures(const unsigned int hp, const unsigned int wp,
-                         const ColorParametrization cParam, const MotionParametrization mParam, const DepthParametrization dParam, const ThermalParametrization tParam);
+    void extractColorFeatures(const ColorParametrization param, GridMat& descriptors, GridMat& tags);
+    void extractMotionFeatures(const MotionParametrization param, GridMat& descriptors, GridMat& tags);
+    void extractDepthFeatures(const DepthParametrization param, GridMat& descriptors, GridMat& tags);
+    void extractThermalFeatures(const ThermalParametrization param, GridMat& descriptors, GridMat& tags);
+    
+    void extractColorFeatures(const ColorParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors);
+    void extractMotionFeatures(const MotionParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors);
+    void extractDepthFeatures(const DepthParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors);
+    void extractThermalFeatures(const ThermalParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors);
     
 private:
     /*
@@ -80,15 +86,26 @@ private:
     // Load people bounding boxes (rects)
     void loadBoundingRects(string file, vector< vector<cv::Rect> > & rects, vector< vector<int> > & tags);
     // Trim subimages (using the rects provided) from frames
-    void grid(vector<cv::Mat> frames, vector< vector<cv::Rect> > boundingRects, vector< vector<int> > tags, unsigned int crows, unsigned int ccols, vector<GridMat> & grids);
+    void grid(vector<cv::Mat> frames, vector< vector<cv::Rect> > boundingRects, vector< vector<int> > rectsTags, unsigned int crows, unsigned int ccols, vector<GridMat> & grids);
+    void grid(vector<cv::Mat> frames, vector< vector<cv::Rect> > boundingRects, vector< vector<int> > rectsTags, unsigned int crows, unsigned int ccols, vector<GridMat> & grids, vector<cv::Mat> & tags);
     
     //
     // Feature extraction
     //
     
     void extractModalityFeatures(string scenePath, string modality, FeatureExtractor* fe,
+                                 GridMat& descriptors, GridMat& tags);
+    
+    void extractModalityFeatures(string scenePath, string modality, FeatureExtractor* fe,
                                  GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors);
-
+    
+    //
+    // Cell classification
+    //
+    
+    void modelPredictor();
+    void predict();
+    
     //
     // Auxiliary methods
     //
@@ -97,12 +114,6 @@ private:
     cv::Mat shuffled(int a, int b, cv::RNG randGen);
     // Indexing
     void select(vector<GridMat> grids, vector<int> indices, vector<GridMat> & selection);
-
-    //
-    // *** Debug ***
-    //
-    
-    void loadDebugTestData(const char* path, vector<cv::Mat> & test, vector<cv::Mat> & testmasks, vector< vector<cv::Rect> > & testrects);
 };
 
 #endif /* defined(__Segmenthreetion__TrimodalSegmentator__) */

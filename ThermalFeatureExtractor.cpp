@@ -36,19 +36,20 @@ void ThermalFeatureExtractor::setParam(ThermalParametrization thermalParam)
 }
 
 
-void ThermalFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> masks, GridMat & descriptors)
+void ThermalFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> gmasks, vector<cv::Mat> gtags, GridMat & descriptors, GridMat & tags)
 {
     //    namedWindow("god");
     
     for (int k = 0; k < grids.size(); k++)
     {
         GridMat & grid = grids[k];
-        GridMat & mask = masks[k];
+        GridMat & gmask = gmasks[k];
+        cv::Mat & gtag = gtags[k];
         
         for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
         {
             cv::Mat & cell = grid.get(i,j);
-            cv::Mat & cellMask = mask.get(i,j);
+            cv::Mat & cellMask = gmask.get(i,j);
             
             // Intensities descriptor
             cv::Mat tIntensitiesHist;
@@ -63,6 +64,9 @@ void ThermalFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> ma
             hconcat(tIntensitiesHist, tGradOrientsHist, tHist);
             
             descriptors.vconcat(tHist, i, j); // row in a matrix of descriptors
+            
+            GridMat t (gtag, grid.crows(), grid.ccols());
+            tags.vconcat(t);
         }
     }
 }

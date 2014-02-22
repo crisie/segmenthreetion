@@ -27,19 +27,20 @@ void MotionFeatureExtractor::setParam(const MotionParametrization param)
 }
 
 
-void MotionFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> masks, GridMat & descriptors)
+void MotionFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> gmasks, vector<cv::Mat> gtags, GridMat & descriptors, GridMat & tags)
 {
 	for(int k = 0; k < grids.size(); k++)
 	{
 		cout << "k : " << k <<  endl;
         
         GridMat & grid = grids[k];
-        GridMat & mask = masks[k];
+        GridMat & gmask = gmasks[k];
+        cv::Mat & gtag = gtags[k];
         
         for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
         {
             cv::Mat & cell = grid.get(i,j);
-            cv::Mat & tmpCellMask = mask.get(i,j);
+            cv::Mat & tmpCellMask = gmask.get(i,j);
             cv::Mat cellMask = cv::Mat::zeros(tmpCellMask.rows, tmpCellMask.cols, CV_8UC1);
             cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);
             threshold(tmpCellMask,tmpCellMask,1,255,CV_THRESH_BINARY);
@@ -49,6 +50,9 @@ void MotionFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> mas
             describeMotionOrientedFlow(cell, cellMask, mOrientedFlowHist);
             
             descriptors.vconcat(mOrientedFlowHist, i, j);
+            
+            GridMat t (gtag, grid.crows(), grid.ccols());
+            tags.vconcat(t);
         }
 	}
 }

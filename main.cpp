@@ -11,10 +11,13 @@
 #include "MotionParametrization.hpp"
 #include "ThermalParametrization.hpp"
 #include "DepthParametrization.hpp"
+#include "StatTools.h"
 
 #include <opencv2/opencv.hpp>
 
 #include <iostream>
+
+using namespace std;
 
 int main(int argc, const char* argv[])
 {
@@ -25,8 +28,10 @@ int main(int argc, const char* argv[])
     const unsigned int hp = 2; // partitions in height
     const unsigned int wp = 2; // partitions in width
 
+    const unsigned char offsetID = 200;
+    
 	int numMixtures = 3; // classification parameter (training step)
-
+    
     // Feature extraction parametrization
     
     ColorParametrization cParam;
@@ -61,12 +66,17 @@ int main(int argc, const char* argv[])
     // Execution
     //
     
-    const unsigned char offsetID = 200;
-    
-    TrimodalSegmentator tms(offsetID);
+    TrimodalSegmentator tms(hp, wp, offsetID);
     
     tms.setDataPath("../../Sequences/");
-    tms.extractFeatures(hp, wp, cParam, mParam, dParam, tParam);
+    
+    GridMat tDescriptors (hp, wp);
+    GridMat tTags (hp, wp);
+    tms.extractThermalFeatures(tParam, tDescriptors, tTags);
+    
+    cv::Mat hist;
+    histogram(tTags.at(0,0), 3, hist);
+    cout << hist << endl;
 
     return 0;
 }
