@@ -39,7 +39,7 @@ TrimodalSegmentator::TrimodalSegmentator(const unsigned int hp, const unsigned i
 { }
 
 
-void TrimodalSegmentator::extractColorFeatures(const ColorParametrization param, GridMat& descriptors, GridMat& tags)
+void TrimodalSegmentator::extractColorFeatures(std::string modalityPath, const ColorParametrization param, GridMat& descriptors, GridMat& tags)
 {
     ColorFeatureExtractor cFE(m_hp, m_wp, param);
     
@@ -50,7 +50,7 @@ void TrimodalSegmentator::extractColorFeatures(const ColorParametrization param,
 }
 
 
-void TrimodalSegmentator::extractMotionFeatures(const MotionParametrization param, GridMat& descriptors, GridMat& tags)
+void TrimodalSegmentator::extractMotionFeatures(std::string modalityPath, const MotionParametrization param, GridMat& descriptors, GridMat& tags)
 {
     MotionFeatureExtractor fe(m_hp, m_wp, param);
     
@@ -61,7 +61,7 @@ void TrimodalSegmentator::extractMotionFeatures(const MotionParametrization para
 }
 
 
-void TrimodalSegmentator::extractDepthFeatures(const DepthParametrization param, GridMat& descriptors, GridMat& tags)
+void TrimodalSegmentator::extractDepthFeatures(std::string modalityPath, const DepthParametrization param, GridMat& descriptors, GridMat& tags)
 {
     DepthFeatureExtractor fe(m_hp, m_wp, param);
     
@@ -72,7 +72,7 @@ void TrimodalSegmentator::extractDepthFeatures(const DepthParametrization param,
 }
 
 
-void TrimodalSegmentator::extractThermalFeatures(const ThermalParametrization param, GridMat& descriptors, GridMat& tags)
+void TrimodalSegmentator::extractThermalFeatures(std::string modalityPath, const ThermalParametrization param, GridMat& descriptors, GridMat& tags)
 {
     ThermalFeatureExtractor fe(m_hp, m_wp, param);
     
@@ -83,7 +83,7 @@ void TrimodalSegmentator::extractThermalFeatures(const ThermalParametrization pa
 }
 
 
-void TrimodalSegmentator::extractColorFeatures(const ColorParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
+void TrimodalSegmentator::extractColorFeatures(std::string modalityPath, const ColorParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
 {
     ColorFeatureExtractor cFE(m_hp, m_wp, param);
     
@@ -94,7 +94,7 @@ void TrimodalSegmentator::extractColorFeatures(const ColorParametrization param,
 }
 
 
-void TrimodalSegmentator::extractMotionFeatures(const MotionParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
+void TrimodalSegmentator::extractMotionFeatures(std::string modalityPath, const MotionParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
 {
     MotionFeatureExtractor fe(m_hp, m_wp, param);
     
@@ -105,7 +105,7 @@ void TrimodalSegmentator::extractMotionFeatures(const MotionParametrization para
 }
 
 
-void TrimodalSegmentator::extractDepthFeatures(const DepthParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
+void TrimodalSegmentator::extractDepthFeatures(std::string modalityPath, const DepthParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
 {
     DepthFeatureExtractor fe(m_hp, m_wp, param);
     
@@ -116,7 +116,7 @@ void TrimodalSegmentator::extractDepthFeatures(const DepthParametrization param,
 }
 
 
-void TrimodalSegmentator::extractThermalFeatures(const ThermalParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
+void TrimodalSegmentator::extractThermalFeatures(std::string modalityPath, const ThermalParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
 {
     ThermalFeatureExtractor fe(m_hp, m_wp, param);
     

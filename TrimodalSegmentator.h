@@ -39,15 +39,15 @@ public:
     // Set the path containing the sequence in which the segmentation will be performed
     void setDataPath(string dataPath);
     
-    void extractColorFeatures(const ColorParametrization param, GridMat& descriptors, GridMat& tags);
-    void extractMotionFeatures(const MotionParametrization param, GridMat& descriptors, GridMat& tags);
-    void extractDepthFeatures(const DepthParametrization param, GridMat& descriptors, GridMat& tags);
-    void extractThermalFeatures(const ThermalParametrization param, GridMat& descriptors, GridMat& tags);
+    void extractColorFeatures(std::string modalityPath, const ColorParametrization param, GridMat& descriptors, GridMat& tags);
+    void extractMotionFeatures(std::string modalityPath, const MotionParametrization param, GridMat& descriptors, GridMat& tags);
+    void extractDepthFeatures(std::string modalityPath, const DepthParametrization param, GridMat& descriptors, GridMat& tags);
+    void extractThermalFeatures(std::string modalityPath, const ThermalParametrization param, GridMat& descriptors, GridMat& tags);
     
-    void extractColorFeatures(const ColorParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors);
-    void extractMotionFeatures(const MotionParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors);
-    void extractDepthFeatures(const DepthParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors);
-    void extractThermalFeatures(const ThermalParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors);
+    void extractColorFeatures(std::string modalityPath, const ColorParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors);
+    void extractMotionFeatures(std::string modalityPath, const MotionParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors);
+    void extractDepthFeatures(std::string modalityPath, const DepthParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors);
+    void extractThermalFeatures(std::string modalityPath, const ThermalParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors);
     
 private:
     /*

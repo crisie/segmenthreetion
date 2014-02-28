@@ -68,15 +68,17 @@ int main(int argc, const char* argv[])
     
     TrimodalSegmentator tms(hp, wp, offsetID);
     
-//    tms.setDataPath("../../Sequences/");
-//    
-//    GridMat tDescriptors (hp, wp);
-//    GridMat tTags (hp, wp);
-//    tms.extractThermalFeatures(tParam, tDescriptors, tTags);
-//    
-//    cv::Mat hist;
-//    histogram(tTags.at(0,0), 3, hist);
-//    cout << hist << endl;
+    tms.setDataPath("../../Sequences/");
+    
+    GridMat tDescriptors (hp, wp);
+    GridMat tTags (hp, wp);
+    tms.extractThermalFeatures("Thermal", tParam, tDescriptors, tTags);
+    
+    tms.computeThermalLikelihoods(tDescriptors, tTags, )
+    
+    cv::Mat hist;
+    histogram(tTags.at(0,0), 3, hist);
+    cout << hist << endl;
 
     return 0;
 }
