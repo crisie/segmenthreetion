@@ -1,4 +1,6 @@
-//
+^{
+    <#code#>
+}//
 //  Segmentator.cpp
 //  Segmenthreetion
 //
@@ -39,155 +41,61 @@ TrimodalSegmentator::TrimodalSegmentator(const unsigned int hp, const unsigned i
 { }
 
 
-void TrimodalSegmentator::extractColorFeatures(std::string modalityDir, const ColorParametrization param, GridMat& descriptors, GridMat& tags)
+void TrimodalSegmentator::getModalityData(std::string modality, std::vector<GridMat>& gframes, std::vector<GridMat>& gmasks, cv::Mat& tags)
 {
-    ColorFeatureExtractor cFE(m_hp, m_wp, param);
-    
     for (int i = 0; i < m_ScenesPaths.size(); i++)
     {
-        extractModalityFeatures(m_ScenesPaths[i], modalityDir, &cFE, descriptors, tags);
+        // Load data from disk: frames, masks, and rectangular bounding boxes
+        vector<cv::Mat> frames;
+        vector<cv::Mat> masks;
+        vector< vector<cv::Rect> > boundingRects;
+        vector< vector<int> > rtags;
+        
+        loadDataToMats   (m_ScenesPaths[i] + "Frames/" + modality + "/", "jpg", frames);
+        loadDataToMats   (m_ScenesPaths[i] + "Masks/" + modality + "/", "png", masks);
+        loadBoundingRects(m_ScenesPaths[i] + "Masks/" + modality + ".yml", boundingRects, rtags);
+        //visualizeMasksWithinRects(masks, bounding_rects); // DEBUG
+        
+        // Grid frames and masks
+        grid(frames, boundingRects, m_hp, m_wp, gframes);
+        grid(masks, boundingRects, rtags, m_hp, m_wp, gmasks, tags);
+        //visualizeGridmats(gframes_train); // DEBUG
+        //visualizeGridmats(gmasks_train); // DEBUG
     }
 }
 
 
-void TrimodalSegmentator::extractMotionFeatures(std::string modalityDir, const MotionParametrization param, GridMat& descriptors, GridMat& tags)
+void TrimodalSegmentator::extractColorFeatures(std::vector<GridMat>& gframes, std::vector<GridMat>& gmasks, const ColorParametrization param, GridMat& descriptors)
+{
+    ColorFeatureExtractor fe(m_hp, m_wp, param);
+    
+    fe.describe(gframes, gmasks, descriptors);
+}
+
+
+void TrimodalSegmentator::extractMotionFeatures(std::vector<GridMat>& gframes, std::vector<GridMat>& gmasks, const MotionParametrization param, GridMat& descriptors)
 {
     MotionFeatureExtractor fe(m_hp, m_wp, param);
     
-    for (int i = 0; i < m_ScenesPaths.size(); i++)
-    {
-        extractModalityFeatures(m_ScenesPaths[i], modalityDir, &fe, descriptors, tags);
-    }
+    fe.describe(gframes, gmasks, descriptors);
 }
 
 
-void TrimodalSegmentator::extractDepthFeatures(std::string modalityDir, const DepthParametrization param, GridMat& descriptors, GridMat& tags)
+void TrimodalSegmentator::extractDepthFeatures(std::vector<GridMat>& gframes, std::vector<GridMat>& gmasks, const DepthParametrization param, GridMat& descriptors)
 {
     DepthFeatureExtractor fe(m_hp, m_wp, param);
     
-    for (int i = 0; i < m_ScenesPaths.size(); i++)
-    {
-        extractModalityFeatures(m_ScenesPaths[i], modalityDir, &fe, descriptors, tags);
-    }
+    fe.describe(gframes, gmasks, descriptors);
 }
 
 
-void TrimodalSegmentator::extractThermalFeatures(std::string modalityDir, const ThermalParametrization param, GridMat& descriptors, GridMat& tags)
+void TrimodalSegmentator::extractThermalFeatures(std::vector<GridMat>& gframes, std::vector<GridMat>& gmasks, const ThermalParametrization param, GridMat& descriptors)
 {
     ThermalFeatureExtractor fe(m_hp, m_wp, param);
     
-    for (int i = 0; i < m_ScenesPaths.size(); i++)
-    {
-        extractModalityFeatures(m_ScenesPaths[i], modalityDir, &fe, descriptors, tags);
-    }
+    fe.describe(gframes, gmasks, descriptors);
 }
 
-
-void TrimodalSegmentator::extractColorFeatures(std::string modalityDir, const ColorParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
-{
-    ColorFeatureExtractor cFE(m_hp, m_wp, param);
-    
-    for (int i = 0; i < m_ScenesPaths.size(); i++)
-    {
-        extractModalityFeatures(m_ScenesPaths[i], modalityDir, &cFE, subDescriptors, objDescriptors, unkDescriptors);
-    }
-}
-
-
-void TrimodalSegmentator::extractMotionFeatures(std::string modalityDir, const MotionParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
-{
-    MotionFeatureExtractor fe(m_hp, m_wp, param);
-    
-    for (int i = 0; i < m_ScenesPaths.size(); i++)
-    {
-        extractModalityFeatures(m_ScenesPaths[i], modalityDir, &fe, subDescriptors, objDescriptors, unkDescriptors);
-    }
-}
-
-
-void TrimodalSegmentator::extractDepthFeatures(std::string modalityDir, const DepthParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
-{
-    DepthFeatureExtractor fe(m_hp, m_wp, param);
-    
-    for (int i = 0; i < m_ScenesPaths.size(); i++)
-    {
-        extractModalityFeatures(m_ScenesPaths[i], modalityDir, &fe, subDescriptors, objDescriptors, unkDescriptors);
-    }
-}
-
-
-void TrimodalSegmentator::extractThermalFeatures(std::string modalityDir, const ThermalParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
-{
-    ThermalFeatureExtractor fe(m_hp, m_wp, param);
-    
-    for (int i = 0; i < m_ScenesPaths.size(); i++)
-    {
-        extractModalityFeatures(m_ScenesPaths[i], modalityDir, &fe, subDescriptors, objDescriptors, unkDescriptors);
-    }
-}
-
-
-void TrimodalSegmentator::extractModalityFeatures(string scenePath, string modalityDir, FeatureExtractor* fe, GridMat& descriptors, GridMat& tags)
-{
-    // Load data from disk: frames, masks, and rectangular bounding boxes
-    
-	vector<cv::Mat> frames;
-	vector<cv::Mat> masks;
-    vector< vector<cv::Rect> > boundingRects;
-    vector< vector<int> > rtags;
-    
-    loadDataToMats   (scenePath + "Frames/" + modalityDir + "/", "jpg", frames);
-	loadDataToMats   (scenePath + "Masks/" + modalityDir + "/", "png", masks);
-	loadBoundingRects(scenePath + "Masks/" + modality + ".yml", boundingRects, rtags);
-    //visualizeMasksWithinRects(masks, bounding_rects); // DEBUG
-    
-    // Grid frames and masks
-    
-    vector<GridMat> gFramesTrain, gMasksTrain; // the ones used to train
-    vector<cv::Mat> gTags;
-    
-	grid(frames, boundingRects, rtags, m_hp, m_wp, gFramesTrain);
-	grid(masks, boundingRects, rtags, m_hp, m_wp, gMasksTrain, gTags);
-    //visualizeGridmats(gframes_train); // DEBUG
-    //visualizeGridmats(gmasks_train); // DEBUG
-    
-	//
-	// Feature extraction
-	//
-    
-    fe->describe(gFramesTrain, gMasksTrain, gTags, descriptors, tags); // framews dimensionality reduced to the description dimensionality
-}
-
-
-void TrimodalSegmentator::extractModalityFeatures(string scenePath, string modalityDir, FeatureExtractor* fe, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
-{
-    // Load data from disk: frames, masks, and rectangular bounding boxes
-    
-	vector<cv::Mat> frames;
-	vector<cv::Mat> masks;
-    vector< vector<cv::Rect> > boundingRects;
-    vector< vector<int> > rtags;
-    
-    loadDataToMats   (scenePath + "Frames/" + modalityDir + "/", "jpg", frames);
-	loadDataToMats   (scenePath + "Masks/" + modalityDir + "/", "png", masks);
-	loadBoundingRects(scenePath + "Masks/" + modalityDir + ".yml", boundingRects, rtags);
-    //visualizeMasksWithinRects(masks, bounding_rects); // DEBUG
-    
-    // Grid frames and masks
-    
-    vector<GridMat> gFramesTrain, gMasksTrain; // the ones used to train
-    
-	grid(frames, boundingRects, rtags, m_hp, m_wp, gFramesTrain);
-	grid(masks, boundingRects, rtags, m_hp, m_wp, gMasksTrain);
-    //visualizeGridmats(gframes_train); // DEBUG
-    //visualizeGridmats(gmasks_train); // DEBUG
-    
-	//
-	// Feature extraction
-	//
-    
-    fe->describe(gFramesTrain, gMasksTrain, subDescriptors, objDescriptors, unkDescriptors); // framews dimensionality reduced to the description dimensionality
-}
 
 //	// DEBUG
 //    boost::posix_time::ptime t = boost::posix_time::second_clock::local_time();
@@ -673,7 +581,7 @@ void TrimodalSegmentator::extractDepthFeatures()
 /*
  * Trim subimages, defined by rects (bounding boxes), from image frames
  */
-void TrimodalSegmentator::grid(vector<cv::Mat> frames, vector< vector<cv::Rect> > rects, vector< vector<int> > rtags, unsigned int crows, unsigned int ccols, vector<GridMat> & grids)
+void TrimodalSegmentator::grid(vector<cv::Mat>& images, vector< vector<cv::Rect> > rects, unsigned int crows, unsigned int ccols, vector<GridMat>& grids)
 {
     //namedWindow("grided subject");
     // Seek in each frame ..
@@ -684,7 +592,7 @@ void TrimodalSegmentator::grid(vector<cv::Mat> frames, vector< vector<cv::Rect> 
         {
             if (rects[f][r].height >= m_hp && rects[f][r].width >= m_wp)
             {
-                cv::Mat subject (frames[f], rects[f][r]); // Get a roi in frame defined by the rectangle.
+                cv::Mat subject (images[f], rects[f][r]); // Get a roi in frame defined by the rectangle.
                 cv::Mat maskedSubject = (subject == (m_OffsetID + r));
                 subject.release();
                 
@@ -699,9 +607,10 @@ void TrimodalSegmentator::grid(vector<cv::Mat> frames, vector< vector<cv::Rect> 
 /*
  * Trim subimages, defined by rects (bounding boxes), from image frames
  */
-void TrimodalSegmentator::grid(vector<cv::Mat> frames, vector< vector<cv::Rect> > rects, vector< vector<int> > rtags, unsigned int crows, unsigned int ccols, vector<GridMat> & grids, vector<cv::Mat> & tags)
+void TrimodalSegmentator::grid(vector<cv::Mat>& images, vector< vector<cv::Rect> > rects, vector< vector<int> > rtags, unsigned int crows, unsigned int ccols, vector<GridMat>& grids, cv::Mat& tags)
 {
-    //namedWindow("grided subject");
+    vector<int> tagsAux;
+    
     // Seek in each frame ..
     for (unsigned int f = 0; f < rects.size(); f++)
     {
@@ -710,20 +619,20 @@ void TrimodalSegmentator::grid(vector<cv::Mat> frames, vector< vector<cv::Rect> 
         {
             if (rects[f][r].height >= m_hp && rects[f][r].width >= m_wp)
             {
-                cv::Mat subject (frames[f], rects[f][r]); // Get a roi in frame defined by the rectangle.
+                cv::Mat subject (images[f], rects[f][r]); // Get a roi in frame defined by the rectangle.
                 cv::Mat maskedSubject = (subject == (m_OffsetID + r));
                 subject.release();
                 
                 GridMat g (maskedSubject, crows, ccols);
                 grids.push_back( g );
                 
-                cv::Mat t (crows, ccols, cv::DataType<int>::type);
-                for (int i = 0; i < crows; i++) for (int j = 0; j < ccols; j++)
-                    t.at<int>(i,j) = rtags[f][r];
-                tags.push_back( t );
+                tagsAux.push_back(rtags[f][r]);
             }
         }
     }
+    
+    cv::Mat tmp (tagsAux.size(), 1, CV_32SC1, tagsAux.data());
+    tmp.copyTo(tags);
 }
 
 

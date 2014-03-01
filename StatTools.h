@@ -15,6 +15,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+#include "GridMat.h"
+
 // Builds an histogram of the values contained in a vector (or matrix)
 void histogram(cv::Mat mat, int nbins, cv::Mat & hist);
 
@@ -27,6 +29,7 @@ cv::Mat shuffledVector(int n, cv::RNG randGen);
 // Create a vector of labels representing the k folds of n elements
 void cvpartition(int n, int k, int seed, cv::Mat& partitions);
 void cvpartition(cv::Mat labels, int k, int seed, cv::Mat& partitions); // stratified
+void cvpartition(GridMat labels, int k, int seed, cv::Mat& partitions); // stratified
 
 // Mathematical function approximating a Gaussian function
 double phi(double x);

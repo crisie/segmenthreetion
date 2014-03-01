@@ -36,18 +36,22 @@ public:
      * Public methods
      */
     
-    // Set the path containing the sequence in which the segmentation will be performed
+    // Data handling
+    
     void setDataPath(string dataPath);
+    void getModalityData(std::string modality, std::vector<GridMat>& gframes, std::vector<GridMat>& gmasks, cv::Mat& tags);
     
-    void extractColorFeatures(std::string modalityDir, const ColorParametrization param, GridMat& descriptors, GridMat& tags);
-    void extractMotionFeatures(std::string modalityDir, const MotionParametrization param, GridMat& descriptors, GridMat& tags);
-    void extractDepthFeatures(std::string modalityDir, const DepthParametrization param, GridMat& descriptors, GridMat& tags);
-    void extractThermalFeatures(std::string modalityDir, const ThermalParametrization param, GridMat& descriptors, GridMat& tags);
+    // Cell feature extraction
     
-    void extractColorFeatures(std::string modalityDir, const ColorParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors);
-    void extractMotionFeatures(std::string modalityDir, const MotionParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors);
-    void extractDepthFeatures(std::string modalityDir, const DepthParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors);
-    void extractThermalFeatures(std::string modalityDir, const ThermalParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors);
+    void extractColorFeatures(std::vector<GridMat>& gframes, std::vector<GridMat>& gmasks, const ColorParametrization param, GridMat& descriptors);
+    void extractMotionFeatures(std::vector<GridMat>& gframes, std::vector<GridMat>& gmasks, const MotionParametrization param, GridMat& descriptors);
+    void extractDepthFeatures(std::vector<GridMat>& gframes, std::vector<GridMat>& gmasks, const DepthParametrization param, GridMat& descriptors);
+    void extractThermalFeatures(std::vector<GridMat>& gframes, std::vector<GridMat>& gmasks, const ThermalParametrization param, GridMat& descriptors);
+    
+    // Cell classification
+    
+    void computeLoglikelihoods(GridMat descriptors, cv::Mat tags, GridMat& loglikelihoods);
+    
     
 private:
     /*
@@ -77,38 +81,28 @@ private:
      * Private methods
      */
     
-    //
     // Data handling
-    //
     
     // Load frames of a modality within a directory
     void loadDataToMats(string dir, const char* format, vector<cv::Mat> & frames);
     // Load people bounding boxes (rects)
     void loadBoundingRects(string file, vector< vector<cv::Rect> > & rects, vector< vector<int> > & tags);
     // Trim subimages (using the rects provided) from frames
-    void grid(vector<cv::Mat> frames, vector< vector<cv::Rect> > boundingRects, vector< vector<int> > rectsTags, unsigned int crows, unsigned int ccols, vector<GridMat> & grids);
-    void grid(vector<cv::Mat> frames, vector< vector<cv::Rect> > boundingRects, vector< vector<int> > rectsTags, unsigned int crows, unsigned int ccols, vector<GridMat> & grids, vector<cv::Mat> & tags);
+    void grid(vector<cv::Mat>& frames, vector< vector<cv::Rect> > rects, unsigned int crows, unsigned int ccols, vector<GridMat>& grids);
+    void grid(vector<cv::Mat>& frames, vector< vector<cv::Rect> > rects, vector< vector<int> > rtags, unsigned int crows, unsigned int ccols, vector<GridMat>& grids, cv::Mat& tags);
     
-    //
     // Feature extraction
-    //
+    // ...
     
-    void extractModalityFeatures(string scenePath, string modality, FeatureExtractor* fe,
-                                 GridMat& descriptors, GridMat& tags);
     
-    void extractModalityFeatures(string scenePath, string modality, FeatureExtractor* fe,
-                                 GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors);
-    
-    //
     // Cell classification
-    //
+    // ...
     
-    void modelPredictor();
-    void predict();
+//    void modelPredictor();
+//    void predict();
     
-    //
+    
     // Auxiliary methods
-    //
     
     // Training data and testing data random indexing
     cv::Mat shuffled(int a, int b, cv::RNG randGen);

@@ -40,6 +40,32 @@ void DepthFeatureExtractor::setParam(DepthParametrization depthParam)
 }
 
 
+void DepthFeatureExtractor::describe(vector<GridMat>& grids, vector<GridMat>& gmasks, GridMat& descriptors)
+{
+    //    namedWindow("god");
+    
+    for (int k = 0; k < grids.size(); k++)
+    {
+        GridMat & grid = grids[k];
+        GridMat & gmask = gmasks[k];
+        cv::Mat & gtag = gtags[k];
+        
+        for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
+        {
+            cv::Mat & cell = grid.get(i,j);
+            cv::Mat & cellMask = gmask.get(i,j);
+            
+            // Normals orientation descriptor
+            cv::Mat dNormalsOrientsHist(1, (m_DepthParam.thetaBins + m_DepthParam.phiBins), CV_32F);
+            dNormalsOrientsHist.setTo(NAN);
+            describeNormalsOrients(cell, cellMask, dNormalsOrientsHist);
+            
+            descriptors.vconcat(dNormalsOrientsHist, i, j); // row in a matrix of descriptors
+        }
+    }
+}
+
+
 void DepthFeatureExtractor::describeNormalsOrients(const cv::Mat cell, const cv::Mat mask, cv::Mat & dNormalsOrientsHist)
 {    
     pcl::PointCloud<pcl::PointXYZ>::Ptr pCloud ( new pcl::PointCloud<pcl::PointXYZ>() );
@@ -176,63 +202,4 @@ void DepthFeatureExtractor::describeNormalsOrients(const cv::Mat cell, const cv:
     phisHist.release();
     
     return;
-}
-
-
-void DepthFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> gmasks, vector<cv::Mat> gtags, GridMat & descriptors, GridMat & tags)
-{
-    //    namedWindow("god");
-    
-    for (int k = 0; k < grids.size(); k++)
-    {
-        GridMat & grid = grids[k];
-        GridMat & gmask = gmasks[k];
-        cv::Mat & gtag = gtags[k];
-        
-        for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
-        {
-            cv::Mat & cell = grid.get(i,j);
-            cv::Mat & cellMask = gmask.get(i,j);
-
-            // Normals orientation descriptor
-            cv::Mat dNormalsOrientsHist(1, (m_DepthParam.thetaBins + m_DepthParam.phiBins), CV_32F);
-            dNormalsOrientsHist.setTo(NAN);
-            describeNormalsOrients(cell, cellMask, dNormalsOrientsHist);
-            
-            descriptors.vconcat(dNormalsOrientsHist, i, j); // row in a matrix of descriptors
-            
-            GridMat t (gtag, grid.crows(), grid.ccols());
-            tags.vconcat(t);
-        }
-    }
-}
-
-
-void DepthFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> masks,
-                                     GridMat & subDescriptors, GridMat & objDescriptors, GridMat & unkDescriptors)
-{
-    //    namedWindow("god");
-    
-    for (int k = 0; k < grids.size(); k++)
-    {
-        GridMat & grid = grids[k];
-        GridMat & mask = masks[k];
-        
-        cout << k << "/" << grids.size() << endl;
-        
-        for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
-        {
-            cv::Mat & cell = grid.get(i,j);
-            cv::Mat & cellMask = mask.get(i,j);
-            
-            // Normals orientation descriptor
-            cv::Mat dNormalsOrientsHist(1, (m_DepthParam.thetaBins + m_DepthParam.phiBins), CV_32F);
-            dNormalsOrientsHist.setTo(NAN);
-            describeNormalsOrients(cell, cellMask, dNormalsOrientsHist);
-
-            if (grid.type() == GridMat::SUBJECT) subDescriptors.vconcat(dNormalsOrientsHist, i, j); // row in a matrix of descriptors
-            else if (grid.type() == GridMat::OBJECT)  objDescriptors.vconcat(dNormalsOrientsHist, i, j);
-            else if (grid.type() == GridMat::UNKNOWN) unkDescriptors.vconcat(dNormalsOrientsHist, i, j);
-        }
-    }
 }

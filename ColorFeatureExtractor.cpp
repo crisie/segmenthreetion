@@ -26,7 +26,6 @@ void ColorFeatureExtractor::setParam(ColorParametrization ColorParam)
 }
 
 
-
 void ColorFeatureExtractor::describeColorHog(const cv::Mat cell, const cv::Mat cellMask, cv::Mat & cOrientedGradsHist)
 {
     
@@ -176,7 +175,7 @@ void ColorFeatureExtractor::describeColorHog(const cv::Mat cell, const cv::Mat c
 }
 
 
-void ColorFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> gmasks, vector<cv::Mat> gtags, GridMat & descriptors, GridMat & tags)
+void ColorFeatureExtractor::describe(vector<GridMat>& grids, vector<GridMat>& gmasks, GridMat & descriptors)
 {
 	for (int k = 0; k < grids.size(); k++)
 	{
@@ -184,7 +183,6 @@ void ColorFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> gmas
         
         GridMat & grid = grids[k];
         GridMat & gmask = gmasks[k];
-        cv::Mat & gtag = gtags[k];
         
         for(int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
         {
@@ -200,40 +198,6 @@ void ColorFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> gmas
             describeColorHog(cell, cellMask, cOrientedGradsHist);
             
             descriptors.vconcat(cOrientedGradsHist, i, j);
-            GridMat t (gtag, grid.crows(), grid.ccols());
-            tags.vconcat(t);
-        }
-	}
-}
-
-
-void ColorFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> masks,
-                                     GridMat & subDescriptors, GridMat & objDescriptors, GridMat & unkDescriptors)
-{
-	for (int k = 0; k < grids.size(); k++)
-	{
-		cout << "k : " << k <<  endl;
-        
-        GridMat & grid = grids[k];
-        GridMat & mask = masks[k];
-        
-        for(int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
-        {
-            cv::Mat & cell = grid.get(i,j);
-            cv::Mat & tmpCellMask = mask.get(i,j);
-            cv::Mat cellMask = cv::Mat::zeros(tmpCellMask.rows, tmpCellMask.cols, CV_8UC1);
-            cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);
-            threshold(tmpCellMask,tmpCellMask,1,255,CV_THRESH_BINARY);
-            tmpCellMask.convertTo(cellMask, CV_8UC1);
-            
-            //HOG descriptor
-            cv::Mat cOrientedGradsHist;
-            describeColorHog(cell, cellMask, cOrientedGradsHist);
-
-            if (grid.type() == GridMat::SUBJECT)  subDescriptors.vconcat(cOrientedGradsHist, i, j); // row in a matrix of descriptors
-            else if (grid.type() == GridMat::OBJECT) objDescriptors.vconcat(cOrientedGradsHist, i, j);
-            else if (grid.type() == GridMat::UNKNOWN) unkDescriptors.vconcat(cOrientedGradsHist, i, j);
-            
         }
 	}
 }

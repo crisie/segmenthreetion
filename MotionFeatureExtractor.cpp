@@ -27,7 +27,7 @@ void MotionFeatureExtractor::setParam(const MotionParametrization param)
 }
 
 
-void MotionFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> gmasks, vector<cv::Mat> gtags, GridMat & descriptors, GridMat & tags)
+void MotionFeatureExtractor::describe(vector<GridMat>& grids, vector<GridMat>& gmasks, GridMat& descriptors)
 {
 	for(int k = 0; k < grids.size(); k++)
 	{
@@ -35,7 +35,6 @@ void MotionFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> gma
         
         GridMat & grid = grids[k];
         GridMat & gmask = gmasks[k];
-        cv::Mat & gtag = gtags[k];
         
         for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
         {
@@ -50,39 +49,6 @@ void MotionFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> gma
             describeMotionOrientedFlow(cell, cellMask, mOrientedFlowHist);
             
             descriptors.vconcat(mOrientedFlowHist, i, j);
-            
-            GridMat t (gtag, grid.crows(), grid.ccols());
-            tags.vconcat(t);
-        }
-	}
-}
-
-
-void MotionFeatureExtractor::describe(vector<GridMat> grids, vector<GridMat> masks,
-                                      GridMat & subDescriptors, GridMat & objDescriptors, GridMat & unkDescriptors)
-{
-	for(int k = 0; k < grids.size(); k++)
-	{
-		cout << "k : " << k <<  endl;
-        
-        GridMat & grid = grids[k];
-        GridMat & mask = masks[k];
-        
-        for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
-        {
-            cv::Mat & cell = grid.get(i,j);
-            cv::Mat & tmpCellMask = mask.get(i,j);
-            cv::Mat cellMask = cv::Mat::zeros(tmpCellMask.rows, tmpCellMask.cols, CV_8UC1);
-            cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);
-            threshold(tmpCellMask,tmpCellMask,1,255,CV_THRESH_BINARY);
-            tmpCellMask.convertTo(cellMask, CV_8UC1);
-            
-            cv::Mat mOrientedFlowHist;
-            describeMotionOrientedFlow(cell, cellMask, mOrientedFlowHist);
-            
-            if (grid.type() == GridMat::SUBJECT)  subDescriptors.vconcat(mOrientedFlowHist, i, j); // row in a matrix of descriptors
-            else if (grid.type() == GridMat::OBJECT) objDescriptors.vconcat(mOrientedFlowHist, i, j);
-            else if (grid.type() == GridMat::UNKNOWN) unkDescriptors.vconcat(mOrientedFlowHist, i, j);
         }
 	}
 }

@@ -25,14 +25,14 @@ int main(int argc, const char* argv[])
     // Parametrization
     //
     
-    const unsigned int hp = 2; // partitions in height
-    const unsigned int wp = 2; // partitions in width
-
+    // Dataset handling
+    
     const unsigned char offsetID = 200;
     
-	int numMixtures = 3; // classification parameter (training step)
+    // Feature extraction
     
-    // Feature extraction parametrization
+    const unsigned int hp = 2; // partitions in height
+    const unsigned int wp = 2; // partitions in width
     
     ColorParametrization cParam;
     cParam.winSizeX = 64;
@@ -62,6 +62,16 @@ int main(int argc, const char* argv[])
     tParam.ibins    = 8;
     tParam.oribins  = 8;
     
+    // Classification step
+    
+	int numMixtures = 3; // classification parameter (training step)
+    
+    // Validation procedure
+    
+    int k = 10; // number of folds of a cvpartition
+    int seed = 74;
+    
+    
     //
     // Execution
     //
@@ -70,15 +80,20 @@ int main(int argc, const char* argv[])
     
     tms.setDataPath("../../Sequences/");
     
-    GridMat tDescriptors (hp, wp);
-    GridMat tTags (hp, wp);
-    tms.extractThermalFeatures("Thermal", tParam, tDescriptors, tTags);
+    std::vector<GridMat> tGrids, tMasks; // the ones used to train
+    cv::Mat tTags;
+    GridMat tDescriptors;
     
-    //tms.computeLogLikelihoods(tDescriptors, tTags, tLogLikelihoods);
+    tms.getModalityData("Thermal", tGrids, tMasks, tTags);
+    tms.extractThermalFeatures(tGrids, tMasks, tParam, tDescriptors);
+    tGrids.clear();
+    tMasks.clear();
     
-    cv::Mat hist;
-    histogram(tTags.at(0,0), 3, hist);
-    cout << hist << endl;
+    cv::Mat tPartitions;
+    cvpartition(tTags, k, seed, tPartitions);
+    
+    GridMat tLogLikelihoods;
+    tms.computeLogLikelihoods(tDescriptors, tTags, tLogLikelihoods);
 
     return 0;
 }

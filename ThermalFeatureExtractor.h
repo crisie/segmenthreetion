@@ -30,9 +30,7 @@ public:
     
     void setParam(ThermalParametrization tParam);
 
-    void describe(vector<GridMat> grids, vector<GridMat> gmasks, vector<cv::Mat> gtags, GridMat & descriptors, GridMat & tags);
-    void describe(vector<GridMat> grids, vector<GridMat> masks,
-                  GridMat & subDescriptors, GridMat & objDescriptors, GridMat & unkDescriptors);
+    void describe(vector<GridMat>& grids, vector<GridMat>& gmasks, GridMat& descriptors);
     
 private:
     /*
