@@ -24,13 +24,13 @@
 #define __PI 3.14159265
 
 
-DepthFeatureExtractor::DepthFeatureExtractor(int hp, int wp)
-    : FeatureExtractor(hp, wp)
+DepthFeatureExtractor::DepthFeatureExtractor()
+    : FeatureExtractor()
 { }
 
 
-DepthFeatureExtractor::DepthFeatureExtractor(int hp, int wp, DepthParametrization dParam)
-	: FeatureExtractor(hp, wp), m_DepthParam(dParam)
+DepthFeatureExtractor::DepthFeatureExtractor(DepthParametrization dParam)
+	: FeatureExtractor(), m_DepthParam(dParam)
 { }
 
 
@@ -40,15 +40,14 @@ void DepthFeatureExtractor::setParam(DepthParametrization depthParam)
 }
 
 
-void DepthFeatureExtractor::describe(vector<GridMat>& grids, vector<GridMat>& gmasks, GridMat& descriptors)
+void DepthFeatureExtractor::describe(ModalityGridData data, GridMat& descriptors)
 {
     //    namedWindow("god");
     
-    for (int k = 0; k < grids.size(); k++)
+    for (int k = 0; k < data.getGridFrames().size(); k++)
     {
-        GridMat & grid = grids[k];
-        GridMat & gmask = gmasks[k];
-        cv::Mat & gtag = gtags[k];
+        GridMat & grid = data.getGridFrames()[k];
+        GridMat & gmask = data.getGridMasks()[k];
         
         for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
         {

@@ -9,8 +9,7 @@
 #include "FeatureExtractor.h"
 
 
-FeatureExtractor::FeatureExtractor(const unsigned int hp, const unsigned int wp)
-    : m_hp(hp), m_wp(wp)
+FeatureExtractor::FeatureExtractor()
 {
 }
 

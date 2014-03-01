@@ -11,13 +11,6 @@
 
 #include "FeatureExtractor.h"
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-
-#include <iostream>
-
-#include "GridMat.h"
 #include "DepthParametrization.hpp"
 
 using namespace std;
@@ -25,12 +18,12 @@ using namespace std;
 class DepthFeatureExtractor : public FeatureExtractor
 {
 public:
-    DepthFeatureExtractor(int hp, int wp);
-	DepthFeatureExtractor(int hp, int wp, DepthParametrization dParam);
+    DepthFeatureExtractor();
+	DepthFeatureExtractor(DepthParametrization dParam);
     
     void setParam(DepthParametrization dParam);
 
-    void describe(vector<GridMat>& grids, vector<GridMat>& gmasks, GridMat& descriptors);
+    void describe(ModalityGridData data, GridMat& descriptors);
     
 private:
     /*

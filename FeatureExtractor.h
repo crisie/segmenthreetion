@@ -17,21 +17,19 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include "GridMat.h"
+#include "ModalityGridData.hpp"
 
 using namespace std;
 
 class FeatureExtractor
 {
 public:
-    FeatureExtractor(const unsigned int hp, const unsigned int wp);
+    FeatureExtractor();
     
     // Describe grids at cell-level
-    virtual void describe(vector<GridMat>& grids, vector<GridMat>& gmasks, GridMat & descriptions) = 0;
+    virtual void describe(ModalityGridData data, GridMat & descriptions) = 0;
     
-protected:
-    const unsigned int m_hp;
-    const unsigned int m_wp;
-    
+protected:    
     // Normalize a descriptor (hypercube, i.e. f: (-inf, inf) --> [0, 1]
     void hypercubeNorm(cv::Mat & src, cv::Mat & dst);
 };

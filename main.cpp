@@ -6,11 +6,20 @@
 //  Copyright (c) 2013 Albert Clapés. All rights reserved.
 //
 
-#include "TrimodalSegmentator.h"
+#include "ModalityReader.h"
+#include "ModalityData.hpp"
+#include "ModalityGridData.hpp"
+#include "GridPartitioner.h"
+
+#include "ThermalFeatureExtractor.h"
+
 #include "ColorParametrization.hpp"
 #include "MotionParametrization.hpp"
 #include "ThermalParametrization.hpp"
 #include "DepthParametrization.hpp"
+
+#include "ModalityPredictor.h"
+
 #include "StatTools.h"
 
 #include <opencv2/opencv.hpp>
@@ -27,7 +36,8 @@ int main(int argc, const char* argv[])
     
     // Dataset handling
     
-    const unsigned char offsetID = 200;
+    string dataPath = "../../Sequences/";
+    const unsigned char masksOffset = 200;
     
     // Feature extraction
     
@@ -64,36 +74,46 @@ int main(int argc, const char* argv[])
     
     // Classification step
     
-	int numMixtures = 3; // classification parameter (training step)
+	int numMixtures[] = {2,3,4,5,6}; // classification parameter (training step)
     
     // Validation procedure
     
-    int k = 10; // number of folds of a cvpartition
+    int kTest = 10; // number of folds in the outer cross-validation
+    int kModelSelec = 3;
     int seed = 74;
-    
     
     //
     // Execution
     //
     
-    TrimodalSegmentator tms(hp, wp, offsetID);
+    ModalityData tData;
+    ModalityGridData tGridData;
     
-    tms.setDataPath("../../Sequences/");
+    ModalityReader reader(dataPath);
+    reader.setMasksOffset(masksOffset);
     
-    std::vector<GridMat> tGrids, tMasks; // the ones used to train
-    cv::Mat tTags;
+    // Thermal
+    // <------
+    reader.read("Thermal", tData);
+    
+    GridPartitioner partitioner;
+    partitioner.setGridPartitions(hp, wp);
+    partitioner.grid(tData, tGridData); // perform "gridding"
+    
     GridMat tDescriptors;
+    ThermalFeatureExtractor tFE(tParam);
+    tFE.describe(tGridData, tDescriptors); // perform description
     
-    tms.getModalityData("Thermal", tGrids, tMasks, tTags);
-    tms.extractThermalFeatures(tGrids, tMasks, tParam, tDescriptors);
-    tGrids.clear();
-    tMasks.clear();
+//    GridMat tLoglikelihoods;
     
-    cv::Mat tPartitions;
-    cvpartition(tTags, k, seed, tPartitions);
+//    ModalityPredictor tPredictor;
+//    tPredictor.setModelSelection(kModelSelec, expand(nmixtures, nlikelicuts));
+//    tPredictor.setModelSelection(kTest);
+//    
+//    tPredictor.setData(t)
+//    tPredictor.computeLoglikelihoods(tLoglikelihoods);
+    // ------>
     
-    GridMat tLogLikelihoods;
-    tms.computeLogLikelihoods(tDescriptors, tTags, tLogLikelihoods);
 
     return 0;
 }

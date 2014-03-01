@@ -11,30 +11,30 @@
 #include <opencv2/video/video.hpp>
 
 
-MotionFeatureExtractor::MotionFeatureExtractor(const unsigned hp, const unsigned wp)
-    : FeatureExtractor(hp, wp)
+MotionFeatureExtractor::MotionFeatureExtractor()
+    : FeatureExtractor()
 {}
 
 
-MotionFeatureExtractor::MotionFeatureExtractor(const unsigned hp, const unsigned wp, const MotionParametrization param)
-    : FeatureExtractor(hp, wp), m_Param(param)
+MotionFeatureExtractor::MotionFeatureExtractor(MotionParametrization param)
+    : FeatureExtractor(), m_Param(param)
 {}
 
 
-void MotionFeatureExtractor::setParam(const MotionParametrization param)
+void MotionFeatureExtractor::setParam(MotionParametrization param)
 {
     m_Param = param;
 }
 
 
-void MotionFeatureExtractor::describe(vector<GridMat>& grids, vector<GridMat>& gmasks, GridMat& descriptors)
+void MotionFeatureExtractor::describe(ModalityGridData data, GridMat& descriptors)
 {
-	for(int k = 0; k < grids.size(); k++)
+	for(int k = 0; k < data.getGridFrames().size(); k++)
 	{
 		cout << "k : " << k <<  endl;
         
-        GridMat & grid = grids[k];
-        GridMat & gmask = gmasks[k];
+        GridMat & grid = data.getGridFrames()[k];
+        GridMat & gmask = data.getGridMasks()[k];
         
         for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
         {

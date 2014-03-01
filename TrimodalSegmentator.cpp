@@ -1,6 +1,4 @@
-^{
-    <#code#>
-}//
+//
 //  Segmentator.cpp
 //  Segmenthreetion
 //
@@ -21,15 +19,7 @@
 #include "StatTools.h"
 #include "DebugTools.h"
 
-#include <sys/stat.h>
-#include <string>
-#include <fstream>
-#include <iostream>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 
-using namespace boost::filesystem; 
 using namespace std;
 
 /*
@@ -39,30 +29,6 @@ using namespace std;
 TrimodalSegmentator::TrimodalSegmentator(const unsigned int hp, const unsigned int wp, const unsigned char offsetID)
     : m_hp(hp), m_wp(wp), m_OffsetID(offsetID)
 { }
-
-
-void TrimodalSegmentator::getModalityData(std::string modality, std::vector<GridMat>& gframes, std::vector<GridMat>& gmasks, cv::Mat& tags)
-{
-    for (int i = 0; i < m_ScenesPaths.size(); i++)
-    {
-        // Load data from disk: frames, masks, and rectangular bounding boxes
-        vector<cv::Mat> frames;
-        vector<cv::Mat> masks;
-        vector< vector<cv::Rect> > boundingRects;
-        vector< vector<int> > rtags;
-        
-        loadDataToMats   (m_ScenesPaths[i] + "Frames/" + modality + "/", "jpg", frames);
-        loadDataToMats   (m_ScenesPaths[i] + "Masks/" + modality + "/", "png", masks);
-        loadBoundingRects(m_ScenesPaths[i] + "Masks/" + modality + ".yml", boundingRects, rtags);
-        //visualizeMasksWithinRects(masks, bounding_rects); // DEBUG
-        
-        // Grid frames and masks
-        grid(frames, boundingRects, m_hp, m_wp, gframes);
-        grid(masks, boundingRects, rtags, m_hp, m_wp, gmasks, tags);
-        //visualizeGridmats(gframes_train); // DEBUG
-        //visualizeGridmats(gmasks_train); // DEBUG
-    }
-}
 
 
 void TrimodalSegmentator::extractColorFeatures(std::vector<GridMat>& gframes, std::vector<GridMat>& gmasks, const ColorParametrization param, GridMat& descriptors)
@@ -578,62 +544,7 @@ void TrimodalSegmentator::extractDepthFeatures()
 //}
 
 
-/*
- * Trim subimages, defined by rects (bounding boxes), from image frames
- */
-void TrimodalSegmentator::grid(vector<cv::Mat>& images, vector< vector<cv::Rect> > rects, unsigned int crows, unsigned int ccols, vector<GridMat>& grids)
-{
-    //namedWindow("grided subject");
-    // Seek in each frame ..
-    for (unsigned int f = 0; f < rects.size(); f++)
-    {
-        // .. all the people appearing
-        for (unsigned int r = 0; r < rects[f].size(); r++)
-        {
-            if (rects[f][r].height >= m_hp && rects[f][r].width >= m_wp)
-            {
-                cv::Mat subject (images[f], rects[f][r]); // Get a roi in frame defined by the rectangle.
-                cv::Mat maskedSubject = (subject == (m_OffsetID + r));
-                subject.release();
-                
-                GridMat g (maskedSubject, crows, ccols);
-                grids.push_back( g );
-            }
-        }
-    }
-}
 
-
-/*
- * Trim subimages, defined by rects (bounding boxes), from image frames
- */
-void TrimodalSegmentator::grid(vector<cv::Mat>& images, vector< vector<cv::Rect> > rects, vector< vector<int> > rtags, unsigned int crows, unsigned int ccols, vector<GridMat>& grids, cv::Mat& tags)
-{
-    vector<int> tagsAux;
-    
-    // Seek in each frame ..
-    for (unsigned int f = 0; f < rects.size(); f++)
-    {
-        // .. all the people appearing
-        for (unsigned int r = 0; r < rects[f].size(); r++)
-        {
-            if (rects[f][r].height >= m_hp && rects[f][r].width >= m_wp)
-            {
-                cv::Mat subject (images[f], rects[f][r]); // Get a roi in frame defined by the rectangle.
-                cv::Mat maskedSubject = (subject == (m_OffsetID + r));
-                subject.release();
-                
-                GridMat g (maskedSubject, crows, ccols);
-                grids.push_back( g );
-                
-                tagsAux.push_back(rtags[f][r]);
-            }
-        }
-    }
-    
-    cv::Mat tmp (tagsAux.size(), 1, CV_32SC1, tagsAux.data());
-    tmp.copyTo(tags);
-}
 
 
 /*
@@ -753,128 +664,9 @@ void TrimodalSegmentator::grid(vector<cv::Mat>& images, vector< vector<cv::Rect>
 //    closedir(dp);
 //}
 
-/**
- * Load data to opencv's cv::Mats
- *
- * This method uses OpenCV and Boost.
- */
-void TrimodalSegmentator::loadDataToMats(string dir, const char* format, vector<cv::Mat> & frames)
-{
-    const char* path = dir.c_str();
-	if( exists( path ) )
-	{
-        boost::filesystem::
-		directory_iterator end;
-		directory_iterator iter(path);
-		for( ; iter != end ; ++iter )
-		{
-			if ( !is_directory( *iter ) && iter->path().extension().string().compare(".DS_Store") != 0 && iter->path().filename().string().compare("renamer.py") != 0)
-			{
-                //std::cout << iter->path().string() << std::endl;
-				cv::Mat img = cv::imread( iter->path().string(), CV_LOAD_IMAGE_ANYDEPTH );
-				frames.push_back(img);
-			}
-		}
-	}
-}
 
-/*
- * Load the people data (bounding boxes coordinates)
- */
-void TrimodalSegmentator::loadBoundingRects(string file, vector< vector<cv::Rect> > & rects, vector< vector<int> >& tags)
-{
-    cv::FileStorage fs;
-    fs.open(file.c_str(), cv::FileStorage::READ);
 
-    int num_frames;
-    fs["num_frames"] >> num_frames;
-    
-    for (int i = 0; i < num_frames; i++)
-    {
-        stringstream ss;
-        ss << i;
 
-        std::vector<int> v, w;
-        fs[string("coords_") + ss.str()] >> v;
-        fs[string("tags_") + ss.str()] >> w;
-        /*
-        for (int j = 0; j < v.size(); j++)
-            cout << v[j] << ",";
-        cout << endl; */        
-        vector<cv::Rect> frame_rects;
-        for (int j = 0; j < v.size() / 4; j++)
-        {
-            int x0 = v[j*4];
-            int y0 = v[j*4+1];
-            int x1 = v[j*4+2];
-            int y1 = v[j*4+3];
-            
-            frame_rects.push_back( cv::Rect(x0, y0, x1 - x0, y1 - y0) );
-        }
-        //cout << i << " rects: " << frame_rects.size() << endl;
-        rects.push_back(frame_rects);
-        tags.push_back(w);
-    }
-
-//    for (int i = 0; i < num_frames; i++)
-//    {
-//        stringstream ss;
-//        string s;
-//        ss << i;
-//        s = ss.str();
-//        string a = "tags_";
-//        a+=s;
-//
-//        std::vector<int> v;
-//        fs[a] >> v;
-//        
-//        bbTags.push_back(v);
-//    }
-    
-    fs.release();
-    
-    /*
-    std::ifstream in(path);
-    string line;
-
-    // Read lines
-    while( getline(in, line) )
-    {
-//        // DEBUG
-//        line = "0#";
-//        line = "1#1 2 -10 2#";
-//        line = "2#1 2 -10 2#3 4 11 0#";
-        
-        // First number in line is the number of bounding rects in the frame
-        unsigned long inipos = line.find("#");
-        string head = line.substr(0, inipos);
-        istringstream buffer(head);
-        int numOfRects;
-        buffer >> numOfRects;
-        
-        // The rest are the coordinates of each rect in a line
-        string tail (line.substr(inipos));
-        inipos = inipos - 1; // a detail (for further processing)
-        
-        // Extract the coordinates separating by the delimiters and create the rects
-        vector<Rect> frameRects;
-        unsigned long endpos;
-        for (int i = 0; i < numOfRects; i++)
-        {
-            string aux = tail.substr(inipos + 1);   // Cut in the left bound
-            endpos = aux.find("#");                 // Seek the right bound delimiter
-            string s = aux.substr(0,endpos);        // Cut in the right bound       
-            inipos = endpos + 1;
-            
-            int x0, y0, x1, y1;
-            sscanf(s.c_str(), "%d %d %d %d", &x0, &y0, &x1, &y1);
-            frameRects.push_back(Rect(x0, y0, x1-x0, y1-y0));
-        }
-        
-        rects.push_back(frameRects);
-    }
-     */
-}
 
 cv::Mat TrimodalSegmentator::shuffled(int a, int b, cv::RNG randGen)
 {
@@ -895,31 +687,5 @@ void TrimodalSegmentator::select(vector<GridMat> grids, vector<int> indices, vec
     for (int i = 0; i < indices.size(); i++)
     {
         selection[i] = grids[indices[i]];
-    }
-}
-
-void TrimodalSegmentator::setDataPath(string dataPath)
-{
-    m_DataPath = dataPath;
-    
-    const char* path = m_DataPath.c_str();
-	if( exists( path ) )
-	{
-		directory_iterator end;
-		directory_iterator iter(path);
-		for( ; iter != end ; ++iter )
-		{
-			if ( is_directory( *iter ) )
-			{
-                string scenePath = iter->path().string();
-				m_ScenesPaths.push_back(scenePath);
-                
-                cout << "Scene found: " << scenePath << endl;
-			}
-		}
-	}
-    else
-    {
-        cerr << "Data path is not containing any scene(s)!" << endl;
     }
 }

@@ -83,14 +83,6 @@ private:
     
     // Data handling
     
-    // Load frames of a modality within a directory
-    void loadDataToMats(string dir, const char* format, vector<cv::Mat> & frames);
-    // Load people bounding boxes (rects)
-    void loadBoundingRects(string file, vector< vector<cv::Rect> > & rects, vector< vector<int> > & tags);
-    // Trim subimages (using the rects provided) from frames
-    void grid(vector<cv::Mat>& frames, vector< vector<cv::Rect> > rects, unsigned int crows, unsigned int ccols, vector<GridMat>& grids);
-    void grid(vector<cv::Mat>& frames, vector< vector<cv::Rect> > rects, vector< vector<int> > rtags, unsigned int crows, unsigned int ccols, vector<GridMat>& grids, cv::Mat& tags);
-    
     // Feature extraction
     // ...
     

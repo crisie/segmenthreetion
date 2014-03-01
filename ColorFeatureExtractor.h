@@ -11,13 +11,6 @@
 
 #include "FeatureExtractor.h"
 
-#include <iostream>
-
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-
-#include "GridMat.h"
 #include "ColorParametrization.hpp"
 
 using namespace std;
@@ -25,12 +18,12 @@ using namespace std;
 class ColorFeatureExtractor : public FeatureExtractor
 {
 public:
-    ColorFeatureExtractor(int hp, int wp);
-	ColorFeatureExtractor(int hp, int wp, ColorParametrization dParam);
+    ColorFeatureExtractor();
+	ColorFeatureExtractor(ColorParametrization dParam);
     
-    void setParam(const ColorParametrization dParam);
+    void setParam(ColorParametrization dParam);
     
-    void describe(vector<GridMat>& grids, vector<GridMat>& gmasks, GridMat& descriptors);
+    void describe(ModalityGridData data, GridMat& descriptors);
     
     cv::Mat get_hogdescriptor_visu(cv::Mat origImg, cv::Mat mask, vector<float> descriptorValues);
     

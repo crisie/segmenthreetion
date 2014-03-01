@@ -20,13 +20,13 @@
 #include <boost/timer.hpp>
 
 
-ThermalFeatureExtractor::ThermalFeatureExtractor(int hp, int wp)
-    : FeatureExtractor(hp, wp)
+ThermalFeatureExtractor::ThermalFeatureExtractor()
+    : FeatureExtractor()
 { }
 
 
-ThermalFeatureExtractor::ThermalFeatureExtractor(int hp, int wp, ThermalParametrization tParam)
-    : FeatureExtractor(hp, wp), m_ThermalParam(tParam)
+ThermalFeatureExtractor::ThermalFeatureExtractor(ThermalParametrization tParam)
+    : FeatureExtractor(), m_ThermalParam(tParam)
 { }
 
 
@@ -36,14 +36,14 @@ void ThermalFeatureExtractor::setParam(ThermalParametrization thermalParam)
 }
 
 
-void ThermalFeatureExtractor::describe(vector<GridMat>& grids, vector<GridMat>& gmasks, GridMat& descriptors)
+void ThermalFeatureExtractor::describe(ModalityGridData data, GridMat& descriptors)
 {
     //    namedWindow("god");
     
-    for (int k = 0; k < grids.size(); k++)
+    for (int k = 0; k < data.getGridFrames().size(); k++)
     {
-        GridMat & grid = grids[k];
-        GridMat & gmask = gmasks[k];
+        GridMat & grid = data.getGridFrames()[k];
+        GridMat & gmask = data.getGridMasks()[k];
         
         for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
         {

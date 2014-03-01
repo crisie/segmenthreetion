@@ -11,13 +11,6 @@
 
 #include "FeatureExtractor.h"
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-
-#include <iostream>
-
-#include "GridMat.h"
 #include "ThermalParametrization.hpp"
 
 using namespace std;
@@ -25,12 +18,12 @@ using namespace std;
 class ThermalFeatureExtractor : public FeatureExtractor
 {
 public:
-    ThermalFeatureExtractor(int hp, int wp);
-	ThermalFeatureExtractor(int hp, int wp, ThermalParametrization tParam);
+    ThermalFeatureExtractor();
+	ThermalFeatureExtractor(ThermalParametrization tParam);
     
     void setParam(ThermalParametrization tParam);
 
-    void describe(vector<GridMat>& grids, vector<GridMat>& gmasks, GridMat& descriptors);
+    void describe(ModalityGridData data, GridMat& descriptors);
     
 private:
     /*

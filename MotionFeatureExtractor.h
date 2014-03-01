@@ -11,13 +11,6 @@
 
 #include "FeatureExtractor.h"
 
-#include <iostream>
-
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-
-#include "GridMat.h"
 #include "MotionParametrization.hpp"
 
 using namespace std;
@@ -25,12 +18,12 @@ using namespace std;
 class MotionFeatureExtractor : public FeatureExtractor
 {
 public:
-    MotionFeatureExtractor(const unsigned int hp, const unsigned int wp);
-	MotionFeatureExtractor(const unsigned int hp, const unsigned int wp, MotionParametrization mParam);
+    MotionFeatureExtractor();
+	MotionFeatureExtractor(MotionParametrization mParam);
     
-    void setParam(const MotionParametrization param);
+    void setParam(MotionParametrization param);
     
-    void describe(vector<GridMat>& grids, vector<GridMat>& gmasks, GridMat& descriptors);
+    void describe(ModalityGridData data, GridMat& descriptors);
     
     cv::Mat get_hogdescriptor_visu(cv::Mat origImg, cv::Mat mask, vector<float> descriptorValues);
     

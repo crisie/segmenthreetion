@@ -10,13 +10,13 @@
 #include "ColorParametrization.hpp"
 
 
-ColorFeatureExtractor::ColorFeatureExtractor(int hp, int wp)
-    : FeatureExtractor(hp, wp)
+ColorFeatureExtractor::ColorFeatureExtractor()
+    : FeatureExtractor()
 { }
 
 
-ColorFeatureExtractor::ColorFeatureExtractor(int hp, int wp, ColorParametrization cParam)
-    : FeatureExtractor(hp, wp), m_ColorParam(cParam)
+ColorFeatureExtractor::ColorFeatureExtractor(ColorParametrization cParam)
+    : FeatureExtractor(), m_ColorParam(cParam)
 { }
 
 
@@ -175,14 +175,14 @@ void ColorFeatureExtractor::describeColorHog(const cv::Mat cell, const cv::Mat c
 }
 
 
-void ColorFeatureExtractor::describe(vector<GridMat>& grids, vector<GridMat>& gmasks, GridMat & descriptors)
+void ColorFeatureExtractor::describe(ModalityGridData data, GridMat & descriptors)
 {
-	for (int k = 0; k < grids.size(); k++)
+	for (int k = 0; k < data.getGridFrames().size(); k++)
 	{
 		cout << "k : " << k <<  endl;
         
-        GridMat & grid = grids[k];
-        GridMat & gmask = gmasks[k];
+        GridMat & grid = data.getGridFrames()[k];
+        GridMat & gmask = data.getGridMasks()[k];
         
         for(int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
         {
