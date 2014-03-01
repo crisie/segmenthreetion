@@ -25,7 +25,8 @@ cv::Mat shuffledVector(int a, int b, cv::RNG randGen);
 cv::Mat shuffledVector(int n, cv::RNG randGen);
 
 // Create a vector of labels representing the k folds of n elements
-void cvpartition(int n, int k, int seed, cv::Mat& labels);
+void cvpartition(int n, int k, int seed, cv::Mat& partitions);
+void cvpartition(cv::Mat labels, int k, int seed, cv::Mat& partitions); // stratified
 
 // Mathematical function approximating a Gaussian function
 double phi(double x);

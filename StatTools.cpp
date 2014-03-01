@@ -58,15 +58,15 @@ cv::Mat shuffledVector(int n, cv::RNG randGen)
 /**
  * Create a vector of labels representing the k folds of n elements
  */
-void cvpartition(int n, int k, int seed, cv::Mat& labels)
+void cvpartition(int n, int k, int seed, cv::Mat& partitions)
 {
     int foldElems = floor(n/k);
     int extraElems = n - (k * floor(n/k));
 
     cv::Mat indices = shuffledVector(n, cv::RNG(seed));
     
-    labels.release();
-    labels.create(indices.rows, indices.cols, cv::DataType<int>::type);
+    partitions.release();
+    partitions.create(indices.rows, indices.cols, cv::DataType<int>::type);
 
     unsigned int c = 0;
     unsigned int i, j;
@@ -75,10 +75,48 @@ void cvpartition(int n, int k, int seed, cv::Mat& labels)
         int ifoldElems = (i < extraElems) ? (foldElems + 1) : foldElems;
         for (j = 0; j < ifoldElems; j++)
         {
-            labels.at<int>(indices.at<int>(c+j)) = i;
+            partitions.at<int>(indices.at<int>(c+j)) = i;
         }
         
         c += ifoldElems;
+    }
+}
+
+/**
+ * Create a vector of labels representing the k folds of n elements (stratified)
+ */
+void cvpartition(cv::Mat classes, int k, int seed, cv::Mat& partitions)
+{
+    double minVal, maxVal; // labels do not need to be between [0, #classes - 1]
+    cv::minMaxIdx(classes, &minVal, &maxVal); // but, suppose continuous numeration of labels
+    
+    // separate the indices in a different vector for each class
+
+    std::vector<std::vector<int> > classesIndices(minVal - maxVal + 1);
+    int m = (classes.rows > 1) ? classes.rows : classes.cols;
+    for (int i = 0; i < m; i++)
+    {
+        int l = (classes.rows > 1) ? classes.at<int>(i,0) : classes.at<int>(0,1);
+        classesIndices[l].push_back(i);
+    }
+    
+    // perform partitions separately in the classes' indices vectors
+    // and then merge the separate partitions into one
+    
+    std::vector<cv::Mat> classesPartitions(minVal - maxVal + 1);
+    
+    partitions.release();
+    partitions.create(classes.rows, classes.cols, cv::DataType<int>::type);
+    
+    for (int i = 0; i < classesIndices.size(); i++)
+    {
+        cvpartition(classesIndices[i].size(), k, seed, classesPartitions[i]);
+        for (int j = 0; j < classesIndices[i].size(); j++)
+        {
+            (partitions.rows > 1) ?
+                partitions.at<int>(classesIndices[i][j], 0) = classesPartitions[i].at<int>(j,0) :
+                partitions.at<int>(0, classesIndices[i][j]) = classesPartitions[i].at<int>(j,0);
+        }
     }
 }
 
