@@ -39,96 +39,95 @@ TrimodalSegmentator::TrimodalSegmentator(const unsigned int hp, const unsigned i
 { }
 
 
-void TrimodalSegmentator::extractColorFeatures(std::string modalityPath, const ColorParametrization param, GridMat& descriptors, GridMat& tags)
+void TrimodalSegmentator::extractColorFeatures(std::string modalityDir, const ColorParametrization param, GridMat& descriptors, GridMat& tags)
 {
     ColorFeatureExtractor cFE(m_hp, m_wp, param);
     
     for (int i = 0; i < m_ScenesPaths.size(); i++)
     {
-        extractModalityFeatures(m_ScenesPaths[i], "Color", &cFE, descriptors, tags);
+        extractModalityFeatures(m_ScenesPaths[i], modalityDir, &cFE, descriptors, tags);
     }
 }
 
 
-void TrimodalSegmentator::extractMotionFeatures(std::string modalityPath, const MotionParametrization param, GridMat& descriptors, GridMat& tags)
+void TrimodalSegmentator::extractMotionFeatures(std::string modalityDir, const MotionParametrization param, GridMat& descriptors, GridMat& tags)
 {
     MotionFeatureExtractor fe(m_hp, m_wp, param);
     
     for (int i = 0; i < m_ScenesPaths.size(); i++)
     {
-        extractModalityFeatures(m_ScenesPaths[i], "Motion", &fe, descriptors, tags);
+        extractModalityFeatures(m_ScenesPaths[i], modalityDir, &fe, descriptors, tags);
     }
 }
 
 
-void TrimodalSegmentator::extractDepthFeatures(std::string modalityPath, const DepthParametrization param, GridMat& descriptors, GridMat& tags)
+void TrimodalSegmentator::extractDepthFeatures(std::string modalityDir, const DepthParametrization param, GridMat& descriptors, GridMat& tags)
 {
     DepthFeatureExtractor fe(m_hp, m_wp, param);
     
     for (int i = 0; i < m_ScenesPaths.size(); i++)
     {
-        extractModalityFeatures(m_ScenesPaths[i], "Depth", &fe, descriptors, tags);
+        extractModalityFeatures(m_ScenesPaths[i], modalityDir, &fe, descriptors, tags);
     }
 }
 
 
-void TrimodalSegmentator::extractThermalFeatures(std::string modalityPath, const ThermalParametrization param, GridMat& descriptors, GridMat& tags)
+void TrimodalSegmentator::extractThermalFeatures(std::string modalityDir, const ThermalParametrization param, GridMat& descriptors, GridMat& tags)
 {
     ThermalFeatureExtractor fe(m_hp, m_wp, param);
     
     for (int i = 0; i < m_ScenesPaths.size(); i++)
     {
-        extractModalityFeatures(m_ScenesPaths[i], "Thermal", &fe, descriptors, tags);
+        extractModalityFeatures(m_ScenesPaths[i], modalityDir, &fe, descriptors, tags);
     }
 }
 
 
-void TrimodalSegmentator::extractColorFeatures(std::string modalityPath, const ColorParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
+void TrimodalSegmentator::extractColorFeatures(std::string modalityDir, const ColorParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
 {
     ColorFeatureExtractor cFE(m_hp, m_wp, param);
     
     for (int i = 0; i < m_ScenesPaths.size(); i++)
     {
-        extractModalityFeatures(m_ScenesPaths[i], "Color", &cFE, subDescriptors, objDescriptors, unkDescriptors);
+        extractModalityFeatures(m_ScenesPaths[i], modalityDir, &cFE, subDescriptors, objDescriptors, unkDescriptors);
     }
 }
 
 
-void TrimodalSegmentator::extractMotionFeatures(std::string modalityPath, const MotionParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
+void TrimodalSegmentator::extractMotionFeatures(std::string modalityDir, const MotionParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
 {
     MotionFeatureExtractor fe(m_hp, m_wp, param);
     
     for (int i = 0; i < m_ScenesPaths.size(); i++)
     {
-        extractModalityFeatures(m_ScenesPaths[i], "Motion", &fe, subDescriptors, objDescriptors, unkDescriptors);
+        extractModalityFeatures(m_ScenesPaths[i], modalityDir, &fe, subDescriptors, objDescriptors, unkDescriptors);
     }
 }
 
 
-void TrimodalSegmentator::extractDepthFeatures(std::string modalityPath, const DepthParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
+void TrimodalSegmentator::extractDepthFeatures(std::string modalityDir, const DepthParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
 {
     DepthFeatureExtractor fe(m_hp, m_wp, param);
     
     for (int i = 0; i < m_ScenesPaths.size(); i++)
     {
-        extractModalityFeatures(m_ScenesPaths[i], "Depth", &fe, subDescriptors, objDescriptors, unkDescriptors);
+        extractModalityFeatures(m_ScenesPaths[i], modalityDir, &fe, subDescriptors, objDescriptors, unkDescriptors);
     }
 }
 
 
-void TrimodalSegmentator::extractThermalFeatures(std::string modalityPath, const ThermalParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
+void TrimodalSegmentator::extractThermalFeatures(std::string modalityDir, const ThermalParametrization param, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
 {
     ThermalFeatureExtractor fe(m_hp, m_wp, param);
     
     for (int i = 0; i < m_ScenesPaths.size(); i++)
     {
-        extractModalityFeatures(m_ScenesPaths[i], "Thermal", &fe, subDescriptors, objDescriptors, unkDescriptors);
+        extractModalityFeatures(m_ScenesPaths[i], modalityDir, &fe, subDescriptors, objDescriptors, unkDescriptors);
     }
 }
 
 
-void TrimodalSegmentator::extractModalityFeatures(string scenePath, string modality, FeatureExtractor* fe,
-                                                  GridMat& descriptors, GridMat& tags)
+void TrimodalSegmentator::extractModalityFeatures(string scenePath, string modalityDir, FeatureExtractor* fe, GridMat& descriptors, GridMat& tags)
 {
     // Load data from disk: frames, masks, and rectangular bounding boxes
     
@@ -137,8 +136,8 @@ void TrimodalSegmentator::extractModalityFeatures(string scenePath, string modal
     vector< vector<cv::Rect> > boundingRects;
     vector< vector<int> > rtags;
     
-    loadDataToMats   (scenePath + "Frames/" + modality + "/", "jpg", frames);
-	loadDataToMats   (scenePath + "Masks/" + modality + "/", "png", masks);
+    loadDataToMats   (scenePath + "Frames/" + modalityDir + "/", "jpg", frames);
+	loadDataToMats   (scenePath + "Masks/" + modalityDir + "/", "png", masks);
 	loadBoundingRects(scenePath + "Masks/" + modality + ".yml", boundingRects, rtags);
     //visualizeMasksWithinRects(masks, bounding_rects); // DEBUG
     
@@ -160,8 +159,7 @@ void TrimodalSegmentator::extractModalityFeatures(string scenePath, string modal
 }
 
 
-void TrimodalSegmentator::extractModalityFeatures(string scenePath, string modality, FeatureExtractor* fe,
-                                                  GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
+void TrimodalSegmentator::extractModalityFeatures(string scenePath, string modalityDir, FeatureExtractor* fe, GridMat& subDescriptors, GridMat& objDescriptors, GridMat& unkDescriptors)
 {
     // Load data from disk: frames, masks, and rectangular bounding boxes
     
@@ -170,9 +168,9 @@ void TrimodalSegmentator::extractModalityFeatures(string scenePath, string modal
     vector< vector<cv::Rect> > boundingRects;
     vector< vector<int> > rtags;
     
-    loadDataToMats   (scenePath + "Frames/" + modality + "/", "jpg", frames);
-	loadDataToMats   (scenePath + "Masks/" + modality + "/", "png", masks);
-	loadBoundingRects(scenePath + "Masks/" + modality + ".yml", boundingRects, rtags);
+    loadDataToMats   (scenePath + "Frames/" + modalityDir + "/", "jpg", frames);
+	loadDataToMats   (scenePath + "Masks/" + modalityDir + "/", "png", masks);
+	loadBoundingRects(scenePath + "Masks/" + modalityDir + ".yml", boundingRects, rtags);
     //visualizeMasksWithinRects(masks, bounding_rects); // DEBUG
     
     // Grid frames and masks

@@ -74,7 +74,7 @@ int main(int argc, const char* argv[])
     GridMat tTags (hp, wp);
     tms.extractThermalFeatures("Thermal", tParam, tDescriptors, tTags);
     
-    tms.computeThermalLikelihoods(tDescriptors, tTags, )
+    //tms.computeLogLikelihoods(tDescriptors, tTags, tLogLikelihoods);
     
     cv::Mat hist;
     histogram(tTags.at(0,0), 3, hist);
