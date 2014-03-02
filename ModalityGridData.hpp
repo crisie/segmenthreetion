@@ -27,7 +27,41 @@ public:
     
     ModalityGridData(vector<GridMat> gframes, vector<GridMat> gmasks, cv::Mat tags)
             : m_GFrames(gframes), m_GMasks(gmasks), m_Tags(tags) {}
-
+    
+    ModalityGridData(ModalityGridData& other, cv::Mat indices)
+    {
+        vector<GridMat> gframes;
+        vector<GridMat> gmasks;
+        cv::Mat tags (cv::sum(indices).val[0], other.getTags().cols, other.getTags().type());
+        
+        int ntags = (other.getTags().rows > 1) ? other.getTags().rows : other.getTags().cols;        
+        for (int i = 0; i < ntags; i++)
+        {
+            int include = (indices.rows > 1) ? indices.at<int>(i,0) : indices.at<int>(0,i);
+            if (include)
+            {
+                gframes.push_back(other.getGridFrames()[i]);
+                gmasks.push_back(other.getGridMasks()[i]);
+                
+                if (other.getTags().rows > 1)
+                    tags.at<int>(i,0) = other.getTags().at<int>(i,0);
+                else
+                    tags.at<int>(0,i) = other.getTags().at<int>(0,i);
+            }
+        }
+        
+        setGridFrames(gframes);
+        setGridMasks(gmasks);
+        setTags(tags);
+    }
+    
+    void operator=(ModalityGridData& other)
+    {
+        m_GFrames = other.m_GFrames;
+        m_GMasks = other.m_GMasks;
+        m_Tags = other.m_Tags;
+    }
+    
     // Getters
     
     vector<GridMat>& getGridFrames()

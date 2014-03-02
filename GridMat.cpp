@@ -12,12 +12,23 @@
 #include <iostream>
 #include <string>
 
-GridMat::GridMat(unsigned int crows, unsigned int ccols, int type) : m_crows(crows), m_ccols(ccols), m_type(type)
+GridMat::GridMat(unsigned int crows, unsigned int ccols) : m_crows(crows), m_ccols(ccols)
 {    
     m_grid.resize( m_crows * m_ccols );
 }
 
-GridMat::GridMat(cv::Mat mat, unsigned int crows, unsigned int ccols, int type) : m_crows(crows), m_ccols(ccols), m_type(type)
+GridMat::GridMat(unsigned int crows, unsigned int ccols, unsigned int helems, unsigned int welems, int matType)
+: m_crows(crows), m_ccols(ccols)
+{
+    m_grid.resize( m_crows * m_ccols );
+    for (unsigned int row = 0; row < m_crows; row++) for (unsigned int col = 0; col < m_ccols; col++)
+    {
+        this->set(cv::Mat(helems, welems, matType), row, col);
+    }
+}
+
+GridMat::GridMat(cv::Mat mat, unsigned int crows, unsigned int ccols)
+: m_crows(crows), m_ccols(ccols)
 {
     m_rows = mat.rows;
     m_cols = mat.cols;
@@ -38,6 +49,29 @@ GridMat::GridMat(cv::Mat mat, unsigned int crows, unsigned int ccols, int type) 
     }
 }
 
+GridMat::GridMat(GridMat& other, cv::Mat indices)
+{
+    int nelems = cv::sum(indices).val[0];
+    
+    for (int i = 0; i < other.crows(); i++) for (int j = 0; j < other.crows(); j++)
+    {
+        cv::Mat& cell = other.get(i,j);
+        cv::Mat cellPartition (nelems, cell.cols, cell.type());
+        
+        int n = 0;
+        for (int d = 0; d < cell.cols; d++)
+        {
+            bool include = (indices.rows > 1) ? indices.at<int>(d,0) : indices.at<int>(0,d);
+            if (include)
+            {
+                cell.row(d).copyTo(cellPartition.row(n++));
+            }
+        }
+        
+        set(cellPartition, i, j);
+    }
+}
+
 /*
  * TODO: Implement this alternative instead of the nasty init method
  */
@@ -55,11 +89,10 @@ GridMat::GridMat(cv::Mat mat, unsigned int crows, unsigned int ccols, int type) 
 //    }
 //}
 
-void GridMat::create(unsigned int crows, unsigned int ccols, int type)
+void GridMat::create(unsigned int crows, unsigned int ccols)
 {
     m_crows = crows;
     m_ccols = ccols;
-    m_type = type;
     m_grid.resize( m_crows * m_ccols );
 }
 
@@ -112,11 +145,6 @@ cv::Mat GridMat::cols()
     }
     
     return numcols;
-}
-
-int GridMat::type()
-{
-    return m_type;
 }
 
 cv::Mat GridMat::at(unsigned int i, unsigned int j) const

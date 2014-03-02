@@ -120,13 +120,6 @@ void cvpartition(cv::Mat classes, int k, int seed, cv::Mat& partitions)
     }
 }
 
-/**
- * Create a vector of labels representing the k folds of n elements (stratified)
- */
-void cvpartition(GridMat classes, int k, int seed, cv::Mat& partitions)
-{
-    cvpartition(, int k, int seed, cv::Mat& partitions)
-}
 
 /**
  * Mathematical function approximating a Gaussian function

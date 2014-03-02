@@ -18,7 +18,7 @@
 #include "ThermalParametrization.hpp"
 #include "DepthParametrization.hpp"
 
-#include "ModalityPredictor.h"
+#include "ModalityPrediction.h"
 
 #include "StatTools.h"
 
@@ -106,7 +106,7 @@ int main(int argc, const char* argv[])
     
 //    GridMat tLoglikelihoods;
     
-//    ModalityPredictor tPredictor;
+    ModalityPrediction<cv::EM> tPrediction;
 //    tPredictor.setModelSelection(kModelSelec, expand(nmixtures, nlikelicuts));
 //    tPredictor.setModelSelection(kTest);
 //    

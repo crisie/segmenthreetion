@@ -25,11 +25,13 @@ public:
     /*
      * Constructors
      */
-    GridMat(unsigned int hp = 0, unsigned int wp = 0, int type = 0);
-    GridMat(cv::Mat mat, unsigned int hp, unsigned int wp, int type = 0);
+    GridMat(unsigned int hp = 2, unsigned int wp = 2);
+    GridMat(unsigned int hp, unsigned int wp, unsigned int helems = 1, unsigned int welems = 1, int type = CV_32SC1);
+    GridMat(cv::Mat mat, unsigned int hp = 2, unsigned int wp = 2);
+    GridMat(GridMat& other, cv::Mat indices);
     //GridMat(GridMat& other);
 
-    void create(unsigned int crows, unsigned int ccols, int type = 0);
+    void create(unsigned int crows, unsigned int ccols);
     void copyTo(cv::Mat mat, unsigned int i, unsigned int j);
     
     // Get the grid cell matrix at (i,j)
@@ -41,8 +43,6 @@ public:
     cv::Mat cols();
     cv::Mat rows();
 
-    int type();
-    
     void hconcat(GridMat other);
     void vconcat(GridMat other);
     void hconcat(cv::Mat mat, unsigned int i, unsigned int j);
@@ -54,8 +54,6 @@ public:
     void show(const char* namedWindow);
 
     void release();
-    
-    enum { UNKNOWN = -1, OBJECT = 0, SUBJECT = 1 };
 
 private:
     /*
@@ -66,9 +64,6 @@ private:
     unsigned int    m_ccols; // Num of cell cols
     unsigned int    m_rows;
     unsigned int    m_cols;
-    
-    int             m_type; // 0: no type, 1: subject, 2: object
-    
     
     void init(GridMat & gridMat);
     bool isEmpty();
