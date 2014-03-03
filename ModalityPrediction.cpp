@@ -41,6 +41,34 @@ void ModalityPredictionBase<PredictorT>::setModelValidation(int k, int seed)
     m_seed = seed;
 }
 
+template<class PredictorT>
+vector<float> ModalityPredictionBase<PredictorT>::accuracy(GridMat predictions, cv::Mat actuals)
+{
+    vector<float> accuracies(4);
+    
+    int nobjects  = cv::sum(actuals == 0).val[0];
+    int nsubjects = cv::sum(actuals == 1).val[0];
+    
+    for (int i = 0; i < predictions.crows(); i++) for (int j = 0; j < predictions.ccols(); j++)
+    {
+        int objectHits  = 0;
+        int subjectHits = 0;
+        
+        for (int k = 0; k < actuals.rows; k++)
+        {
+            int actualVal = actuals.at<int>(k,0);
+            int predVal = predictions.get(i,j).at<int>(k,0);
+            
+            if (actualVal == 0 && predVal == 0) objectHits++;
+            else if (actualVal == 1 && predVal == 1) subjectHits++;
+        }
+        
+        accuracies[i * predictions.ccols() + j] = ( ((float)subjectHits)/nsubjects + ((float)objectHits)/nobjects ) / 2.0;
+    }
+    
+    return accuracies;
+}
+
 
 //
 // ModalityPrediction<PredictorT>
@@ -69,6 +97,12 @@ template<class PredictorT>
 void ModalityPrediction<PredictorT>::setModelValidation(int k, int seed)
 {
     ModalityPredictionBase<PredictorT>::setModelValidation(k, seed);
+}
+
+template<class PredictorT>
+vector<float> ModalityPrediction<PredictorT>::accuracy(GridMat predictions, cv::Mat actuals)
+{
+    return ModalityPredictionBase<PredictorT>:: accuracy(predictions, actuals);
 }
 
 //
@@ -150,6 +184,7 @@ void ModalityPrediction<cv::EM>::predict(GridMat& predictions, GridMat& loglikel
     }
 }
 
+
 void expand(vector<vector<double> > params, cv::Mat& expandedParams)
 {
     expandedParams.release();
@@ -174,6 +209,7 @@ void expand(vector<vector<double> > params, cv::Mat& expandedParams)
     }
 }
 
+
 void ModalityPrediction<cv::EM>::modelSelection(ModalityGridData data, vector<int> nmixtures, vector<int> loglikelihoods, int* nmixturesSelected, int* loglikelihoodSelected)
 {
     // Prepare parameters' combinations
@@ -189,6 +225,12 @@ void ModalityPrediction<cv::EM>::modelSelection(ModalityGridData data, vector<in
     
     cv::Mat partitions;
     cvpartition(m_data.getTags(), m_modelSelecK, m_seed, partitions);
+    
+//    const int dims = 3;
+//    int size[] = {m_data.hp() * m_data.wp(), expandedParams.rows, m_modelSelecK};
+//    cv::SparseMat results (dims, size, cv::DataType<float>::type);
+    
+    GridMat 
     
     vector<GridPredictor<cv::EM> > predictors;
     for (int i = 0; i < m_modelSelecK; i++)
@@ -208,8 +250,15 @@ void ModalityPrediction<cv::EM>::modelSelection(ModalityGridData data, vector<in
             
             GridMat predictionsVal, loglikelihoodsVal;
             predictor.predict(descriptorsVal, predictionsVal, loglikelihoodsVal);
+            
+            results.ref<float>(m,i) = accuracy(dataVal.getTags(), predictionsVal);
         }
     }
+}
+
+vector<float> ModalityPrediction<cv::EM>::accuracy(GridMat predictions, cv::Mat actuals)
+{
+    return ModalityPredictionBase<cv::EM>::accuracy(predictions, actuals);
 }
 
 

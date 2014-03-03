@@ -33,7 +33,7 @@ public:
     void setModelSelection(int k, bool best);
     void setModelValidation(int k, int seed);
     
-    void getFold(ModalityGridData data, cv::Mat partitions, int idx, int test, ModalityGridData& dataPartition);
+    vector<float> accuracy(GridMat predictions, cv::Mat actuals);
     
 protected:
     ModalityGridData m_data;
@@ -56,6 +56,8 @@ class ModalityPrediction : public ModalityPredictionBase<Prediction>
     
     void setModelSelection(int k = 3, bool best = 0);
     void setModelValidation(int k = 10, int seed = 74);
+    
+    vector<float> accuracy(GridMat predictions, cv::Mat actuals);
 };
 
 
@@ -78,6 +80,8 @@ public:
     
     void modelSelection(ModalityGridData data, vector<int> nmixtures, vector<int> loglikelihoods, int* nmixturesSelected, int* loglikelihoodSelected);
     void predict(GridMat& predictions, GridMat& loglikelihoods);
+    
+    vector<float> accuracy(GridMat predictions, cv::Mat actuals);
     
 private:
     vector<int> m_nmixtures;
