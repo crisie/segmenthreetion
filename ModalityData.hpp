@@ -27,6 +27,31 @@ public:
     
     // Getters
     
+    cv::Mat getFrame(int k)
+    {
+        return m_Frames[k];
+    }
+    
+    cv::Mat getMask(int k)
+    {
+        return m_Masks[k];
+    }
+    
+    cv::Mat getMask(int k, unsigned char subjectId)
+    {
+        return (m_Masks[k] == (m_MasksOffset + subjectId));
+    }
+    
+    vector<cv::Rect> getBoundingRectsInFrame(int k)
+    {
+        return m_BoundingRects[k];
+    }
+    
+    vector<int> getTagsInFrame(int k)
+    {
+        return m_Tags[k];
+    }
+    
     vector<cv::Mat>& getFrames()
     {
         return m_Frames;

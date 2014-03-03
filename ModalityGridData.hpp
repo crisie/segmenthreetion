@@ -64,6 +64,21 @@ public:
     
     // Getters
     
+    GridMat getGridFrame(int k)
+    {
+        return m_GFrames[k];
+    }
+    
+    GridMat getGridMask(int k)
+    {
+        return m_GMasks[k];
+    }
+    
+    int getTag(int k)
+    {
+        return (m_Tags.rows > 1) ? m_Tags.at<int>(k,0) : m_Tags.at<int>(0,k);
+    }
+    
     vector<GridMat>& getGridFrames()
     {
         return m_GFrames;

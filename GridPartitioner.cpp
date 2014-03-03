@@ -23,19 +23,6 @@ GridPartitioner::GridPartitioner(unsigned int hp, unsigned int wp)
 }
 
 
-GridPartitioner::GridPartitioner(unsigned int hp, unsigned int wp, ModalityData md)
-: m_hp(hp), m_wp(wp), m_md(md)
-{
-    
-}
-
-
-void GridPartitioner::setModalityData(ModalityData md)
-{
-    m_md = md;
-}
-
-
 void GridPartitioner::setGridPartitions(unsigned int hp, unsigned int wp)
 {
     m_hp = hp;
@@ -43,16 +30,9 @@ void GridPartitioner::setGridPartitions(unsigned int hp, unsigned int wp)
 }
 
 
-void GridPartitioner::grid(ModalityGridData& mgd)
+void GridPartitioner::grid(ModalityData& md, ModalityGridData& mgd)
 {
-    grid(m_md, mgd);
-}
-
-
-void GridPartitioner::grid(ModalityData md, ModalityGridData& mgd)
-{
-    m_md = md;
-    if (!m_md.isFilled())
+    if (!md.isFilled())
         return; // do nothing
     
     vector<GridMat> gframes;
@@ -60,32 +40,38 @@ void GridPartitioner::grid(ModalityData md, ModalityGridData& mgd)
     cv::Mat tags;
     
     // Grid frames and masks
-    grid(md.getFrames(), md.getBoundingRects(), m_hp, m_wp, gframes);
-    grid(md.getMasks(), md.getBoundingRects(), md.getTags(), m_hp, m_wp, gmasks, tags);
+    grid(md, gframes);
+    grid(md, gmasks, tags);
     //visualizeGridmats(gframes_train); // DEBUG
     //visualizeGridmats(gmasks_train); // DEBUG
+    
+    mgd.setGridFrames(gframes);
+    mgd.setGridMasks(gmasks);
+    mgd.setTags(tags);
 }
 
 
 /*
  * Trim subimages, defined by rects (bounding boxes), from image frames
  */
-void GridPartitioner::grid(vector<cv::Mat>& images, vector< vector<cv::Rect> > rects, unsigned int crows, unsigned int ccols, vector<GridMat>& grids)
+void GridPartitioner::grid(ModalityData& md, vector<GridMat>& grids)
 {
     //namedWindow("grided subject");
     // Seek in each frame ..
-    for (unsigned int f = 0; f < rects.size(); f++)
+    for (unsigned int f = 0; f < md.getFrames().size(); f++)
     {
+        vector<cv::Rect> rects = md.getBoundingRectsInFrame(f);
         // .. all the people appearing
-        for (unsigned int r = 0; r < rects[f].size(); r++)
+        for (unsigned int r = 0; r < rects.size(); r++)
         {
-            if (rects[f][r].height >= m_hp && rects[f][r].width >= m_wp)
+            if (rects[r].height >= m_hp && rects[r].width >= m_wp)
             {
-                cv::Mat subject (images[f], rects[f][r]); // Get a roi in frame defined by the rectangle.
-                cv::Mat maskedSubject = (subject == (m_md.getMasksOffset() + r));
+                cv::Mat subject (md.getFrame(f), rects[r]); // Get a roi in frame defined by the rectangle.
+                cv::Mat maskedSubject;
+                subject.copyTo(maskedSubject, md.getMask(f,r));
                 subject.release();
                 
-                GridMat g (maskedSubject, crows, ccols);
+                GridMat g (maskedSubject, m_hp, m_wp);
                 grids.push_back( g );
             }
         }
@@ -96,26 +82,29 @@ void GridPartitioner::grid(vector<cv::Mat>& images, vector< vector<cv::Rect> > r
 /*
  * Trim subimages, defined by rects (bounding boxes), from image frames
  */
-void GridPartitioner::grid(vector<cv::Mat>& images, vector< vector<cv::Rect> > rects, vector< vector<int> > rtags, unsigned int crows, unsigned int ccols, vector<GridMat>& grids, cv::Mat& tags)
+void GridPartitioner::grid(ModalityData& md, vector<GridMat>& grids, cv::Mat& tags)
 {
     vector<int> tagsAux;
     
     // Seek in each frame ..
-    for (unsigned int f = 0; f < rects.size(); f++)
+    for (unsigned int f = 0; f < md.getFrames().size(); f++)
     {
+        vector<cv::Rect> rects = md.getBoundingRectsInFrame(f);
+        vector<int> tags = md.getTagsInFrame(f);
         // .. all the people appearing
-        for (unsigned int r = 0; r < rects[f].size(); r++)
+        for (unsigned int r = 0; r < rects.size(); r++)
         {
-            if (rects[f][r].height >= m_hp && rects[f][r].width >= m_wp)
+            if (rects[r].height >= m_hp && rects[r].width >= m_wp)
             {
-                cv::Mat subject (images[f], rects[f][r]); // Get a roi in frame defined by the rectangle.
-                cv::Mat maskedSubject = (subject == (m_md.getMasksOffset() + r));
+                cv::Mat subject (md.getFrame(f), rects[r]); // Get a roi in frame defined by the rectangle.
+                cv::Mat maskedSubject;
+                subject.copyTo(maskedSubject, md.getMask(f,r));
                 subject.release();
                 
-                GridMat g (maskedSubject, crows, ccols);
+                GridMat g (maskedSubject, m_hp, m_wp);
                 grids.push_back( g );
                 
-                tagsAux.push_back(rtags[f][r]);
+                tagsAux.push_back(tags[r]);
             }
         }
     }

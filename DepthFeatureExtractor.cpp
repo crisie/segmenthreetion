@@ -46,8 +46,8 @@ void DepthFeatureExtractor::describe(ModalityGridData data, GridMat& descriptors
     
     for (int k = 0; k < data.getGridFrames().size(); k++)
     {
-        GridMat & grid = data.getGridFrames()[k];
-        GridMat & gmask = data.getGridMasks()[k];
+        GridMat grid = data.getGridFrame(k);
+        GridMat gmask = data.getGridMask(k);
         
         for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
         {

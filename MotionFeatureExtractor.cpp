@@ -33,8 +33,8 @@ void MotionFeatureExtractor::describe(ModalityGridData data, GridMat& descriptor
 	{
 		cout << "k : " << k <<  endl;
         
-        GridMat & grid = data.getGridFrames()[k];
-        GridMat & gmask = data.getGridMasks()[k];
+        GridMat grid = data.getGridFrame(k);
+        GridMat gmask = data.getGridMask(k);
         
         for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
         {
