@@ -230,7 +230,7 @@ void ModalityPrediction<cv::EM>::modelSelection(ModalityGridData data, vector<in
 //    int size[] = {m_data.hp() * m_data.wp(), expandedParams.rows, m_modelSelecK};
 //    cv::SparseMat results (dims, size, cv::DataType<float>::type);
     
-    GridMat 
+    // GridMat ...
     
     vector<GridPredictor<cv::EM> > predictors;
     for (int i = 0; i < m_modelSelecK; i++)
@@ -251,7 +251,7 @@ void ModalityPrediction<cv::EM>::modelSelection(ModalityGridData data, vector<in
             GridMat predictionsVal, loglikelihoodsVal;
             predictor.predict(descriptorsVal, predictionsVal, loglikelihoodsVal);
             
-            results.ref<float>(m,i) = accuracy(dataVal.getTags(), predictionsVal);
+            //results.ref<float>(m,i) = accuracy(dataVal.getTags(), predictionsVal);
         }
     }
 }
