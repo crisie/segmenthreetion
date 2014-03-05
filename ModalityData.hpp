@@ -23,7 +23,7 @@ class ModalityData
 public:
     ModalityData() {}
     
-    ModalityData(vector<cv::Mat> frames, vector<cv::Mat> masks, vector< vector<cv::Rect> > rects, vector< vector<int> > tags) : m_Frames(frames), m_Masks(masks), m_BoundingRects(rects), m_Tags(tags) {}
+    ModalityData(vector<cv::Mat> frames, vector<cv::Mat> masks, vector<cv::Mat> predictedMasks, vector< vector<cv::Rect> > rects, vector< vector<int> > tags) : m_Frames(frames), m_Masks(masks), m_PredictedMasks(predictedMasks), m_BoundingRects(rects), m_Tags(tags) {}
     
     // Getters
     
@@ -35,6 +35,11 @@ public:
     cv::Mat getMask(int k)
     {
         return m_Masks[k];
+    }
+    
+    cv::Mat getPredictedMask(int k)
+    {
+        return m_PredictedMasks[k];
     }
     
     cv::Mat getMask(int k, unsigned char subjectId)
@@ -62,6 +67,11 @@ public:
         return m_Masks;
     }
     
+    vector<cv::Mat>& getPredictedMasks()
+    {
+        return m_PredictedMasks;
+    }
+    
     vector< vector<cv::Rect> >& getBoundingRects()
     {
         return m_BoundingRects;
@@ -79,7 +89,7 @@ public:
     
     bool isFilled()
     {
-        return m_Frames.size() > 0 && m_Masks.size() > 0 && m_BoundingRects.size() > 0 && m_Tags.size() > 0;
+        return m_Frames.size() > 0 && m_Masks.size() > 0 && m_PredictedMasks.size() > 0 && m_BoundingRects.size() > 0 && m_Tags.size() > 0;
     }
     
     // Setters
@@ -92,6 +102,11 @@ public:
     void setMasks(vector<cv::Mat> masks)
     {
         m_Masks = masks;
+    }
+    
+    void setPredictedMasks(vector<cv::Mat> masks)
+    {
+        m_PredictedMasks = masks;
     }
     
     void setBoundingRects(vector< vector<cv::Rect> > rects)
@@ -112,7 +127,8 @@ public:
 private:
     // Load data from disk: frames, masks, and rectangular bounding boxes
     vector<cv::Mat> m_Frames;
-    vector<cv::Mat> m_Masks;
+    vector<cv::Mat> m_Masks; // groundtruth masks
+    vector<cv::Mat> m_PredictedMasks; // bs predicted masks
     vector< vector<cv::Rect> > m_BoundingRects;
     vector< vector<int> > m_Tags;
     
