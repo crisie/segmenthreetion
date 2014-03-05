@@ -13,14 +13,14 @@
 // GridPredictorBase
 //
 
-template<class PredictorT>
+template<typename PredictorT>
 GridPredictorBase<PredictorT>::GridPredictorBase()
 {
     
 }
 
-template<class PredictorT>
-void GridPredictorBase<PredictorT>::setData(GridMat data, cv::Mat categories)
+template<typename PredictorT>
+void GridPredictorBase<PredictorT>::setData(GridMat<float> data, cv::Mat categories)
 {
     m_data = data;
     m_categories = categories;
@@ -29,8 +29,8 @@ void GridPredictorBase<PredictorT>::setData(GridMat data, cv::Mat categories)
     m_predictors.resize(data.crows() * data.ccols());
 }
 
-template<class PredictorT>
-PredictorT& GridPredictorBase<PredictorT>::getPredictor(unsigned int i, unsigned int j)
+template<typename PredictorT>
+PredictorT& GridPredictorBase<PredictorT>::at(unsigned int i, unsigned int j)
 {
     return m_predictors[i * m_wp + j];
 }
@@ -40,21 +40,21 @@ PredictorT& GridPredictorBase<PredictorT>::getPredictor(unsigned int i, unsigned
 // GridPredictor<PredictorT>
 //
 
-template<class PredictorT>
+template<typename PredictorT>
 GridPredictor<PredictorT>::GridPredictor()
 : GridPredictorBase<PredictorT>()
 {
     
 }
 
-template<class PredictorT>
-void GridPredictor<PredictorT>::setData(GridMat data, cv::Mat categories)
+template<typename PredictorT>
+void GridPredictor<PredictorT>::setData(GridMat<float> data, cv::Mat categories)
 {
     GridPredictorBase<PredictorT>::setData(data, categories);
 }
 
-template<class PredictorT>
-PredictorT& GridPredictor<PredictorT>::getPredictor(unsigned int i, unsigned int j)
+template<typename PredictorT>
+PredictorT& GridPredictor<PredictorT>::at(unsigned int i, unsigned int j)
 {
     return GridPredictorBase<PredictorT>::getPredictor(i, j);
 }
@@ -70,19 +70,22 @@ GridPredictor<cv::EM>::GridPredictor()
     
 }
 
-void GridPredictor<cv::EM>::setData(GridMat data, cv::Mat categories)
+void GridPredictor<cv::EM>::setData(GridMat<float> data, cv::Mat categories)
 {
     GridPredictorBase<cv::EM>::setData(data, categories);
-    
+}
+
+void GridPredictor<cv::EM>::setParameters(GridMat<int> parameters)
+{
     for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
     {
-        getPredictor(i,j).set("nclusters", m_nmixtures);
+        this->at(i,j).set("nclusters", parameters.at(i,j,0,0));
     }
 }
 
 cv::EM& GridPredictor<cv::EM>::getPredictor(unsigned int i, unsigned int j)
 {
-    return GridPredictorBase<cv::EM>::getPredictor(i, j);
+    return GridPredictorBase<cv::EM>::at(i, j);
 }
 
 void GridPredictor<cv::EM>::setNumOfMixtures(int m)
@@ -99,22 +102,22 @@ void GridPredictor<cv::EM>::train()
 {
     for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
     {
-        getPredictor(i,j).train(m_data.get(i,j));
+        this->at(i,j).train(m_data.get(i,j));
     }
 }
 
-void GridPredictor<cv::EM>::predict(GridMat data, GridMat& predictions, GridMat& loglikelihoods)
+void GridPredictor<cv::EM>::predict(GridMat<float> data, GridMat<int>& predictions, GridMat<int>& loglikelihoods)
 {
     for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
     {
-        cv::Mat& cell = data.get(i,j);
+        cv::Mat& cell = data.at(i,j);
         cv::Mat cellPredictions (cell.rows, 1, cv::DataType<int>::type);
         cv::Mat cellLoglikelihoods (cell.rows, 1, cv::DataType<int>::type);
         
         for (int d = 0; d < cell.rows; d++)
         {
             cv::Vec2d res;
-            res = getPredictor(i,j).predict(cell.row(d));
+            res = this->at(i,j).predict(cell.row(d));
             
             cellPredictions.at<int>(d,0) = (res[0] > m_logthreshold);
             cellLoglikelihoods.at<int>(d,0) = res[0];
@@ -127,5 +130,5 @@ void GridPredictor<cv::EM>::predict(GridMat data, GridMat& predictions, GridMat&
 
 
 // Explicit template instanciation (to avoid linking errors)
-template class GridPredictorBase<cv::EM>;
-template class GridPredictor<cv::EM>;
+template typename GridPredictorBase<cv::EM>;
+template typename GridPredictor<cv::EM>;
