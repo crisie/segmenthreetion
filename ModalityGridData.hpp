@@ -25,33 +25,35 @@ class ModalityGridData
 public:
     ModalityGridData() {}
     
-    ModalityGridData(vector<GridMat> gframes, vector<GridMat> gmasks, cv::Mat tags)
-            : m_GFrames(gframes), m_GMasks(gmasks), m_Tags(tags) {}
+    ModalityGridData(vector<GridMat> gframes, vector<GridMat> gmasks, vector<GridMat> gpredmasks, cv::Mat tags)
+            : m_GFrames(gframes), m_GMasks(gmasks), m_GPredictedMasks(gpredmasks), m_Tags(tags) {}
     
     ModalityGridData(ModalityGridData& other, cv::Mat indices)
     {
         vector<GridMat> gframes;
         vector<GridMat> gmasks;
+        vector<GridMat> gpredmasks;
         cv::Mat tags (cv::sum(indices).val[0], other.getTags().cols, other.getTags().type());
         
         int ntags = (other.getTags().rows > 1) ? other.getTags().rows : other.getTags().cols;        
         for (int i = 0; i < ntags; i++)
         {
-            int include = (indices.rows > 1) ? indices.at<int>(i,0) : indices.at<int>(0,i);
-            if (include)
-            {
-                gframes.push_back(other.getGridFrames()[i]);
-                gmasks.push_back(other.getGridMasks()[i]);
-                
-                if (other.getTags().rows > 1)
-                    tags.at<int>(i,0) = other.getTags().at<int>(i,0);
-                else
-                    tags.at<int>(0,i) = other.getTags().at<int>(0,i);
-            }
+            int index = (indices.rows > 1) ? indices.at<int>(i,0) : indices.at<int>(0,i);
+
+            gframes.push_back(other.getGridFrame(index));
+            gmasks.push_back(other.getGridMask(index));
+            gpredmasks.push_back(other.getGridPredictedMask(index));
+            
+            if (other.getTags().rows > 1)
+                tags.at<int>(i,0) = other.getTag(index);
+            else
+                tags.at<int>(0,i) = other.getTag(index);
+            
         }
         
         setGridFrames(gframes);
         setGridMasks(gmasks);
+        setGridPredictedMasks(gpredmasks);
         setTags(tags);
     }
     
@@ -59,6 +61,7 @@ public:
     {
         m_GFrames = other.m_GFrames;
         m_GMasks = other.m_GMasks;
+        m_GPredictedMasks = other.m_GPredictedMasks;
         m_Tags = other.m_Tags;
     }
     
@@ -74,6 +77,11 @@ public:
         return m_GMasks[k];
     }
     
+    GridMat getGridPredictedMask(int k)
+    {
+        return m_GPredictedMasks[k];
+    }
+    
     int getTag(int k)
     {
         return (m_Tags.rows > 1) ? m_Tags.at<int>(k,0) : m_Tags.at<int>(0,k);
@@ -87,6 +95,11 @@ public:
     vector<GridMat>& getGridMasks()
     {
         return m_GMasks;
+    }
+    
+    vector<GridMat>& getGridPredictedMasks()
+    {
+        return m_GPredictedMasks;
     }
     
     cv::Mat& getTags()
@@ -106,7 +119,7 @@ public:
     
     bool isFilled()
     {
-        return m_GFrames.size() > 0 && m_GMasks.size() > 0 && (m_Tags.rows > 1 || m_Tags.cols > 1);
+        return m_GFrames.size() > 0 && m_GMasks.size() > 0 && m_GPredictedMasks.size() > 0 && (m_Tags.rows > 1 || m_Tags.cols > 1);
     }
     
     // Setters
@@ -121,6 +134,11 @@ public:
         m_GMasks = gmasks;
     }
     
+    void setGridPredictedMasks(vector<GridMat> gmasks)
+    {
+        m_GPredictedMasks = gmasks;
+    }
+    
     void setTags(cv::Mat tags)
     {
         m_Tags = tags;
@@ -131,6 +149,9 @@ private:
     
     vector<GridMat> m_GFrames;
     vector<GridMat> m_GMasks;
+    vector<GridMat> m_GPredictedMasks;
+    vector<unsigned int> m_GFrameIDs; // not used yet
+    vector<cv::Point2d> m_GridsPositions; // not used yet
     cv::Mat m_Tags;
 };
 

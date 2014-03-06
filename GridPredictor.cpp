@@ -20,7 +20,7 @@ GridPredictorBase<PredictorT>::GridPredictorBase()
 }
 
 template<typename PredictorT>
-void GridPredictorBase<PredictorT>::setData(GridMat<float> data, cv::Mat categories)
+void GridPredictorBase<PredictorT>::setData(GridMat data, cv::Mat categories)
 {
     m_data = data;
     m_categories = categories;
@@ -48,15 +48,9 @@ GridPredictor<PredictorT>::GridPredictor()
 }
 
 template<typename PredictorT>
-void GridPredictor<PredictorT>::setData(GridMat<float> data, cv::Mat categories)
+void GridPredictor<PredictorT>::setData(GridMat data, cv::Mat categories)
 {
     GridPredictorBase<PredictorT>::setData(data, categories);
-}
-
-template<typename PredictorT>
-PredictorT& GridPredictor<PredictorT>::at(unsigned int i, unsigned int j)
-{
-    return GridPredictorBase<PredictorT>::getPredictor(i, j);
 }
 
 
@@ -70,32 +64,38 @@ GridPredictor<cv::EM>::GridPredictor()
     
 }
 
-void GridPredictor<cv::EM>::setData(GridMat<float> data, cv::Mat categories)
+void GridPredictor<cv::EM>::setData(GridMat data, cv::Mat categories)
 {
     GridPredictorBase<cv::EM>::setData(data, categories);
 }
 
-void GridPredictor<cv::EM>::setParameters(GridMat<int> parameters)
+void GridPredictor<cv::EM>::setParameters(GridMat parameters)
 {
+    m_logthreshold.release();
+    m_logthreshold.create(m_hp, m_wp, cv::DataType<int>::type);
     for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
     {
-        this->at(i,j).set("nclusters", parameters.at(i,j,0,0));
+        this->at(i,j).set("nclusters", parameters.at<int>(i,j,0,0));
+        m_logthreshold.at<int>(i,j) = parameters.at<int>(i,j,0,1);
     }
 }
 
-cv::EM& GridPredictor<cv::EM>::getPredictor(unsigned int i, unsigned int j)
+void GridPredictor<cv::EM>::setNumOfMixtures(cv::Mat nmixtures)
 {
-    return GridPredictorBase<cv::EM>::at(i, j);
+    for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
+    {
+        this->at(i,j).set("nclusters", nmixtures.at<int>(i,j));
+    }
 }
 
-void GridPredictor<cv::EM>::setNumOfMixtures(int m)
+void GridPredictor<cv::EM>::setLoglikelihoodThreshold(cv::Mat loglikes)
 {
-    m_nmixtures = m;
-}
-
-void GridPredictor<cv::EM>::setLoglikelihoodThreshold(int t)
-{
-    m_logthreshold = t;
+    m_logthreshold.release();
+    m_logthreshold.create(m_hp, m_wp, cv::DataType<int>::type);
+    for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
+    {
+        m_logthreshold.at<int>(i,j) = loglikes.at<int>(i,j);
+    }
 }
 
 void GridPredictor<cv::EM>::train()
@@ -106,7 +106,7 @@ void GridPredictor<cv::EM>::train()
     }
 }
 
-void GridPredictor<cv::EM>::predict(GridMat<float> data, GridMat<int>& predictions, GridMat<int>& loglikelihoods)
+void GridPredictor<cv::EM>::predict(GridMat data, GridMat& predictions, GridMat& loglikelihoods)
 {
     for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
     {
@@ -119,7 +119,7 @@ void GridPredictor<cv::EM>::predict(GridMat<float> data, GridMat<int>& predictio
             cv::Vec2d res;
             res = this->at(i,j).predict(cell.row(d));
             
-            cellPredictions.at<int>(d,0) = (res[0] > m_logthreshold);
+            cellPredictions.at<int>(d,0) = res[0] > m_logthreshold.at<int>(i,j);
             cellLoglikelihoods.at<int>(d,0) = res[0];
         }
 

@@ -47,8 +47,8 @@ void ThermalFeatureExtractor::describe(ModalityGridData data, GridMat& descripto
         
         for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
         {
-            cv::Mat & cell = grid.get(i,j);
-            cv::Mat & cellMask = gmask.get(i,j);
+            cv::Mat & cell = grid.at(i,j);
+            cv::Mat & cellMask = gmask.at(i,j);
             
             // Intensities descriptor
             cv::Mat tIntensitiesHist;

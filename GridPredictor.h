@@ -28,12 +28,13 @@ class GridPredictorBase
 public:
     GridPredictorBase();
     
-    void setData(GridMat<float> data, cv::Mat categories);
+    void setData(GridMat data, cv::Mat categories);
+    void setParameters(GridMat parameters);
     
     PredictorT& at(unsigned int i, unsigned int j);
 
 protected:
-    GridMat<float> m_data;
+    GridMat m_data;
     cv::Mat m_categories;
     
     unsigned int m_hp, m_wp;
@@ -47,7 +48,8 @@ class GridPredictor : public GridPredictorBase<PredictorT>
 {
     GridPredictor();
     
-    void setData(GridMat<float> data, cv::Mat categories);
+    void setData(GridMat data, cv::Mat categories);
+     void setParameters(GridMat parameters);
     
     PredictorT& t(unsigned int i, unsigned int j);
 };
@@ -59,20 +61,18 @@ class GridPredictor<cv::EM> : public GridPredictorBase<cv::EM>
 public:
     GridPredictor();
     
-    void setData(GridMat<float> data, cv::Mat categories);
-    void setParameters(GridMat<int> parameters);
-    void setNumOfMixtures(int m);
-    void setLoglikelihoodThreshold(int t);
+    void setData(GridMat data, cv::Mat categories);
+    void setParameters(GridMat parameters);
+    void setNumOfMixtures(cv::Mat nmixtures);
+    void setLoglikelihoodThreshold(cv::Mat loglikes);
     
     cv::EM& at(unsigned int i, unsigned int j);
     
     void train();
-    void predict(GridMat<float> data, GridMat<int>& predictions, GridMat<int>& loglikelihoods);
+    void predict(GridMat data, GridMat& predictions, GridMat& loglikelihoods);
     
 private:
-    int m_nmixtures;
-    int m_logthreshold;
-    GridMat<int> m_Parameters;
+    cv::Mat m_logthreshold;
 };
 
 

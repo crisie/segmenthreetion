@@ -12,25 +12,25 @@
 #include <iostream>
 #include <string>
 
-template<typename T>
-GridMat<T>::GridMat(unsigned int crows, unsigned int ccols) : m_crows(crows), m_ccols(ccols)
+
+GridMat::GridMat(unsigned int crows, unsigned int ccols) : m_crows(crows), m_ccols(ccols)
 {    
     m_grid.resize( m_crows * m_ccols );
 }
 
-template<typename T>
-GridMat<T>::GridMat(unsigned int crows, unsigned int ccols, unsigned int helems, unsigned int welems)
+
+GridMat::GridMat(unsigned int crows, unsigned int ccols, unsigned int helems, unsigned int welems, int type)
 : m_crows(crows), m_ccols(ccols)
 {
     m_grid.resize( m_crows * m_ccols );
     for (unsigned int row = 0; row < m_crows; row++) for (unsigned int col = 0; col < m_ccols; col++)
     {
-        this->set(cv::Mat_<T>(helems, welems), row, col);
+        this->set(cv::Mat(helems, welems, type), row, col);
     }
 }
 
-template<typename T>
-GridMat<T>::GridMat(cv::Mat_<T> mat, unsigned int crows, unsigned int ccols)
+
+GridMat::GridMat(cv::Mat mat, unsigned int crows, unsigned int ccols)
 : m_crows(crows), m_ccols(ccols)
 {
     m_rows = mat.rows;
@@ -46,33 +46,132 @@ GridMat<T>::GridMat(cv::Mat_<T> mat, unsigned int crows, unsigned int ccols)
         cellh = ((j+1) * b - 1) - (j * b);
         cellw = ((i+1) * a - 1) - (i * a);
         cv::Rect cell = cv::Rect((j * b), (i * a), cellh, cellw);
-        cv::Mat_<T> roi(mat,cell);
+        cv::Mat roi(mat,cell);
         //copyMakeBorder(roi, roi, margin, margin, margin, margin, BORDER_CONSTANT, 0);
         this->set(roi,i,j);
     }
 }
 
-template<typename T>
-GridMat<T>::GridMat(GridMat& other, cv::Mat_<unsigned int> indices)
+
+GridMat::GridMat(GridMat& other, cv::Mat indices, int dim, bool logical)
 {
+    setIndexedCellElements(other, indices, dim, logical);
+}
+
+GridMat GridMat::getIndexedCellElements(cv::Mat indices, int dim, bool logical)
+{
+    if (logical)
+        return getIndexedCellElementsLogically(indices, dim);
+    else
+        return getIndexedCellElementsPositionally(indices, dim);
+}
+
+void GridMat::setIndexedCellElements(GridMat& grid, cv::Mat indices, int dim, bool logical)
+{
+    if (logical)
+        setIndexedCellElementsLogically(grid, indices, dim);
+    else
+        setIndexedCellElementsPositionally(grid, indices, dim);
+}
+
+GridMat GridMat::getIndexedCellElementsLogically(cv::Mat indices, int dim)
+{
+    GridMat indexed (crows(), ccols());
     int nelems = cv::sum(indices).val[0];
     
-    for (int i = 0; i < other.crows(); i++) for (int j = 0; j < other.crows(); j++)
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < crows(); j++)
     {
-        cv::Mat& cell = other.get(i,j);
-        cv::Mat cellPartition (nelems, cell.cols, cell.type());
+        cv::Mat cellPartition (dim == 0 ? nelems : this->at(i,j).rows,
+                               dim == 0 ? this->at(i,j).cols : nelems,
+                               this->at(i,j).type());
         
-        int n = 0;
-        for (int d = 0; d < cell.cols; d++)
+        unsigned int n = 0;
+        if (dim == 0)
         {
-            bool include = (indices.rows > 1) ? indices.at<int>(d,0) : indices.at<int>(0,d);
-            if (include)
+            for (int r = 0; r < this->at(i,j).rows; r++)
             {
-                cell.row(d).copyTo(cellPartition.row(n++));
+                bool included = (indices.rows > 1) ? indices.at<int>(r,0) : indices.at<int>(0,r);
+                if (included) this->at(i,j).row(r).copyTo(cellPartition.row(n++));
+            }
+        }
+        else
+        {
+            for (int c = 0; c < this->at(i,j).cols; c++)
+            {
+                bool included = (indices.rows > 1) ? indices.at<int>(c,0) : indices.at<int>(0,c);
+                if (included) this->at(i,j).col(c).copyTo(cellPartition.col(n++));
             }
         }
         
-        set(cellPartition, i, j);
+        indexed.set(cellPartition, i, j);
+    }
+}
+
+void GridMat::setIndexedCellElementsLogically(GridMat grid, cv::Mat indices, int dim)
+{
+    int nelems = (indices.rows > 1) ? indices.rows : indices.cols;
+    
+    for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.crows(); j++)
+    {
+        unsigned int n = 0;
+        for (int k = 0; k < nelems; k++)
+        {
+            bool included = (indices.rows > 1) ? indices.at<int>(k,0) : indices.at<int>(0,k);
+            if (included)
+            {
+                if (dim == 0)
+                    grid.at(i,j).row(n++).copyTo(this->at(i,j).row(k));
+                else
+                    grid.at(i,j).col(n++).copyTo(this->at(i,j).col(k));
+            }
+        }
+        
+    }
+}
+
+GridMat GridMat::getIndexedCellElementsPositionally(cv::Mat indices, int dim)
+{
+    GridMat indexed (crows(), ccols());
+    
+    int nelems = (indices.rows > 1) ? indices.rows : indices.cols;
+    
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < crows(); j++)
+    {
+        cv::Mat cellPartition (dim == 0 ? nelems : this->at(i,j).rows,
+                               dim == 0 ? this->at(i,j).cols : nelems,
+                               this->at(i,j).type());
+        
+        for (int k = 0; k < nelems; k++)
+        {
+            unsigned int idx = (indices.rows > 1) ? indices.at<int>(k,0) : indices.at<int>(0,k);
+            if (dim == 0) // row indexing
+                this->at(i,j).row(idx).copyTo(cellPartition.row(k));
+            else // column indexing
+                this->at(i,j).col(idx).copyTo(cellPartition.col(k));
+        }
+        
+        indexed.set(cellPartition, i, j);
+    }
+    
+    return indexed;
+}
+
+void GridMat::setIndexedCellElementsPositionally(GridMat grid, cv::Mat indices, int dim)
+{
+    GridMat indexed (crows(), ccols());
+    
+    int nelems = (indices.rows > 1) ? indices.rows : indices.cols;
+    
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < crows(); j++)
+    {
+        for (int k = 0; k < nelems; k++)
+        {
+            unsigned int idx = (indices.rows > 1) ? indices.at<int>(r,0) : indices.at<int>(0,r);
+            if (dim == 0) // row indexing
+                grid.at(i,j).row(k).copyTo(this->at(i,j).row(idx));
+            else // column indexing
+                grid.at(i,j).col(k).copyTo(this->at(i,j).col(idx));
+        }
     }
 }
 
@@ -93,8 +192,8 @@ GridMat<T>::GridMat(GridMat& other, cv::Mat_<unsigned int> indices)
 //    }
 //}
 
-template<typename T>
-void GridMat<T>::create(unsigned int crows, unsigned int ccols)
+
+void GridMat::create(unsigned int crows, unsigned int ccols)
 {
     m_crows = crows;
     m_ccols = ccols;
@@ -103,7 +202,7 @@ void GridMat<T>::create(unsigned int crows, unsigned int ccols)
 
 
 template<typename T>
-void GridMat<T>::create(unsigned int crows, unsigned int ccols, unsigned int helems, unsigned int welems)
+void GridMat::create(unsigned int crows, unsigned int ccols, unsigned int helems, unsigned int welems)
 {
     m_crows = crows;
     m_ccols = ccols;
@@ -115,8 +214,7 @@ void GridMat<T>::create(unsigned int crows, unsigned int ccols, unsigned int hel
 }
 
 
-template<typename T>
-void GridMat<T>::init(GridMat & other)
+void GridMat::init(GridMat & other)
 {
     this->m_crows = other.crows();
     this->m_ccols = other.ccols();
@@ -128,71 +226,90 @@ void GridMat<T>::init(GridMat & other)
     }
 }
 
-template<typename T>
-void GridMat<T>::copyTo(cv::Mat_<T> mat, unsigned int i, unsigned int j)
+
+void GridMat::copyTo(cv::Mat mat, unsigned int i, unsigned int j)
 {
     mat.copyTo(m_grid[i * ccols() + j]);
 }
 
-template<typename T>
-unsigned int GridMat<T>::crows() const
+
+unsigned int GridMat::crows() const
 {
 //    std::cout << m_crows << std::endl;
     return m_crows;
 }
 
-template<typename T>
-unsigned int GridMat<T>::ccols() const
+
+unsigned int GridMat::ccols() const
 {
 //    std::cout << m_ccols << std::endl;
     return m_ccols;
 }
 
-template<typename T>
-unsigned int GridMat<T>::rows(unsigned int i, unsigned int j)
+
+unsigned int GridMat::rows(unsigned int i, unsigned int j)
 {
     return m_grid[i * ccols() + j].rows;
 }
 
-template<typename T>
-unsigned int GridMat<T>::cols(unsigned int i, unsigned int j)
+
+unsigned int GridMat::cols(unsigned int i, unsigned int j)
 {
     return m_grid[i * ccols() + j].cols;
 }
 
-template<typename T>
-cv::Mat& GridMat<T>::at(unsigned int i, unsigned int j)
+
+cv::Mat& GridMat::at(unsigned int i, unsigned int j)
 {
     return m_grid[i * m_ccols + j];
 }
 
 template<typename T>
-T& GridMat<T>::at(unsigned int i, unsigned int j, unsigned int row, unsigned int col)
+T& GridMat::at(unsigned int i, unsigned int j, unsigned int row, unsigned int col)
 {
     return m_grid[i * m_ccols + j].template at<T>(row,col);
 }
 
-template<typename T>
-cv::Mat GridMat<T>::get(unsigned int i, unsigned int j)
+
+cv::Mat GridMat::get(unsigned int i, unsigned int j) const
 {
     return m_grid[i * m_ccols + j];
 }
 
-template<typename T>
-void GridMat<T>::set(cv::Mat cell, unsigned int i, unsigned int j)
+void GridMat::set(cv::Mat cell, unsigned int i, unsigned int j)
 {
     this->at(i,j).release();
     m_grid[i * m_ccols + j] = cell;
 }
 
-template<typename T>
-bool GridMat<T>::isEmpty()
+GridMat GridMat::vget(cv::Mat indices, bool logical)
+{
+    this->getIndexedCellElements(indices, 0, logical);
+}
+
+GridMat GridMat::hget(cv::Mat indices, bool logical)
+{
+    this->getIndexedCellElements(indices, 1, logical);
+}
+
+void GridMat::vset(GridMat grid, cv::Mat indices, bool logical)
+{
+    this->setIndexedCellElements(grid, indices, 0, logical);
+}
+
+void GridMat::hset(GridMat grid, cv::Mat indices)
+{
+    this->setIndexedCellElements(grid, indices, 1, logical);
+}
+
+
+bool GridMat::isEmpty()
 {
     return ccols() == 0 || crows() == 0;
 }
 
-template<typename T>
-void GridMat<T>::hconcat(GridMat<T>& other)
+
+void GridMat::hconcat(GridMat& other)
 {
     // Set rather than concatenate if empty
     if (this->isEmpty())
@@ -213,8 +330,8 @@ void GridMat<T>::hconcat(GridMat<T>& other)
     }
 }
 
-template<typename T>
-void GridMat<T>::vconcat(GridMat<T>& other)
+
+void GridMat::vconcat(GridMat& other)
 {
     // Set rather than concatenate if empty
     if (this->isEmpty())
@@ -235,8 +352,8 @@ void GridMat<T>::vconcat(GridMat<T>& other)
     }
 }
 
-template<typename T>
-void GridMat<T>::hconcat(cv::Mat mat, unsigned int i, unsigned int j)
+
+void GridMat::hconcat(cv::Mat mat, unsigned int i, unsigned int j)
 {
     if (this->at(i,j).rows == 0 && this->at(i,j).cols == 0)
         this->set(mat,i,j);
@@ -247,8 +364,8 @@ void GridMat<T>::hconcat(cv::Mat mat, unsigned int i, unsigned int j)
     }
 }
 
-template<typename T>
-void GridMat<T>::vconcat(cv::Mat mat, unsigned int i, unsigned int j)
+
+void GridMat::vconcat(cv::Mat mat, unsigned int i, unsigned int j)
 {
     if (this->at(i,j).rows == 0 && this->at(i,j).cols == 0)
         this->set(mat,i,j);
@@ -260,8 +377,8 @@ void GridMat<T>::vconcat(cv::Mat mat, unsigned int i, unsigned int j)
 }
 
 
-template<typename T>
-void GridMat<T>::mean(GridMat<T>& gmean, int dim)
+
+void GridMat::mean(GridMat& gmean, int dim)
 {
     for (unsigned int i = 0; i < m_crows; i++) for (unsigned int j = 0; j < m_ccols; j++)
     {
@@ -272,8 +389,8 @@ void GridMat<T>::mean(GridMat<T>& gmean, int dim)
 }
 
 
-template<typename T>
-void GridMat<T>::max(GridMat<T>& gmax, int dim)
+
+void GridMat::max(GridMat& gmax, int dim)
 {
     for (unsigned int i = 0; i < m_crows; i++) for (unsigned int j = 0; j < m_ccols; j++)
     {
@@ -284,8 +401,7 @@ void GridMat<T>::max(GridMat<T>& gmax, int dim)
 }
 
 
-template<typename T>
-void GridMat<T>::min(GridMat<T>& gmin, int dim)
+void GridMat::min(GridMat& gmin, int dim)
 {
     for (unsigned int i = 0; i < m_crows; i++) for (unsigned int j = 0; j < m_ccols; j++)
     {
@@ -296,8 +412,7 @@ void GridMat<T>::min(GridMat<T>& gmin, int dim)
 }
 
 
-template<typename T>
-void GridMat<T>::sum(GridMat<T>&gsum, int dim)
+void GridMat::sum(GridMat&gsum, int dim)
 {
     for (unsigned int i = 0; i < m_crows; i++) for (unsigned int j = 0; j < m_ccols; j++)
     {
@@ -309,9 +424,9 @@ void GridMat<T>::sum(GridMat<T>&gsum, int dim)
 
 
 template<typename T>
-void GridMat<T>::argmax(GridMat<T>& gargmax)
+void GridMat::argmax(GridMat& gargmax)
 {
-    gargmax.create(m_crows, m_ccols, 1, 1);
+    gargmax.create<T>(m_crows, m_ccols, 1, 1);
     for (unsigned int i = 0; i < m_crows; i++) for (unsigned int j = 0; j < m_ccols; j++)
     {
         cv::Mat& cell = this->at(i,j);
@@ -323,7 +438,7 @@ void GridMat<T>::argmax(GridMat<T>& gargmax)
         {
             for (int col = 0; col < cell.cols; col++)
             {
-                T value = this->at(i,j,row,col); // query value
+                T value = this->at<T>(i,j,row,col); // query value
                 if (value > max)
                 {
                     max = value;
@@ -333,16 +448,15 @@ void GridMat<T>::argmax(GridMat<T>& gargmax)
             }
         }
         
-        gargmax.at(i,j,0,0) = maxrow;
-        gargmax.at(i,j,0,1) = maxcol;
+        gargmax.at<T>(i,j,0,0) = maxrow;
+        gargmax.at<T>(i,j,0,1) = maxcol;
     }
 }
 
-
 template<typename T>
-void GridMat<T>::argmin(GridMat<T>& gargmin)
+void GridMat::argmin(GridMat& gargmin)
 {
-    gargmin.create(m_crows, m_ccols, 1, 1);
+    gargmin.create<T>(m_crows, m_ccols, 1, 1);
     for (unsigned int i = 0; i < m_crows; i++) for (unsigned int j = 0; j < m_ccols; j++)
     {
         cv::Mat& cell = this->at(i,j);
@@ -354,7 +468,7 @@ void GridMat<T>::argmin(GridMat<T>& gargmin)
         {
             for (int col = 0; col < cell.cols; col++)
             {
-                T value = this->at(i,j,row,col); // query value
+                T value = this->at<T>(i,j,row,col); // query value
                 if (value > min)
                 {
                     min = value;
@@ -364,14 +478,13 @@ void GridMat<T>::argmin(GridMat<T>& gargmin)
             }
         }
         
-        gargmin.at(i,j,0,0) = minrow;
-        gargmin.at(i,j,0,1) = mincol;
+        gargmin.at<T>(i,j,0,0) = minrow;
+        gargmin.at<T>(i,j,0,1) = mincol;
     }
 }
 
 
-template<typename T>
-void GridMat<T>::saveFS(const std::string & filename)
+void GridMat::saveFS(const std::string & filename)
 {
 	cv::FileStorage fs(filename, cv::FileStorage::WRITE);
 
@@ -391,8 +504,8 @@ void GridMat<T>::saveFS(const std::string & filename)
 	fs.release();
 }
 
-template<typename T>
-void GridMat<T>::release()
+
+void GridMat::release()
 {
     for (unsigned int i = 0; i < m_crows; i++) for (unsigned int j = 0; j < m_ccols; j++)
     {
@@ -400,17 +513,17 @@ void GridMat<T>::release()
     }
 }
 
-template<typename T>
-bool GridMat<T>::accessible(unsigned int i, unsigned int j) const
+
+bool GridMat::accessible(unsigned int i, unsigned int j) const
 {
     return (i * m_ccols + j) <= m_grid.size() - 1;
 }
 
-template<typename T>
-void GridMat<T>::show(const char* windowName)
+
+void GridMat::show(const char* windowName)
 {
     cv::namedWindow(windowName);
-    cv::Mat_<T> img (m_rows, m_cols);
+    cv::Mat img (m_rows, m_cols, this->at(0,0).type());
     
     std::cout << m_cols << " " << m_rows << std::endl;
     
@@ -422,7 +535,7 @@ void GridMat<T>::show(const char* windowName)
         for ( ; j < m_ccols; j++)
         {
             cv::Rect roi (x, y, this->at(i,j).cols, this->at(i,j).rows);
-            cv::Mat_<T> roiImg (img, roi);
+            cv::Mat roiImg (img, roi);
             this->at(i,j).copyTo(roiImg);
             
             rectangle(img, cv::Point(x,y), cv::Point(x + this->at(i,j).cols, y + this->at(i,j).rows), cv::Scalar(255,0,0));
@@ -435,12 +548,12 @@ void GridMat<T>::show(const char* windowName)
     cv::imshow(windowName, img);
 }
 
-template<typename T>
-std::ostream& operator<<(std::ostream& os, const GridMat<T>& gm)
+
+std::ostream& operator<<(std::ostream& os, const GridMat& gm)
 {
     for (int i = 0; i < gm.crows(); i++) for (int j = 0; j < gm.ccols(); j++)
     {
-        os << gm.at(i,j) << std::endl;
+        os << gm.get(i,j) << std::endl;
     }
     
     return os;

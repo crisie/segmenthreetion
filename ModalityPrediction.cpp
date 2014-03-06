@@ -42,9 +42,9 @@ void ModalityPredictionBase<PredictorT>::setModelValidation(int k, int seed)
 }
 
 template<class PredictorT>
-void ModalityPredictionBase<PredictorT>::accuracy(GridMat<int> predictions, cv::Mat actuals, GridMat<float>& accuracies)
+void ModalityPredictionBase<PredictorT>::accuracy(cv::Mat actuals, GridMat predictions, cv::Mat& accuracies)
 {
-    accuracies.create(predictions.crows(), predictions.ccols(), 1, 1);
+    accuracies.create(predictions.crows(), predictions.ccols(), cv::DataType<float>::type);
     
     int nobjects  = cv::sum(actuals == 0).val[0];
     int nsubjects = cv::sum(actuals == 1).val[0];
@@ -57,13 +57,13 @@ void ModalityPredictionBase<PredictorT>::accuracy(GridMat<int> predictions, cv::
         for (int k = 0; k < actuals.rows; k++)
         {
             int actualVal = actuals.at<int>(k,0);
-            int predVal = predictions.get(i,j).at<int>(k,0);
+            int predVal = predictions.at<int>(i,j,k,0);
             
             if (actualVal == 0 && predVal == 0) objectHits++;
             else if (actualVal == 1 && predVal == 1) subjectHits++;
         }
         
-        accuracies.at(i, j, 0, 0) = ( ((float)subjectHits)/nsubjects + ((float)objectHits)/nobjects ) / 2.0;
+        accuracies.at<float>(i,j) = ( ((float)subjectHits)/nsubjects + ((float)objectHits)/nobjects ) / 2.0;
     }
 }
 
@@ -98,9 +98,9 @@ void ModalityPrediction<PredictorT>::setModelValidation(int k, int seed)
 }
 
 template<class PredictorT>
-vector<float> ModalityPrediction<PredictorT>::accuracy(GridMat predictions, cv::Mat actuals)
+void ModalityPrediction<PredictorT>::accuracy(cv::Mat actuals, GridMat predictions, cv::Mat& accuracies)
 {
-    return ModalityPredictionBase<PredictorT>:: accuracy(predictions, actuals);
+    return ModalityPredictionBase<PredictorT>:: accuracy(actuals, predictions);
 }
 
 //
@@ -155,29 +155,32 @@ void ModalityPrediction<cv::EM>::predict(GridMat& predictions, GridMat& loglikel
     cv::Mat partitions;
     cvpartition(m_data.getTags(), m_testK, m_seed, partitions);
     
+    GridMat predictionsTe;
+    GridMat loglikelihoodsTe;
     vector<GridPredictor<cv::EM> > predictors;
+    
     for (int i = 0; i < m_testK; i++)
     {
-        ModalityGridData dataTr (m_data, partitions != i);
-        ModalityGridData dataTe (m_data, partitions == i);
-        GridMat descriptorsTr (m_descriptors, partitions != i);
-        GridMat descriptorsTe (m_descriptors, partitions == i);
+        ModalityGridData dataTrFold (m_data, partitions != i);
+        ModalityGridData dataTeFold (m_data, partitions == i);
+        GridMat descriptorsTrFold (m_descriptors, partitions != i);
+        GridMat descriptorsTeFold (m_descriptors, partitions == i);
         
-        GridMat<int> selectedParams;
-        modelSelection(dataTr, m_nmixtures, m_logthresholds, selectedParams);
+        GridMat selectedParams;
+        modelSelection(dataTrFold, descriptorsTrFold,
+                       m_nmixtures, m_logthresholds,
+                       selectedParams);
         
         GridPredictor<cv::EM> predictor;
-        predictor.setData(descriptorsTr, dataTr.getTags());
+        predictor.setData(descriptorsTrFold, dataTrFold.getTags());
         predictor.setParameters(selectedParams);
         predictor.train();
         
-        GridMat predictionsTe, loglikelihoodsTe;
-        predictor.predict(descriptorsTe, predictionsTe, loglikelihoodsTe);
+        GridMat predictionsTeFold, loglikelihoodsTeFold;
+        predictor.predict(descriptorsTeFold, predictionsTeFold, loglikelihoodsTeFold);
         
-        // TODO
-        // ... merge the results of the test folds ...
-        // setResults(predictionsTe, partitions, i, predictions);
-        // setResults(loglikelihoodsTe, partitions, i, loglikelihoods);
+        predictionsTe.vset(predictionsTeFold, partitions == i);
+        loglikelihoodsTe.vset(loglikelihoodsTeFold, partitions == i);
     }
 }
 
@@ -209,18 +212,20 @@ void expandParameters(vector<vector<double> > params, cv::Mat& expandedParams)
 // Given the expanded list of parameters' combinations, and a GridMat
 // of 2dim indices from which the first element index the number of the
 // row in parameters, return a GridMat of hp-by-wp vectors of parameters.
-void selectParameters(cv::Mat parameters, GridMat<int> indices, GridMat<int>& selection)
+void selectParameters(cv::Mat parameters, GridMat indices, GridMat& selection)
 {
-    selection.create(indices.crows(), indices.ccols(), 1, parameters.cols);
+    selection.create<int>(indices.crows(), indices.ccols(), 1, parameters.cols);
     for (int i = 0; selection.crows(); i++) for (int j = 0; selection.ccols(); j++)
     {
-        int idx (indices.at(i,j,0,0);
+        int idx = indices.at<int>(i,j,0,0);
         parameters.row(idx).copyTo(selection.at(i,j).row(0));
     }
 }
 
 
-void ModalityPrediction<cv::EM>::modelSelection(ModalityGridData data, vector<int> nmixtures, vector<int> loglikelihoods, GridMat<int>& selection)
+void ModalityPrediction<cv::EM>::modelSelection(ModalityGridData data, GridMat descriptors,
+                                                vector<int> nmixtures, vector<int> loglikelihoods,
+                                                GridMat& selection)
 {
     // Prepare parameters' combinations
     
@@ -238,44 +243,59 @@ void ModalityPrediction<cv::EM>::modelSelection(ModalityGridData data, vector<in
     
     // Instanciate a hp-by-wp GridMat of accuracies. A cell contains a matrix
     // being the rows the parameters' combinations and columns fold-runs
-    GridMat<float> accuracies;
+    GridMat accuracies;
     
     vector<GridPredictor<cv::EM> > predictors;
     for (int k = 0; k < m_modelSelecK; k++)
     {
-        GridMat<float> foldAccs;
+        GridMat foldAccs;
         for (int m = 0; m < expandedParams.rows; m++)
         {
-            ModalityGridData dataTr (m_data, partitions != k);
-            ModalityGridData dataVal (m_data, partitions == k);
-            GridMat descriptorsTr (m_descriptors, partitions != k);
-            GridMat descriptorsVal (m_descriptors, partitions == k);
+            // Get fold's data
+            ModalityGridData dataTr (data, partitions != k);
+            ModalityGridData dataVal (data, partitions == k);
+            GridMat descriptorsTr (descriptors, partitions != k);
+            GridMat descriptorsVal (descriptors, partitions == k);
             
+            // Create predictor and its parametrization
             GridPredictor<cv::EM> predictor;
             predictor.setData(descriptorsTr, dataTr.getTags());
-            predictor.setNumOfMixtures(expandedParams.at<double>(m,0));
-            predictor.setLoglikelihoodThreshold(expandedParams.at<double>(m,1));
+            
+            cv::Mat nmixtures (data.hp(), data.wp(), cv::DataType<int>::type);
+            cv::Mat loglikes (data.hp(), data.wp(), cv::DataType<int>::type);
+            
+            nmixtures.setTo(expandedParams.at<double>(m,0));
+            loglikes.setTo(expandedParams.at<double>(m,1));
+            
+            predictor.setNumOfMixtures(nmixtures);
+            predictor.setLoglikelihoodThreshold(loglikes);
+            
+            // Train
             predictor.train();
             
-            GridMat<int> predictionsVal, loglikelihoodsVal;
+            // Test
+            GridMat predictionsVal, loglikelihoodsVal;
             predictor.predict(descriptorsVal, predictionsVal, loglikelihoodsVal);
             
-            GridMat<float> paramsAccs; // (m_hp * m_wp) accuracies get by params combination in k-th fold
-            accuracy(dataVal.getTags(), predictionsVal, paramsAccs);
+            // Compute an accuracy measure
+            cv::Mat accs; // (m_hp * m_wp) accuracies get by params combination in k-th fold
+            accuracy(dataVal.getTags(), predictionsVal, accs);
+            
+            GridMat paramsAccs (accs, data.hp(), data.wp());
             foldAccs.vconcat(paramsAccs);
         }
-        accuracies.hconcat(foldsAccs);
+        accuracies.hconcat(foldAccs);
     }
     
-    GridMat<float> foldAccsMean, foldAccsArgmax;
-    accuracies.mean(foldAccsMean, 1);
-    foldAccsMean.argmax(foldsAccsArgmax);
-    selectParameters(expandedParams, foldsAccsArgmax, selection);
+    GridMat foldsMeanAcc, foldsArgmaxAcc;
+    accuracies.mean(foldsMeanAcc, 1);
+    foldsMeanAcc.argmax<float>(foldsArgmaxAcc);
+    selectParameters(expandedParams, foldsArgmaxAcc, selection);
 }
 
-vector<float> ModalityPrediction<cv::EM>::accuracy(GridMat predictions, cv::Mat actuals, GridMat& accuracies)
+void ModalityPrediction<cv::EM>::accuracy(cv::Mat actuals, GridMat predictions, cv::Mat& accuracies)
 {
-    return ModalityPredictionBase<cv::EM>::accuracy(predictions, actuals, accuracies);
+    return ModalityPredictionBase<cv::EM>::accuracy(actuals, predictions, accuracies);
 }
 
 

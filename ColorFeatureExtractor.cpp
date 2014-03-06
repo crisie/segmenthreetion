@@ -186,8 +186,8 @@ void ColorFeatureExtractor::describe(ModalityGridData data, GridMat & descriptor
         
         for(int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
         {
-            cv::Mat & cell = grid.get(i,j);
-            cv::Mat & tmpCellMask = gmask.get(i,j);
+            cv::Mat & cell = grid.at(i,j);
+            cv::Mat & tmpCellMask = gmask.at(i,j);
             cv::Mat cellMask = cv::Mat::zeros(tmpCellMask.rows, tmpCellMask.cols, CV_8UC1);
             cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);
             threshold(tmpCellMask,tmpCellMask,1,255,CV_THRESH_BINARY);
