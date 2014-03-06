@@ -31,8 +31,9 @@ private:
     unsigned int m_hp, m_wp; // partitions in height and width
     
     // Trim subimages (using the rects provided) from frames
-    void grid(ModalityData& md, vector<GridMat>& grids);
-    void grid(ModalityData& md, vector<GridMat>& grids, cv::Mat& tags);
+    void gridFrames(ModalityData& md, vector<GridMat>& gframes, cv::Mat& frameIDs);
+    void gridMasks(ModalityData& md, vector<GridMat>& gmasks);
+    void gridMasks(ModalityData& md, vector<GridMat>& gmasks, vector<cv::Rect>& grects, cv::Mat& gtags);
 };
 
 #endif /* defined(__segmenthreetion__GridPartitioner__) */

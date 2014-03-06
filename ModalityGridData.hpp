@@ -25,14 +25,16 @@ class ModalityGridData
 public:
     ModalityGridData() {}
     
-    ModalityGridData(vector<GridMat> gframes, vector<GridMat> gmasks, vector<GridMat> gpredmasks, cv::Mat tags)
-            : m_GFrames(gframes), m_GMasks(gmasks), m_GPredictedMasks(gpredmasks), m_Tags(tags) {}
+    ModalityGridData(vector<GridMat> gframes, vector<GridMat> gmasks, vector<GridMat> gpredmasks, cv::Mat gframeids, cv::Mat gpositions, cv::Mat tags)
+            : m_GFrames(gframes), m_GMasks(gmasks), m_GPredictedMasks(gpredmasks), m_GFrameIDs(gframeids), m_GPositions(gpositions), m_Tags(tags) {}
     
     ModalityGridData(ModalityGridData& other, cv::Mat indices)
     {
         vector<GridMat> gframes;
         vector<GridMat> gmasks;
         vector<GridMat> gpredmasks;
+        cv::Mat gframeids;
+        cv::Mat gpositions;
         cv::Mat tags (cv::sum(indices).val[0], other.getTags().cols, other.getTags().type());
         
         int ntags = (other.getTags().rows > 1) ? other.getTags().rows : other.getTags().cols;        
@@ -51,9 +53,11 @@ public:
             
         }
         
-        setGridFrames(gframes);
-        setGridMasks(gmasks);
-        setGridPredictedMasks(gpredmasks);
+        setGridsFrames(gframes);
+        setGridsMasks(gmasks);
+        setGridsPredictedMasks(gpredmasks);
+        setGridsFrameIDs(gframeids);
+        segGridsPositions(gpositions);
         setTags(tags);
     }
     
@@ -82,24 +86,54 @@ public:
         return m_GPredictedMasks[k];
     }
     
+    int getGridFrameID(int k)
+    {
+        return m_GFrameIDs.at<int>(k,0);
+    }
+    
+    cv::Point2d getFrameResolution(int k)
+    {
+        return cv::Point2d(m_FramesResolutions.at<int>(k,0), m_FramesResolutions.at<int>(k,1));
+    }
+    
+    cv::Rect getGridBoundingRect(int k)
+    {
+        return m_GBoundingRects[k];
+    }
+    
     int getTag(int k)
     {
         return (m_Tags.rows > 1) ? m_Tags.at<int>(k,0) : m_Tags.at<int>(0,k);
     }
     
-    vector<GridMat>& getGridFrames()
+    vector<GridMat>& getGridsFrames()
     {
         return m_GFrames;
     }
     
-    vector<GridMat>& getGridMasks()
+    vector<GridMat>& getGridsMasks()
     {
         return m_GMasks;
     }
     
-    vector<GridMat>& getGridPredictedMasks()
+    vector<GridMat>& getGridsPredictedMasks()
     {
         return m_GPredictedMasks;
+    }
+    
+    cv::Mat& getGridsFrameIDs()
+    {
+        return m_GFrameIDs;
+    }
+
+    cv::Mat& getFramesResolutions()
+    {
+        return m_FramesResolutions;
+    }
+    
+    vector<cv::Rect>& getGridsBoundingRects()
+    {
+        return m_GBoundingRects;
     }
     
     cv::Mat& getTags()
@@ -107,12 +141,12 @@ public:
         return m_Tags;
     }
     
-    unsigned int hp()
+    int hp()
     {
         return m_hp;
     }
     
-    unsigned int wp()
+    int wp()
     {
         return m_wp;
     }
@@ -124,19 +158,34 @@ public:
     
     // Setters
     
-    void setGridFrames(vector<GridMat> gframes)
+    void setGridsFrames(vector<GridMat> gframes)
     {
         m_GFrames = gframes;
     }
     
-    void setGridMasks(vector<GridMat> gmasks)
+    void setGridsMasks(vector<GridMat> gmasks)
     {
         m_GMasks = gmasks;
     }
     
-    void setGridPredictedMasks(vector<GridMat> gmasks)
+    void setGridsPredictedMasks(vector<GridMat> gmasks)
     {
         m_GPredictedMasks = gmasks;
+    }
+    
+    void setGridsFrameIDs(cv::Mat gframeids)
+    {
+        m_GFrameIDs = gframeids;
+    }
+    
+    void setFramesResolutions(cv::Mat resolutions)
+    {
+        m_FramesResolutions = resolutions;
+    }
+    
+    void setGridsBoundingRects(vector<cv::Rect> gboundingrects)
+    {
+        m_GBoundingRects = gboundingrects;
     }
     
     void setTags(cv::Mat tags)
@@ -145,13 +194,14 @@ public:
     }
     
 private:
-    unsigned int m_hp, m_wp;
+    int m_hp, m_wp;
     
     vector<GridMat> m_GFrames;
     vector<GridMat> m_GMasks;
     vector<GridMat> m_GPredictedMasks;
-    vector<unsigned int> m_GFrameIDs; // not used yet
-    vector<cv::Point2d> m_GridsPositions; // not used yet
+    cv::Mat m_GFrameIDs;
+    cv::Mat m_FramesResolutions;
+    vector<cv::Rect> m_GBoundingRects;
     cv::Mat m_Tags;
 };
 

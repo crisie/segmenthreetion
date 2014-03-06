@@ -67,6 +67,27 @@ void ModalityPredictionBase<PredictorT>::accuracy(cv::Mat actuals, GridMat predi
     }
 }
 
+template<typename PredictorT> template<typename T>
+void ModalityPredictionBase<PredictorT>::writeMaps(ModalityGridData& data, GridMat outputs)
+{
+    double minFrame, maxFrame;
+    cv::minMaxIdx(data.getGridsFrames(), &minFrame, &maxFrame);
+
+    for (int f = minFrame; f <= maxFrame; f++)
+    {
+        cv::Mat map (data.getFrameResolution(f).y, data.getFrameResolution(f).x, cv::DataType<T>::type);
+        
+        cv::Mat frameIndices;
+        cv::findNonZero(data.getGridsFrameIDs() == f, frameIndices);
+        for (int i = 0; i < frameIndices.rows; i++)
+        {
+            // do stuff
+            // ..
+        }
+    }
+    
+}
+
 
 //
 // ModalityPrediction<PredictorT>
@@ -101,6 +122,12 @@ template<class PredictorT>
 void ModalityPrediction<PredictorT>::accuracy(cv::Mat actuals, GridMat predictions, cv::Mat& accuracies)
 {
     return ModalityPredictionBase<PredictorT>:: accuracy(actuals, predictions);
+}
+
+template<class PredictorT>
+void ModalityPrediction<PredictorT>::writeMaps(ModalityGridData &data, GridMat output)
+{
+    return ModalityPredictionBase<PredictorT>::writeMaps(data, output);
 }
 
 //
@@ -298,6 +325,10 @@ void ModalityPrediction<cv::EM>::accuracy(cv::Mat actuals, GridMat predictions, 
     return ModalityPredictionBase<cv::EM>::accuracy(actuals, predictions, accuracies);
 }
 
+void ModalityPrediction<cv::EM>::writeMaps(ModalityGridData &data, GridMat output)
+{
+    return ModalityPredictionBase<cv::EM>::accuwriteMapsracy(data, output);
+}
 
 // Explicit template instanciation (to avoid linking errors)
 template class ModalityPredictionBase<cv::EM>;

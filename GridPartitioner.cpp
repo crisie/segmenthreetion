@@ -37,26 +37,65 @@ void GridPartitioner::grid(ModalityData& md, ModalityGridData& mgd)
     
     vector<GridMat> gframes;
     vector<GridMat> gmasks;
+    vector<GridMat> gpredictedmasks;
+    cv::Mat gframeids;
+    vector<cv::Rect> gboundingrects;
     cv::Mat tags;
     
-    // Grid frames and masks
-    grid(md, gframes);
-    grid(md, gmasks, tags);
+//    // Grid frames and masks
+    gridFrames(md, gframes, gframeids);
+    gridMasks(md, gmasks, gboundingrects, tags);
+    gridMasks(md, gpredictedmasks);
+    
     //visualizeGridmats(gframes_train); // DEBUG
     //visualizeGridmats(gmasks_train); // DEBUG
     
-    mgd.setGridFrames(gframes);
-    mgd.setGridMasks(gmasks);
+    mgd.setGridsFrames(gframes);
+    mgd.setGridsMasks(gmasks);
+    mgd.setGridsPredictedMasks(gpredictedmasks);
+    mgd.setGridsFrameIDs(gframeids);
+    mgd.setFramesResolutions(gresolutions);
+    mgd.setGridsBoundingRects(gboundingrects);
     mgd.setTags(tags);
+}
+
+/*
+ * Trim subimages, defined by rects (bounding boxes), from image frames
+ */
+void GridPartitioner::gridFrames(ModalityData& md, vector<GridMat>& gframes, cv::Mat& frameIDs)
+{
+    //namedWindow("grided subject");
+    // Seek in each frame ..
+    int ngrids = 0;
+    for (unsigned int f = 0; f < md.getFrames().size(); f++)
+    {
+        vector<cv::Rect> rects = md.getBoundingRectsInFrame(f);
+        // .. all the people appearing
+        for (unsigned int r = 0; r < rects.size(); r++)
+        {
+            if (rects[r].height >= m_hp && rects[r].width >= m_wp)
+            {
+                cv::Mat subject (md.getFrame(f), rects[r]); // Get a roi in frame defined by the rectangle.
+                cv::Mat maskedSubject;
+                subject.copyTo(maskedSubject, md.getMask(f,r));
+                subject.release();
+                
+                GridMat g (maskedSubject, m_hp, m_wp);
+                gframes.push_back( g );
+                
+                frameIDs.at<int>(ngrids++, 0) = f;
+            }
+            
+        }
+    }
 }
 
 
 /*
  * Trim subimages, defined by rects (bounding boxes), from image frames
  */
-void GridPartitioner::grid(ModalityData& md, vector<GridMat>& grids)
+void GridPartitioner::gridMasks(ModalityData& md, vector<GridMat>& gmasks)
 {
-    //namedWindow("grided subject");
     // Seek in each frame ..
     for (unsigned int f = 0; f < md.getFrames().size(); f++)
     {
@@ -72,17 +111,13 @@ void GridPartitioner::grid(ModalityData& md, vector<GridMat>& grids)
                 subject.release();
                 
                 GridMat g (maskedSubject, m_hp, m_wp);
-                grids.push_back( g );
+                gmasks.push_back( g );
             }
         }
     }
 }
 
-
-/*
- * Trim subimages, defined by rects (bounding boxes), from image frames
- */
-void GridPartitioner::grid(ModalityData& md, vector<GridMat>& grids, cv::Mat& tags)
+void GridPartitioner::gridMasks(ModalityData& md, vector<GridMat>& gmasks, vector<cv::Rect>& grects, cv::Mat& gtags)
 {
     vector<int> tagsAux;
     
@@ -102,13 +137,14 @@ void GridPartitioner::grid(ModalityData& md, vector<GridMat>& grids, cv::Mat& ta
                 subject.release();
                 
                 GridMat g (maskedSubject, m_hp, m_wp);
-                grids.push_back( g );
+                gmasks.push_back( g );
                 
+                grects.push_back(rects[r]);
                 tagsAux.push_back(tags[r]);
             }
         }
     }
     
     cv::Mat tmp (tagsAux.size(), 1, cv::DataType<int>::type, tagsAux.data());
-    tmp.copyTo(tags);
+    tmp.copyTo(gtags);
 }

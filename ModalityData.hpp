@@ -47,6 +47,11 @@ public:
         return (m_Masks[k] == (m_MasksOffset + subjectId));
     }
     
+    int getFrameID(int k)
+    {
+        return m_FrameIDs[k];
+    }
+    
     vector<cv::Rect> getBoundingRectsInFrame(int k)
     {
         return m_BoundingRects[k];
@@ -72,11 +77,16 @@ public:
         return m_PredictedMasks;
     }
     
+    vector<int>& getFrameIDs()
+    {
+        return m_FrameIDs;
+    }
+    
     vector< vector<cv::Rect> >& getBoundingRects()
     {
         return m_BoundingRects;
     }
-    
+
     vector< vector<int> >& getTags()
     {
         return m_Tags;
@@ -89,7 +99,8 @@ public:
     
     bool isFilled()
     {
-        return m_Frames.size() > 0 && m_Masks.size() > 0 && m_PredictedMasks.size() > 0 && m_BoundingRects.size() > 0 && m_Tags.size() > 0;
+        return m_Frames.size() > 0 && m_Masks.size() > 0 && m_PredictedMasks.size() > 0
+                && m_FrameIDs.size() > 0 && m_BoundingRects.size() > 0 && m_Tags.size() > 0;
     }
     
     // Setters
@@ -97,6 +108,12 @@ public:
     void setFrames(vector<cv::Mat> frames)
     {
         m_Frames = frames;
+        m_FramesResolutions.create(m_Frames.size(), 2, cv::DataType<int>::type);
+        for (int i = 0; i < m_Frames.size(); i++)
+        {
+            m_FramesResolutions.at<int>(i,0) = m_Frames[i].cols; // inverted
+            m_FramesResolutions.at<int>(i,1) = m_Frames[i].rows;
+        }
     }
     
     void setMasks(vector<cv::Mat> masks)
@@ -107,6 +124,11 @@ public:
     void setPredictedMasks(vector<cv::Mat> masks)
     {
         m_PredictedMasks = masks;
+    }
+    
+    void setFrameIDs(vector<int> frameids)
+    {
+        m_FrameIDs = frameids;
     }
     
     void setBoundingRects(vector< vector<cv::Rect> > rects)
@@ -129,8 +151,11 @@ private:
     vector<cv::Mat> m_Frames;
     vector<cv::Mat> m_Masks; // groundtruth masks
     vector<cv::Mat> m_PredictedMasks; // bs predicted masks
+    vector<int> m_FrameIDs;
     vector< vector<cv::Rect> > m_BoundingRects;
     vector< vector<int> > m_Tags;
+    
+    cv::Mat m_FramesResolutions;
     
     unsigned char m_MasksOffset;
 };
