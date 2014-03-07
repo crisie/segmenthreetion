@@ -35,9 +35,6 @@ public:
     
     void accuracy(cv::Mat actuals, GridMat predictions, cv::Mat& accuracies);
     
-    template<typename T>
-    void writeMaps(ModalityGridData& data, GridMat output);
-    
 protected:
     ModalityGridData m_data;
     GridMat m_descriptors;
@@ -61,9 +58,6 @@ class ModalityPrediction : public ModalityPredictionBase<Prediction>
     void setModelValidation(int k = 10, int seed = 74);
     
     void accuracy(cv::Mat actuals, GridMat predictions, cv::Mat& accuracies);
-    
-    template<typename T>
-    void writeMaps(ModalityGridData& data, GridMat output);
 };
 
 
@@ -90,9 +84,6 @@ public:
     void predict(GridMat& predictions, GridMat& loglikelihoods);
     
     void accuracy(cv::Mat actuals, GridMat predictions, cv::Mat& accuracies);
-    
-    template<typename T>
-    void writeMaps(ModalityGridData& data, GridMat output);
     
 private:
     vector<int> m_nmixtures;
