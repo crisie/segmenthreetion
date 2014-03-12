@@ -130,5 +130,5 @@ void GridPredictor<cv::EM>::predict(GridMat data, GridMat& predictions, GridMat&
 
 
 // Explicit template instanciation (to avoid linking errors)
-template typename GridPredictorBase<cv::EM>;
-template typename GridPredictor<cv::EM>;
+//template typename GridPredictorBase<cv::EM>;
+//template typename GridPredictor<cv::EM>;
