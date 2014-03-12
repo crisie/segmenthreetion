@@ -36,9 +36,13 @@ private:
     unsigned char m_MasksOffset;
     
     // Load frames of a modality within a directory
-    void loadDataToMats(std::string dir, const char* format, std::vector<cv::Mat>& frames);
+    void loadDataToMats(string dir, const char* format, vector<cv::Mat> & frames);
+    // Load frames and frames' indices of a modality within a directory
+    void loadDataToMats(string dir, const char* format, vector<cv::Mat> & frames, vector<string>& indices);
     // Load people bounding boxes (rects)
     void loadBoundingRects(std::string file, std::vector< std::vector<cv::Rect> >& rects, std::vector< std::vector<int> >& tags);
+    // Save calibVars files directories
+    void loadCalibVarsDir(string dir, vector<string> calibVarsDirs);
 };
 
 #endif /* defined(__segmenthreetion__ModalityReader__) */

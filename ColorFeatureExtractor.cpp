@@ -29,8 +29,6 @@ void ColorFeatureExtractor::setParam(ColorParametrization ColorParam)
 void ColorFeatureExtractor::describeColorHog(const cv::Mat cell, const cv::Mat cellMask, cv::Mat & cOrientedGradsHist)
 {
     
-	//TODO change to manual HOG
-    
 	/*Following R-HoG descriptor (Dalal-Triggs 2005) except that the image patch is variance-normalized before
      binning into the histogram, making the descriptor less sensitive to illumination changes.
      

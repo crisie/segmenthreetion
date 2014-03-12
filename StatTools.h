@@ -33,4 +33,13 @@ void cvpartition(cv::Mat labels, int k, int seed, cv::Mat& partitions); // strat
 // Mathematical function approximating a Gaussian function
 double phi(double x);
 
+// Sort a vector by unique values
+void uniqueSortValues(vector<int> & values);
+
+// Find unique values of a Mat and returns them sorted
+void findUniqueValues(cv::Mat image, vector<int> & values);
+
+// Find unique values of a vector and returns them sorted
+void findUniqueValues(vector<int> v, vector<int> & values);
+
 #endif /* defined(__segmenthreetion__StatTools__) */

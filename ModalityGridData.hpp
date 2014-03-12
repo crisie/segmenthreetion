@@ -57,7 +57,7 @@ public:
         setGridsMasks(gmasks);
         setGridsPredictedMasks(gpredmasks);
         setGridsFrameIDs(gframeids);
-        segGridsPositions(gpositions);
+        //segGridsPositions(gpositions);
         setTags(tags);
     }
     

@@ -7,9 +7,15 @@
 //
 
 #include "ModalityReader.h"
+#include "ModalityWriter.h"
 #include "ModalityData.hpp"
 #include "ModalityGridData.hpp"
 #include "GridPartitioner.h"
+
+#include "ForegroundParametrization.hpp"
+#include "DepthBackgroundSubtractor.h"
+#include "ColorBackgroundSubtractor.h"
+#include "ThermalBackgroundSubtractor.h"
 
 #include "ThermalFeatureExtractor.h"
 
@@ -38,6 +44,19 @@ int main(int argc, const char* argv[])
     
     string dataPath = "../../Sequences/";
     const unsigned char masksOffset = 200;
+    
+    //Background subtraction
+    
+    ForegroundParametrization fParam;
+    
+    int nftl[] = {35,200,80}; //frames needed to learn the background models for each sequence
+    const std::vector<int> nFramesToLearn(begin(nftl), end(nftl));
+    
+    fParam.numFramesToLearn = nFramesToLearn;
+    fParam.boundingBoxMinArea = 0.001;
+    fParam.otsuMinArea = 0.02;
+    fParam.otsuMinVariance1 = 8.3;
+    fParam.otsuMinVariance2 = 12;
     
     // Feature extraction
     
@@ -86,24 +105,66 @@ int main(int argc, const char* argv[])
     // Execution
     //
     
+    ModalityData dData;
+    ModalityData dGridData;
+    
+    ModalityData cData;
+    ModalityData cGridData;
+
+    
     ModalityData tData;
     ModalityGridData tGridData;
     
+    
     ModalityReader reader(dataPath);
     reader.setMasksOffset(masksOffset);
+    
+    
+    ModalityWriter writer(dataPath);
+    
+    // Depth
+    reader.read("Depth", dData);
+    
+    DepthBackgroundSubtractor dBS(fParam);
+    dBS.setMasksOffset(masksOffset);
+    dBS.getMasks(dData);
+    dBS.getBoundingRects(dData);
+    dBS.adaptGroundTruthToReg(dData);
+    dBS.getGroundTruthBoundingRects(dData);
+    dBS.getRoiTags(dData, true);
+    
+    writer.write("Depth", dData);
+    
+    //Color
+    reader.read("Color", cData);
+    
+    ColorBackgroundSubtractor cBS;
+    cBS.setMasksOffset(masksOffset);
+    cBS.getMasks(cData, dData);
+    cBS.getBoundingRects(cData, dData);
+    cBS.adaptGroundTruthToReg(cData, dData);
+    cBS.getGroundTruthBoundingRects(cData,dData);
+    cBS.getRoiTags(cData, dData);
     
     // Thermal
     // <------
     reader.read("Thermal", tData);
     
+    
+    ThermalBackgroundSubtractor tBS;
+    tBS.setMasksOffset(masksOffset);
+    tBS.getMasks(tData, dData);
+    tBS.getBoundingRects(tData, dData);
+    tBS.adaptGroundTruthToReg(tData);
+
     GridPartitioner partitioner;
     partitioner.setGridPartitions(hp, wp);
     partitioner.grid(tData, tGridData); // perform "gridding"
     
-    GridMat tDescriptors;
+  /*  GridMat tDescriptors;
     ThermalFeatureExtractor tFE(tParam);
     tFE.describe(tGridData, tDescriptors); // perform description
-    
+    */
 //    GridMat tLoglikelihoods;
     
     ModalityPrediction<cv::EM> tPrediction;

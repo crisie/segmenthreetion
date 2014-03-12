@@ -146,3 +146,41 @@ double phi(double x)
     
     return 0.5*(1.0 + sign*y);
 }
+
+/**
+ * Converts Mat to Vector
+ */
+void matToVector(cv::Mat image, vector<int> & values)
+{
+    cv::Mat_<uchar>::iterator it_start = image.begin<uchar>();
+    cv::Mat_<uchar>::iterator it_end = image.end<uchar>();
+    
+    for(; it_start != it_end; ++it_start) {
+        values.push_back(*it_start);
+    }
+}
+
+/**
+ * Sort a vector by unique values
+ */
+void uniqueSortValues(vector<int> & values)
+{
+    std::sort(values.begin(), values.end());
+    values.erase(std::unique(values.begin(), values.end()), values.end());
+}
+
+/**
+ * Find unique values of a Mat and returns them sorted
+ */
+void findUniqueValues(cv::Mat image, vector<int> & values) {
+    matToVector(image, values);
+    uniqueSortValues(values);
+}
+
+/**
+ * Find unique values of a vector and returns them sorted
+ */
+void findUniqueValues(vector<int> v, vector<int> & values) {
+    uniqueSortValues(v);
+    values = v;
+}

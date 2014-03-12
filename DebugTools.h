@@ -29,9 +29,21 @@ void visualizeMasksWithinRects(vector<cv::Mat> masks, vector<vector<cv::Rect> > 
 
 /**
  * DEBUG (Auxiliary function)
+ * Visualizes in an OpenCV window the sequence of frames with the corresponding bounding boxes surrounding the items found.
+ * To check wheter the bounding rects have been generated correctly.
+ */
+void visualizeBoundingRects(vector<cv::Mat> frames, vector<vector<cv::Rect> > rects);
+
+/**
+ * DEBUG (Auxiliary function)
  * Visualize gridmats
  */
 void visualizeGridmats(vector<GridMat> gridmats);
 
+/**
+ * DEBUG (Auxiliary function)
+ * Show differences per frame in number of bounding boxes between two modalities
+ */
+void compareNumberBoundingBoxes(vector<vector<cv::Rect> > bb1, vector<vector<cv::Rect> > bb2);
 
 #endif /* defined(__segmenthreetion__DebugTools__) */
