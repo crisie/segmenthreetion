@@ -47,14 +47,14 @@ void ThermalBackgroundSubtractor::getMasks(ModalityData& mdOutput, ModalityData&
             cv::Mat depthFrame = mdInput.getFrameInScene(scene,f);
             
             vector<int> uniqueValues;
-            findUniqueValues(mdOutput.getMaskInScene(scene, f), uniqueValues);
+            findUniqueValues(mdOutput.getPredictedMaskInScene(scene, f), uniqueValues);
             
             replicatedDepthFrames.push_back(depthFrame);
             nMasksPerFrame[f] = 1;
             
             for(unsigned int m = 1; m < uniqueValues.size(); m++) {
                 replicatedDepthFrames.push_back(depthFrame);
-                depthMasksCollection.push_back(mdOutput.getMaskInScene(scene, f, m));
+                depthMasksCollection.push_back(mdOutput.getPredictedMaskInScene(scene, f, m));
                 nMasksPerFrame[f]++;
             }
             
@@ -109,7 +109,7 @@ void ThermalBackgroundSubtractor::getMasks(ModalityData& mdOutput, ModalityData&
     
     //TODO: save somehow masks in folder
     
-    mdOutput.setMasks(masks);
+    mdOutput.setPredictedMasks(masks);
     
 }
 
@@ -120,13 +120,13 @@ void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdOutput, Modal
     for(unsigned int f = 0; f < mdInput.getFrames().size(); f++) {
         
         vector<int> uniqueValuesDepthMask;
-        findUniqueValues(mdOutput.getMask(f), uniqueValuesDepthMask);
+        findUniqueValues(mdOutput.getPredictedMask(f), uniqueValuesDepthMask);
         
         for(unsigned int i = 0; i < uniqueValuesDepthMask.size(); i++)
         {
             cv::Rect bigBoundingBox;
             vector<cv::Rect> maskBoundingBoxes;
-            this->getMaskBoundingBoxes(mdInput.getMask(f), maskBoundingBoxes);
+            this->getMaskBoundingBoxes(mdInput.getPredictedMask(f), maskBoundingBoxes);
             
             if(!maskBoundingBoxes.empty())
             {
@@ -141,21 +141,21 @@ void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdOutput, Modal
                     boundingRects[f].push_back(bigBoundingBox);
                 }
             }
-            else if(maskBoundingBoxes.empty() && !mdOutput.getBoundingRectsInFrame(f).empty())
+            else if(maskBoundingBoxes.empty() && !mdOutput.getPredictedBoundingRectsInFrame(f).empty())
             {
-                boundingRects[f].push_back(mdOutput.getBoundingRectsInFrame(f)[i]);
+                boundingRects[f].push_back(mdOutput.getPredictedBoundingRectsInFrame(f)[i]);
             }
             
         }
         
     }
     
-    mdOutput.setBoundingRects(boundingRects);
+    mdOutput.setPredictedBoundingRects(boundingRects);
     
-    cout << "Thermal bounding boxes: " << this->countBoundingBoxes(mdOutput.getBoundingRects()) << endl;
+    cout << "Thermal bounding boxes: " << this->countBoundingBoxes(mdOutput.getPredictedBoundingRects()) << endl;
     
     //Debug purposes
-    compareNumberBoundingBoxes(mdInput.getBoundingRects(), mdOutput.getBoundingRects());
+    compareNumberBoundingBoxes(mdInput.getPredictedBoundingRects(), mdOutput.getPredictedBoundingRects());
     
 }
 

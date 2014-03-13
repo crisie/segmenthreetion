@@ -54,7 +54,7 @@ void GridPartitioner::grid(ModalityData& md, ModalityGridData& mgd)
     mgd.setGridsMasks(gmasks);
     mgd.setGridsPredictedMasks(gpredictedmasks);
     mgd.setGridsFrameIDs(gframeids);
-    mgd.setFramesResolutions(gresolutions);
+    //mgd.setFramesResolutions(gresolutions);
     mgd.setGridsBoundingRects(gboundingrects);
     mgd.setTags(tags);
 }
@@ -69,7 +69,7 @@ void GridPartitioner::gridFrames(ModalityData& md, vector<GridMat>& gframes, cv:
     int ngrids = 0;
     for (unsigned int f = 0; f < md.getFrames().size(); f++)
     {
-        vector<cv::Rect> rects = md.getBoundingRectsInFrame(f);
+        vector<cv::Rect> rects = md.getPredictedBoundingRectsInFrame(f);
         // .. all the people appearing
         for (unsigned int r = 0; r < rects.size(); r++)
         {
@@ -77,7 +77,7 @@ void GridPartitioner::gridFrames(ModalityData& md, vector<GridMat>& gframes, cv:
             {
                 cv::Mat subject (md.getFrame(f), rects[r]); // Get a roi in frame defined by the rectangle.
                 cv::Mat maskedSubject;
-                subject.copyTo(maskedSubject, md.getMask(f,r));
+                subject.copyTo(maskedSubject, md.getPredictedMask(f,r));
                 subject.release();
                 
                 GridMat g (maskedSubject, m_hp, m_wp);
@@ -99,7 +99,7 @@ void GridPartitioner::gridMasks(ModalityData& md, vector<GridMat>& gmasks)
     // Seek in each frame ..
     for (unsigned int f = 0; f < md.getFrames().size(); f++)
     {
-        vector<cv::Rect> rects = md.getBoundingRectsInFrame(f);
+        vector<cv::Rect> rects = md.getPredictedBoundingRectsInFrame(f);
         // .. all the people appearing
         for (unsigned int r = 0; r < rects.size(); r++)
         {
@@ -107,7 +107,7 @@ void GridPartitioner::gridMasks(ModalityData& md, vector<GridMat>& gmasks)
             {
                 cv::Mat subject (md.getFrame(f), rects[r]); // Get a roi in frame defined by the rectangle.
                 cv::Mat maskedSubject;
-                subject.copyTo(maskedSubject, md.getMask(f,r));
+                subject.copyTo(maskedSubject, md.getPredictedMask(f,r));
                 subject.release();
                 
                 GridMat g (maskedSubject, m_hp, m_wp);
@@ -124,7 +124,7 @@ void GridPartitioner::gridMasks(ModalityData& md, vector<GridMat>& gmasks, vecto
     // Seek in each frame ..
     for (unsigned int f = 0; f < md.getFrames().size(); f++)
     {
-        vector<cv::Rect> rects = md.getBoundingRectsInFrame(f);
+        vector<cv::Rect> rects = md.getPredictedBoundingRectsInFrame(f);
         vector<int> tags = md.getTagsInFrame(f);
         // .. all the people appearing
         for (unsigned int r = 0; r < rects.size(); r++)
@@ -133,7 +133,7 @@ void GridPartitioner::gridMasks(ModalityData& md, vector<GridMat>& gmasks, vecto
             {
                 cv::Mat subject (md.getFrame(f), rects[r]); // Get a roi in frame defined by the rectangle.
                 cv::Mat maskedSubject;
-                subject.copyTo(maskedSubject, md.getMask(f,r));
+                subject.copyTo(maskedSubject, md.getPredictedMask(f,r));
                 subject.release();
                 
                 GridMat g (maskedSubject, m_hp, m_wp);

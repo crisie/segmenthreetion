@@ -61,7 +61,7 @@ void ModalityWriter::write(string modality, ModalityData& md)
     {
         saveMats(m_ScenesPaths[i] + "Masks/" + modality + "/",
                  "png",
-                 md.getMasksInScene(i),
+                 md.getPredictedMasksInScene(i),
                  md.getFramesIndicesInScene(i));
         
         saveMats(m_ScenesPaths[i] + "GroundTruth/" + modality + "/",
@@ -70,7 +70,7 @@ void ModalityWriter::write(string modality, ModalityData& md)
                  md.getFramesIndicesInScene(i));
         
         saveBoundingRects(m_ScenesPaths[i] + "Masks/" + modality + ".yml",
-                          md.getBoundingRects(),
+                          md.getPredictedBoundingRects(),
                           md.getTags());
 
     }

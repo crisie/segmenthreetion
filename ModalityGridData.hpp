@@ -25,9 +25,9 @@ class ModalityGridData
 public:
     ModalityGridData() {}
     
-    ModalityGridData(vector<GridMat> gframes, vector<GridMat> gmasks, vector<GridMat> gpredmasks, cv::Mat gframeids, cv::Mat gpositions, cv::Mat tags)
+    /*ModalityGridData(vector<GridMat> gframes, vector<GridMat> gmasks, vector<GridMat> gpredmasks, cv::Mat gframeids, cv::Mat gpositions, cv::Mat tags)
             : m_GFrames(gframes), m_GMasks(gmasks), m_GPredictedMasks(gpredmasks), m_GFrameIDs(gframeids), m_GPositions(gpositions), m_Tags(tags) {}
-    
+    */
     ModalityGridData(ModalityGridData& other, cv::Mat indices)
     {
         vector<GridMat> gframes;

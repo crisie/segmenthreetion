@@ -26,15 +26,15 @@ void ColorBackgroundSubtractor::setMasksOffset(unsigned char masksOffset) {
 
 void ColorBackgroundSubtractor::getMasks(ModalityData& mdOutput, ModalityData& mdInput) {
     
-    mdOutput.setMasks(mdInput.getMasks());
+    mdOutput.setPredictedMasks(mdInput.getPredictedMasks());
     
 }
 
 void ColorBackgroundSubtractor::getBoundingRects(ModalityData& mdOutput, ModalityData& mdInput) {
 
-    mdOutput.setBoundingRects(mdInput.getBoundingRects());
+    mdOutput.setPredictedBoundingRects(mdInput.getPredictedBoundingRects());
     
-    cout << "Color bounding boxes: " << this->countBoundingBoxes(mdOutput.getBoundingRects()) << endl;
+    cout << "Color bounding boxes: " << this->countBoundingBoxes(mdOutput.getPredictedBoundingRects()) << endl;
 
 }
 

@@ -29,7 +29,7 @@ void MotionFeatureExtractor::setParam(MotionParametrization param)
 
 void MotionFeatureExtractor::describe(ModalityGridData data, GridMat& descriptors)
 {
-	for(int k = 0; k < data.getGridFrames().size(); k++)
+	for(int k = 0; k < data.getGridsFrames().size(); k++)
 	{
 		cout << "k : " << k <<  endl;
         

@@ -53,6 +53,11 @@ void GridPredictor<PredictorT>::setData(GridMat data, cv::Mat categories)
     GridPredictorBase<PredictorT>::setData(data, categories);
 }
 
+template<typename PredictorT>
+PredictorT& GridPredictor<PredictorT>::at(unsigned int i, unsigned int j)
+{
+    return GridPredictorBase<PredictorT>::at(i,j);
+}
 
 //
 // GridPredictor<cv::EM>
@@ -69,14 +74,19 @@ void GridPredictor<cv::EM>::setData(GridMat data, cv::Mat categories)
     GridPredictorBase<cv::EM>::setData(data, categories);
 }
 
+cv::EM& GridPredictor<cv::EM>::at(unsigned int i, unsigned int j)
+{
+    return GridPredictorBase<cv::EM>::at(i,j);
+}
+
 void GridPredictor<cv::EM>::setParameters(GridMat parameters)
 {
     m_logthreshold.release();
     m_logthreshold.create(m_hp, m_wp, cv::DataType<int>::type);
     for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
     {
-        this->at(i,j).set("nclusters", parameters.at<int>(i,j,0,0));
-        m_logthreshold.at<int>(i,j) = parameters.at<int>(i,j,0,1);
+//        this->at(i,j).set("nclusters", parameters.at<int>(i,j,0,0));
+//        m_logthreshold.at<int>(i,j) = parameters.at<int>(i,j,0,1);
     }
 }
 

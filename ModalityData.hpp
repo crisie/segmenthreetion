@@ -23,7 +23,7 @@ class ModalityData
 public:
     ModalityData() {}
     
-    ModalityData(vector<cv::Mat> frames, vector<cv::Mat> masks, vector<cv::Mat> predictedMasks vector< vector<cv::Rect> > rects, vector< vector<int> > tags) : m_Frames(frames), m_GroundTruthMasks(masks), m_PredictedMasks(predictedMasks), m_PredictedBoundingRects(rects), m_Tags(tags) {}
+    ModalityData(vector<cv::Mat> frames, vector<cv::Mat> masks, vector<cv::Mat> predictedMasks, vector< vector<cv::Rect> > rects, vector< vector<int> > tags) : m_Frames(frames), m_GroundTruthMasks(masks), m_PredictedMasks(predictedMasks), m_PredictedBoundingRects(rects), m_Tags(tags) {}
     
     // Getters
     

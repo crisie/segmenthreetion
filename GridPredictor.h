@@ -51,7 +51,7 @@ class GridPredictor : public GridPredictorBase<PredictorT>
     void setData(GridMat data, cv::Mat categories);
      void setParameters(GridMat parameters);
     
-    PredictorT& t(unsigned int i, unsigned int j);
+    PredictorT& at(unsigned int i, unsigned int j);
 };
 
 

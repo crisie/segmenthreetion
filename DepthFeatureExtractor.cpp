@@ -44,15 +44,15 @@ void DepthFeatureExtractor::describe(ModalityGridData data, GridMat& descriptors
 {
     //    namedWindow("god");
     
-    for (int k = 0; k < data.getGridFrames().size(); k++)
+    for (int k = 0; k < data.getGridsFrames().size(); k++)
     {
         GridMat grid = data.getGridFrame(k);
         GridMat gmask = data.getGridMask(k);
         
         for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
         {
-            cv::Mat & cell = grid.get(i,j);
-            cv::Mat & cellMask = gmask.get(i,j);
+            cv::Mat & cell = grid.at(i,j);
+            cv::Mat & cellMask = gmask.at(i,j);
             
             // Normals orientation descriptor
             cv::Mat dNormalsOrientsHist(1, (m_DepthParam.thetaBins + m_DepthParam.phiBins), CV_32F);

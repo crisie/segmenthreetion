@@ -40,7 +40,7 @@ void ThermalFeatureExtractor::describe(ModalityGridData data, GridMat& descripto
 {
     //    namedWindow("god");
     
-    for (int k = 0; k < data.getGridFrames().size(); k++)
+    for (int k = 0; k < data.getGridsFrames().size(); k++)
     {
         GridMat grid = data.getGridFrame(k);
         GridMat gmask = data.getGridMask(k);

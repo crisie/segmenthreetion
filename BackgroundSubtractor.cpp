@@ -60,9 +60,9 @@ void BackgroundSubtractor::getRoiTags(ModalityData& md, bool manualAid) {
     
     vector<vector<int> > bbTags;
     
-    for(unsigned int f = 0; f < md.getMasks().size(); f++) {
+    for(unsigned int f = 0; f < md.getPredictedMasks().size(); f++) {
         
-        vector<cv::Rect> boundRects = md.getBoundingRectsInFrame(f);
+        vector<cv::Rect> boundRects = md.getPredictedBoundingRectsInFrame(f);
         vector<cv::Rect> gtBoundRects = md.getGroundTruthBoundingRectsInFrame(f);
         
         if(!boundRects.empty()) {
@@ -80,7 +80,7 @@ void BackgroundSubtractor::getRoiTags(ModalityData& md, bool manualAid) {
                     cv::namedWindow("Tag ROI manually.");
                     
                     cv::Mat frame = md.getFrame(f);
-                    cv::Mat mask = md.getMask(f);
+                    cv::Mat mask = md.getPredictedMask(f);
                     add(frame, cv::Scalar(100, 100, 0), frame, mask);
                     cv::rectangle(frame, boundRects[b].tl(), boundRects[b].br(), cvScalar(255,0,0));
                     

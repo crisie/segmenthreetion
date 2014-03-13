@@ -100,14 +100,14 @@ void ModalityReader::read(std::string modality, ModalityData& md)
     md.setFramesIndices(framesIndices);
     framesIndices.clear();
     
-    md.setMasks(masks);
+    md.setPredictedMasks(masks);
     md.setMasksOffset(m_MasksOffset);
     masks.clear();
     
     md.setGroundTruthMasks(gtMasks);
     gtMasks.clear();
     
-    md.setBoundingRects(rects);
+    md.setPredictedBoundingRects(rects);
     rects.clear();
     
     md.setTags(tags);

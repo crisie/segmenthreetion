@@ -57,13 +57,13 @@ void ModalityPredictionBase<PredictorT>::accuracy(cv::Mat actuals, GridMat predi
         for (int k = 0; k < actuals.rows; k++)
         {
             int actualVal = actuals.at<int>(k,0);
-            int predVal = predictions.at<int>(i,j,k,0);
-            
-            if (actualVal == 0 && predVal == 0) objectHits++;
-            else if (actualVal == 1 && predVal == 1) subjectHits++;
+//            int predVal = predictions.at<int>(i,j,k,0);
+//            
+//            if (actualVal == 0 && predVal == 0) objectHits++;
+//            else if (actualVal == 1 && predVal == 1) subjectHits++;
         }
         
-        accuracies.at<float>(i,j) = ( ((float)subjectHits)/nsubjects + ((float)objectHits)/nobjects ) / 2.0;
+//        accuracies.at<float>(i,j) = ( ((float)subjectHits)/nsubjects + ((float)objectHits)/nobjects ) / 2.0;
     }
 }
 
@@ -215,12 +215,12 @@ void expandParameters(vector<vector<double> > params, cv::Mat& expandedParams)
 // row in parameters, return a GridMat of hp-by-wp vectors of parameters.
 void selectParameters(cv::Mat parameters, GridMat indices, GridMat& selection)
 {
-    selection.create<int>(indices.crows(), indices.ccols(), 1, parameters.cols);
-    for (int i = 0; selection.crows(); i++) for (int j = 0; selection.ccols(); j++)
-    {
-        int idx = indices.at<int>(i,j,0,0);
-        parameters.row(idx).copyTo(selection.at(i,j).row(0));
-    }
+//    selection.create<int>(indices.crows(), indices.ccols(), 1, parameters.cols);
+//    for (int i = 0; selection.crows(); i++) for (int j = 0; selection.ccols(); j++)
+//    {
+//        int idx = indices.at<int>(i,j,0,0);
+//        parameters.row(idx).copyTo(selection.at(i,j).row(0));
+//    }
 }
 
 
@@ -290,8 +290,8 @@ void ModalityPrediction<cv::EM>::modelSelection(ModalityGridData data, GridMat d
     
     GridMat foldsMeanAcc, foldsArgmaxAcc;
     accuracies.mean(foldsMeanAcc, 1);
-    foldsMeanAcc.argmax<float>(foldsArgmaxAcc);
-    selectParameters(expandedParams, foldsArgmaxAcc, selection);
+//    foldsMeanAcc.argmax<float>(foldsArgmaxAcc);
+//    selectParameters(expandedParams, foldsArgmaxAcc, selection);
 }
 
 void ModalityPrediction<cv::EM>::accuracy(cv::Mat actuals, GridMat predictions, cv::Mat& accuracies)
