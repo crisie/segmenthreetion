@@ -16,16 +16,16 @@
  */
 void histogram(cv::Mat mat, int nbins, cv::Mat & hist)
 {
-    double min, max;
-    cv::minMaxIdx(mat, &min, &max);
+    double minval, maxval;
+    cv::minMaxIdx(mat, &minval, &maxval);
     
-    if (nbins > (max-min+1))
+    if (nbins > (maxval-minval+1))
         return;
     
     // Create an histogram for the cell region of blurred intensity values
     int histSize[] = { (int) nbins };
     int channels[] = { 0 }; // 1 channel, number 0
-    float tranges[] = { min, max }; // thermal intensity values range: [0, 256)
+    float tranges[] = { (float)minval, (float)maxval }; // thermal intensity values range: [0, 256)
     const float* ranges[] = { tranges };
     
     cv::calcHist(&mat, 1, channels, cv::noArray(), hist, 1, histSize, ranges, true, false);

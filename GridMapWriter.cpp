@@ -43,11 +43,11 @@ void GridMapWriter<T>::setNumberOfMaps(int n)
 template<typename T>
 void GridMapWriter<T>::write(std::string path)
 {
-    if (n < 1)
-    {
-        std::cerr << "Data was not set. Set it or use the proper write function" << std::endl;
-        return;
-    }
+//    if (n < 1)
+//    {
+//        std::cerr << "Data was not set. Set it or use the proper write function" << std::endl;
+//        return;
+//    }
     
     write(m_mgd, m_n, m_values, path);
 }
@@ -66,7 +66,7 @@ void GridMapWriter<T>::write(ModalityGridData& mgd, int n, GridMat& values, std:
             for (int i = 0; i < mgd.hp(); i++) for (int j = 0; j < mgd.wp(); j++)
             {
                 cv::Mat roiMask (map, mgd.getGridBoundingRect(k));
-                map.setTo(values.at<T>(i, j, k, 0), roiMask);
+//                map.setTo(values.at<T>(i, j, k, 0), roiMask);
             }
         }
         

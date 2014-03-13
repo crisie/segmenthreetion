@@ -50,7 +50,7 @@ int main(int argc, const char* argv[])
     ForegroundParametrization fParam;
     
     int nftl[] = {35,200,80}; //frames needed to learn the background models for each sequence
-    const std::vector<int> nFramesToLearn(begin(nftl), end(nftl));
+    const std::vector<int> nFramesToLearn(nftl, nftl + 3);
     
     fParam.numFramesToLearn = nFramesToLearn;
     fParam.boundingBoxMinArea = 0.001;
