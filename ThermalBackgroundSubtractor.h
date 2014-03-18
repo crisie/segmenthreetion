@@ -24,12 +24,13 @@ public:
     
     ThermalBackgroundSubtractor();
     
-    void getMasks(ModalityData& mdOutput, ModalityData& mdInput);
+    void getMasks(ModalityData& mdInput, ModalityData& mdOutput);
     
-    void getBoundingRects(ModalityData& mdOutput, ModalityData& mdInput);
+    void getBoundingRects(ModalityData& mdInput, ModalityData& mdOutput);
     
     void adaptGroundTruthToReg(ModalityData& md);
     
+    void getRoiTags(ModalityData& mdInput, ModalityData& mdOutput);
 };
 
 #endif /* defined(__segmenthreetion__ThermalBackgroundSubtractor__) */

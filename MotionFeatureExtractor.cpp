@@ -155,7 +155,7 @@ void MotionFeatureExtractor::computeOpticalFlow(vector<cv::Mat> colorFrames, vec
 			prev_frame.release();
 			frame.copyTo(prev_frame);
 		}
-		if(cv::waitKey(30)>= 0)  {break;}
+		cv::waitKey(10);
 		tmpFrame.release();
 		tmpPrev_frame.release();
 	}

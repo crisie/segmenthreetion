@@ -24,13 +24,13 @@ void ColorBackgroundSubtractor::setMasksOffset(unsigned char masksOffset) {
  */
 
 
-void ColorBackgroundSubtractor::getMasks(ModalityData& mdOutput, ModalityData& mdInput) {
+void ColorBackgroundSubtractor::getMasks(ModalityData& mdInput, ModalityData& mdOutput) {
     
     mdOutput.setPredictedMasks(mdInput.getPredictedMasks());
     
 }
 
-void ColorBackgroundSubtractor::getBoundingRects(ModalityData& mdOutput, ModalityData& mdInput) {
+void ColorBackgroundSubtractor::getBoundingRects(ModalityData& mdInput, ModalityData& mdOutput) {
 
     mdOutput.setPredictedBoundingRects(mdInput.getPredictedBoundingRects());
     
@@ -38,18 +38,18 @@ void ColorBackgroundSubtractor::getBoundingRects(ModalityData& mdOutput, Modalit
 
 }
 
-void ColorBackgroundSubtractor::adaptGroundTruthToReg(ModalityData& mdOutput, ModalityData& mdInput) {
+void ColorBackgroundSubtractor::adaptGroundTruthToReg(ModalityData& mdInput, ModalityData& mdOutput) {
     
     mdOutput.setGroundTruthMasks(mdInput.getGroundTruthMasks());
     
 }
 
-void ColorBackgroundSubtractor::getRoiTags(ModalityData& mdOutput, ModalityData& mdInput) {
+void ColorBackgroundSubtractor::getRoiTags(ModalityData& mdInput, ModalityData& mdOutput) {
     
     mdOutput.setTags(mdInput.getTags());
 }
 
-void ColorBackgroundSubtractor::getGroundTruthBoundingRects(ModalityData& mdOutput, ModalityData& mdInput) {
+void ColorBackgroundSubtractor::getGroundTruthBoundingRects(ModalityData& mdInput, ModalityData& mdOutput) {
     
     mdOutput.setGroundTruthBoundingRects(mdInput.getGroundTruthBoundingRects());
     

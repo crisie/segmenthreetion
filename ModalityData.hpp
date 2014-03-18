@@ -55,13 +55,13 @@ public:
         return m_GroundTruthMasks[k];
     }
     
-    vector<cv::Mat> getPredictedMasksInScene(int s)
+    vector<cv::Mat> *getPredictedMasksInScene(int s)
     {
-        vector<cv::Mat> sceneMasks;
+        vector<cv::Mat> *sceneMasks = new vector<cv::Mat>;
         
-        for(int k = m_SceneLimits[s].first; k < (m_SceneLimits[s].second); k++ )
+        for(int k = m_SceneLimits[s].first; k <= (m_SceneLimits[s].second); k++ )
         {
-            sceneMasks.push_back(m_PredictedMasks[k]);
+            sceneMasks->push_back(m_PredictedMasks[k]);
         }
         
         return sceneMasks;
@@ -78,13 +78,13 @@ public:
     }
     
     
-    vector<cv::Mat> getFramesInScene(int s)
+    vector<cv::Mat> *getFramesInScene(int s)
     {
-        vector<cv::Mat> sceneFrames;
+        vector<cv::Mat> *sceneFrames = new vector<cv::Mat>;
         
         for(int k = m_SceneLimits[s].first; k <= (m_SceneLimits[s].second); k++ )
         {
-            sceneFrames.push_back(m_Frames[k]);
+            sceneFrames->push_back(m_Frames[k]);
         }
         
         return sceneFrames;
@@ -95,13 +95,18 @@ public:
         return m_Frames[m_SceneLimits[s].first + k];
     }
     
-    vector<cv::Mat> getGroundTruthMasksInScene(int s)
+    cv::Mat getRegFrameInScene(int s, int k)
     {
-        vector<cv::Mat> gtMasks;
+        return m_RegFrames[m_SceneLimits[s].first + k];
+    }
+    
+    vector<cv::Mat> *getGroundTruthMasksInScene(int s)
+    {
+        vector<cv::Mat> *gtMasks = new vector<cv::Mat>;
         
         for(int k = m_SceneLimits[s].first; k <= (m_SceneLimits[s].second); k++ )
         {
-            gtMasks.push_back(m_GroundTruthMasks[k]);
+            gtMasks->push_back(m_GroundTruthMasks[k]);
         }
         
         return gtMasks;
@@ -117,14 +122,32 @@ public:
         return m_PredictedBoundingRects[k];
     }
     
+    vector<vector<cv::Rect> > *getPredictedBoundingRectsInScene(int s)
+    {
+        vector<vector<cv::Rect> > *bbScene = new vector<vector<cv::Rect> >;
+        
+        for(int k = m_SceneLimits[s].first; k <= (m_SceneLimits[s].second); k++ )
+        {
+            bbScene->push_back(m_PredictedBoundingRects[k]);
+        }
+        
+        return bbScene;
+    }
+    
     vector<cv::Rect> getGroundTruthBoundingRectsInFrame(int k)
     {
         return m_GroundTruthBoundingRects[k];
     }
     
+    
     int getNumScenes()
     {
         return m_SceneLimits.size();
+    }
+    
+    int getSceneSize(int s)
+    {
+        return m_SceneLimits[s].second - m_SceneLimits[s].first + 1;
     }
     
     vector<int> getTagsInFrame(int k)
@@ -132,9 +155,26 @@ public:
         return m_Tags[k];
     }
     
+    vector<vector<int> > *getTagsInScene(int s)
+    {
+        vector<vector<int> > *tagsScene = new vector<vector<int> >;
+        
+        for(int k = m_SceneLimits[s].first; k <= (m_SceneLimits[s].second); k++ )
+        {
+            tagsScene->push_back(m_Tags[k]);
+        }
+        
+        return tagsScene;
+    }
+    
     vector<cv::Mat>& getFrames()
     {
         return m_Frames;
+    }
+    
+    vector<cv::Mat>& getRegFrames()
+    {
+        return m_RegFrames;
     }
     
     vector<cv::Mat>& getPredictedMasks()
@@ -183,13 +223,13 @@ public:
         return m_FramesIndices;
     }
     
-    vector<string> getFramesIndicesInScene(int s)
+    vector<string> *getFramesIndicesInScene(int s)
     {
-        vector<string> indices;
+        vector<string> *indices = new vector<string>;
         
         for(int k = m_SceneLimits[s].first; k <= (m_SceneLimits[s].second); k++ )
         {
-            indices.push_back(m_FramesIndices[k]);
+            indices->push_back(m_FramesIndices[k]);
         }
         
         return indices;
@@ -212,6 +252,11 @@ public:
             m_FramesResolutions.at<int>(i,0) = m_Frames[i].cols; // inverted
             m_FramesResolutions.at<int>(i,1) = m_Frames[i].rows;
         }
+    }
+    
+    void setRegFrames(vector<cv::Mat> regFrames)
+    {
+        m_RegFrames = regFrames;
     }
     
     void setGroundTruthMasks(vector<cv::Mat> masks)
@@ -270,7 +315,8 @@ public:
 private:
     // Load data from disk: frames, masks, and rectangular bounding boxes
     vector<cv::Mat> m_Frames;
-
+    vector<cv::Mat> m_RegFrames;
+    
     //vector<cv::Mat> m_Masks; // groundtruth masks
     vector<cv::Mat> m_PredictedMasks; // bs predicted masks
     //vector<int> m_FrameIDs;

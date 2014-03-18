@@ -9,6 +9,7 @@
 #include "BackgroundSubtractor.h"
 #include "DepthBackgroundSubtractor.h"
 #include "StatTools.h"
+#include "DebugTools.h"
 
 #include <opencv2/opencv.hpp>
 
@@ -49,18 +50,20 @@ void DepthBackgroundSubtractor::getMasks(ModalityData& md) {
         int history = m_fParam.numFramesToLearn[scene];
         float varThreshold = 3;
         cv::BackgroundSubtractorMOG2 bgsubtractor(history, varThreshold, false);
-        
-        //Initialize variables for BS loop
-        cv::Mat output, outputContours;
+        cv::Mat frame;
         
         //Per frame in scene
-        for(int f = 0; f < md.getFramesInScene(scene).size(); f++) {
+        for(int f = 0; f < md.getSceneSize(scene); f++) {
             
             vector<cv::Mat> outputMasksTemp;
             
-            cv::Mat frame (md.getFrameInScene(scene, f));
+            cv::Mat output, realFrame (md.getFrameInScene(scene, f));
+            //cout << realFrame.type() << " " << realFrame.dims << " ";
+            realFrame.convertTo(realFrame, CV_8UC3, 0.00390625);
+            cvtColor(realFrame, frame, CV_GRAY2BGR,3);
+            cout << frame.depth() << " " << frame.type() << " " << frame.channels() << endl;
             
-            if(f < m_fParam.numFramesToLearn[scene])
+            if(f < history)
             {
                 bgsubtractor(frame, output, f == 0 ? 1 : 0.02);
                 output = cv::Mat::zeros(frame.rows, frame.cols, CV_8UC1);
@@ -70,22 +73,20 @@ void DepthBackgroundSubtractor::getMasks(ModalityData& md) {
             {
                 output = cv::Mat::zeros(frame.rows, frame.cols, CV_8UC1);
                 bgsubtractor(frame, output, 0);
-                
                 this->extractItemsFromMask(frame, output);
-                
-                //TODO: visualization purposes
-                cv::Mat auxOutput;
-                frame.copyTo(auxOutput);
-                
-                //...
                 
             }
             masks.push_back(output);
+            
+            //Debug -  visualization purposes
+            cv::imshow("output", output);
+            cv::imshow("frame", frame);
+            cv::waitKey(10);
         }
+        
     }
     
     md.setPredictedMasks(masks);
-    //md.setMasks(masks);
     
 }
 
@@ -93,18 +94,16 @@ void DepthBackgroundSubtractor::getBoundingRects(ModalityData& md) {
     
     vector<vector<cv::Rect> > boundingRects(md.getFrames().size());
     
-    for(unsigned int f = 0; f < md.getFrames().size(); f++) {
-        
-        cv::Mat mask = md.getPredictedMask(f);
-        
+    for(unsigned int f = 0; f < md.getFrames().size(); f++)
+    {
         vector<int> uniqueValuesMask;
-        findUniqueValues(mask, uniqueValuesMask);
+        findUniqueValues(md.getPredictedMask(f), uniqueValuesMask);
         
         for(unsigned int i = 0; i < uniqueValuesMask.size(); i++)
         {
             cv::Rect bigBoundingBox;
             vector<cv::Rect> maskBoundingBoxes;
-            this->getMaskBoundingBoxes(mask, maskBoundingBoxes);
+            this->getMaskBoundingBoxes(md.getPredictedMask(f, i) , maskBoundingBoxes);
             
             if(!maskBoundingBoxes.empty()) {
                 this->getMaximalBoundingBox(maskBoundingBoxes, bigBoundingBox);
@@ -124,6 +123,7 @@ void DepthBackgroundSubtractor::getBoundingRects(ModalityData& md) {
     
     cout << "Depth bounding boxes: " << this->countBoundingBoxes(md.getPredictedBoundingRects()) << endl;
 
+    visualizeBoundingRects("Depth", md.getFrames(), md.getPredictedBoundingRects(), true);
     
 }
 
@@ -132,7 +132,6 @@ void DepthBackgroundSubtractor::extractItemsFromMask(cv::Mat frame, cv::Mat & ma
     cv::Mat valuedMask = cv::Mat::zeros(mask.rows, mask.cols, CV_8UC1);
     vector<pair<cv::Mat, cv::Rect> > item;
     unsigned int nItem = 0;
-    
     
     float bbMinArea = (frame.rows*frame.cols) * m_fParam.boundingBoxMinArea;
 	float otsuMinArea = (frame.rows*frame.cols) * m_fParam.otsuMinArea;
@@ -203,7 +202,8 @@ void DepthBackgroundSubtractor::extractItemsFromMask(cv::Mat frame, cv::Mat & ma
            ((boundRect[i].tl().x < 55 || boundRect[i].br().x > frame.cols - 15) && blobArea > bbMinArea/2))
 		{
             cv::Mat roiMask, frameGray, otsuMask;
-			cvtColor(frame,frameGray,CV_RGB2GRAY);
+            //frameGray.convertTo(frameGray, CV_8UC1);
+            cvtColor(frame,frameGray,CV_RGB2GRAY,1);
 			roiMask = cv::Mat::zeros(frame.size(),CV_8UC1);
             
 			drawContours( roiMask, contours, i, cv::Scalar::all(255), CV_FILLED, 8, vector<cv::Vec4i>());
@@ -215,6 +215,8 @@ void DepthBackgroundSubtractor::extractItemsFromMask(cv::Mat frame, cv::Mat & ma
             //Treat white regions (zero values) before Otsu algorithm
             cv::Mat roi, contourRegion, whiteRegion, blackRegion;
 			frameGray.copyTo(roi,roiMask);
+            roi.convertTo(roi, CV_8UC1);
+            cout << "thresh " << roi.type() << " " << roi.dims << endl;
 			threshold(roi,blackRegion,200,255,CV_THRESH_TOZERO_INV);
 			threshold(roi,whiteRegion,200,255,CV_THRESH_BINARY);
             
@@ -360,15 +362,15 @@ void DepthBackgroundSubtractor::extractItemsFromMask(cv::Mat frame, cv::Mat & ma
             {
                 threshold(roiMask,otsuMask,1,255,CV_THRESH_BINARY);
                 findContours(otsuMask, otsuContours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
-                
+                contours_poly.resize(otsuContours.size());
 				for(unsigned int j = 0; j < otsuContours.size(); j++)
 				{
                     cv::Mat tempMask = cv::Mat::zeros(frame.size(), CV_8UC1);
                     
                     drawContours(tempMask, otsuContours, j, 255, CV_FILLED, 8, vector<cv::Vec4i>());
                     cv::subtract(tempMask, singleLevelHoles, tempMask);
-					approxPolyDP( cv::Mat(otsuContours[j]), contours_poly, 2, true );
-                    item.push_back(std::make_pair(tempMask, boundingRect( cv::Mat(contours_poly)) ));
+					approxPolyDP( cv::Mat(otsuContours[j]), contours_poly[j], 2, true );
+                    item.push_back(std::make_pair(tempMask, boundingRect( cv::Mat(contours_poly[j])) ));
                     
 				}
             }
@@ -413,29 +415,30 @@ void DepthBackgroundSubtractor::adaptGroundTruthToReg(ModalityData& md) {
     
     for(int s = 0; s < md.getNumScenes(); s++)
     {
-        vector<cv::Mat> depthGtMasks = md.getGroundTruthMasksInScene(s);
-        vector<cv::Mat> depthFrames = md.getFramesInScene(s);
+        cv::Mat mask, realFrame(md.getFrameInScene(s,0));
+        realFrame.convertTo(realFrame, CV_8UC1, 0.00390625);
+        threshold(realFrame,mask,1,255,CV_THRESH_BINARY);
         
-        cv::Mat mask;
+        //debug
+        imshow("mask", mask);
         
-        threshold(md.getFrameInScene(s,0),mask,1,255,CV_THRESH_BINARY);
-        
-        for(unsigned int f = 0; f < md.getGroundTruthMasksInScene(s).size(); f++) {
+        for(unsigned int f = 0; f < md.getSceneSize(s); f++) {
             
             cv::Mat gtMask = md.getGroundTruthMaskInScene(s,f);
             
             cv::Mat frameAux = cv::Mat::zeros(gtMask.size(), gtMask.type());
-            depthGtMasks[f].copyTo(frameAux, mask);
+            gtMask.copyTo(frameAux, mask);
             
             newDepthGtMasks.push_back(frameAux);
-            
+          
         }
-
+        
+        cv::waitKey(10);
+        
     }
     
     md.setGroundTruthMasks(newDepthGtMasks);
     
-    //TODO: save masks somehow (?)
 }
 
 

@@ -40,7 +40,7 @@ void ModalityWriter::setDataPath(string dataPath)
 		directory_iterator iter(path);
 		for( ; iter != end ; ++iter )
 		{
-			if ( is_directory( *iter ) )
+			if ( is_directory( *iter ) && iter->path().string().find("Scene") != std::string::npos)
 			{
                 string scenePath = iter->path().string();
 				m_ScenesPaths.push_back(scenePath);
@@ -59,19 +59,18 @@ void ModalityWriter::write(string modality, ModalityData& md)
 {
     for (int i = 0; i < m_ScenesPaths.size(); i++)
     {
-        saveMats(m_ScenesPaths[i] + "Masks/" + modality + "/",
-                 "png",
-                 md.getPredictedMasksInScene(i),
-                 md.getFramesIndicesInScene(i));
+        saveMats(m_ScenesPaths[i] + "/Masks/" + modality + "/",
+                 ".png",
+                 *md.getPredictedMasksInScene(i),
+                 *md.getFramesIndicesInScene(i));
         
-        saveMats(m_ScenesPaths[i] + "GroundTruth/" + modality + "/",
-                 "png",
-                 md.getGroundTruthMasksInScene(i),
-                 md.getFramesIndicesInScene(i));
-        
-        saveBoundingRects(m_ScenesPaths[i] + "Masks/" + modality + ".yml",
-                          md.getPredictedBoundingRects(),
-                          md.getTags());
+        saveMats(m_ScenesPaths[i] + "/GroundTruth/" + modality + "/",
+                 ".png",
+                 *md.getGroundTruthMasksInScene(i),
+                 *md.getFramesIndicesInScene(i));
+        saveBoundingRects(m_ScenesPaths[i] + "/Masks/" + modality + ".yml",
+                          *md.getPredictedBoundingRectsInScene(i),
+                          *md.getTagsInScene(i));
 
     }
     

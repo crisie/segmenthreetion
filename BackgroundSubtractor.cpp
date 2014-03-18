@@ -58,7 +58,7 @@ void BackgroundSubtractor::getGroundTruthBoundingRects(ModalityData& md) {
 
 void BackgroundSubtractor::getRoiTags(ModalityData& md, bool manualAid) {
     
-    vector<vector<int> > bbTags;
+    vector<vector<int> > bbTags(md.getPredictedMasks().size());
     
     for(unsigned int f = 0; f < md.getPredictedMasks().size(); f++) {
         
@@ -77,24 +77,34 @@ void BackgroundSubtractor::getRoiTags(ModalityData& md, bool manualAid) {
                 }
                 
                 if(manualAid && isPerson != UNDEFINED) {
-                    cv::namedWindow("Tag ROI manually.");
+                    //cv::namedWindow("Tag ROI manually.");
                     
                     cv::Mat frame = md.getFrame(f);
+                    cv::Mat auxFrame;
+                    frame.copyTo(auxFrame);
+                    imshow("frame", auxFrame); //frame
                     cv::Mat mask = md.getPredictedMask(f);
-                    add(frame, cv::Scalar(100, 100, 0), frame, mask);
-                    cv::rectangle(frame, boundRects[b].tl(), boundRects[b].br(), cvScalar(255,0,0));
-                    
+                    add(auxFrame, cv::Scalar(100, 100, 0), auxFrame, mask);
+                    cv::rectangle(auxFrame, boundRects[b].tl(), boundRects[b].br(), cvScalar(255,0,0));
+                    cv::imshow("Tag ROI manually", auxFrame);
+                    cv::waitKey(10);
                     bool done = false;
                     do {
-                        cout << "Manual tagging... Press 1 if is a person, 0 otherwise." << endl;
-                        char key;
-                        cin >> key;
-                        if (key == 1) {
+                        cout << "Manual tagging... Press 'p' if it the bounding box surrounds a person, 'o' if object and 'u' if undefined." << endl;
+                        string input = "";
+                        getline(cin, input);
+                        boost::algorithm::to_lower(input);
+                        
+                        if (input.compare("p") == 0) {
                             isPerson = TRUE;
                             done = true;
                         }
-                        else if (key == 0) {
+                        else if (input.compare("o") == 0) {
                             isPerson = FALSE;
+                            done = true;
+                        }
+                        else if(input.compare("u") == 0) {
+                            isPerson = UNDEFINED;
                             done = true;
                         }
                         else cout << "Incorrect option." << endl;
@@ -102,6 +112,7 @@ void BackgroundSubtractor::getRoiTags(ModalityData& md, bool manualAid) {
                 }
                 
                 bbTags[f].push_back(isPerson);
+                
             }
             
         }

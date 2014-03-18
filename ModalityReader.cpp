@@ -43,7 +43,7 @@ void ModalityReader::setDataPath(string dataPath)
 		directory_iterator iter(path);
 		for( ; iter != end ; ++iter )
 		{
-			if ( is_directory( *iter ) )
+			if ( is_directory( *iter ) && iter->path().string().find("Scene") != std::string::npos)
 			{
                 string scenePath = iter->path().string();
 				m_ScenesPaths.push_back(scenePath);
@@ -70,6 +70,7 @@ void ModalityReader::read(std::string modality, ModalityData& md)
     vector<cv::Mat> frames;
     vector<cv::Mat> masks;
     vector<cv::Mat> gtMasks;
+    vector<cv::Mat> regFrames;
     
     vector<string> framesIndices;
     
@@ -81,16 +82,19 @@ void ModalityReader::read(std::string modality, ModalityData& md)
     int nFrames = 0;
     for (int i = 0; i < m_ScenesPaths.size(); i++)
     {
-        loadDataToMats   (m_ScenesPaths[i] + "Frames/" + modality + "/", "jpg", frames, framesIndices);
-        loadDataToMats   (m_ScenesPaths[i] + "Masks/" + modality + "/", "png", masks);
-        loadDataToMats(m_ScenesPaths[i] + "GroundTruth/" + modality + "/", "png", gtMasks);
-        loadBoundingRects(m_ScenesPaths[i] + "Masks/" + modality + ".yml", rects, tags);
-        if(modality == "Thermal") {
-            loadCalibVarsDir (m_ScenesPaths[i] + "calibVars.yml", calibVars);
+        loadDataToMats   (m_ScenesPaths[i] + "/Frames/" + modality + "/", "jpg", frames, framesIndices);
+        loadDataToMats   (m_ScenesPaths[i] + "/Masks/" + modality + "/", "png", masks);
+        loadDataToMats(m_ScenesPaths[i] + "/GroundTruth/" + modality + "/", "png", gtMasks);
+        loadBoundingRects(m_ScenesPaths[i] + "/Masks/" + modality + ".yml", rects, tags);
+        if(modality.compare("Thermal") == 0) {
+            loadCalibVarsDir (m_ScenesPaths[i] + "/calibVars.yml", calibVars);
+        }
+        if(modality.compare("Depth") == 0) {
+            loadDataToMats(m_ScenesPaths[i] + "/Frames/" + modality + "Raw/", "jpg", regFrames);
         }
         
         framesPerScene.push_back(std::make_pair(nFrames, frames.size() - 1));
-        nFrames = frames.size() - nFrames;
+        nFrames = frames.size();
     }
     
     md.setFrames(frames); // inner copy
@@ -113,6 +117,14 @@ void ModalityReader::read(std::string modality, ModalityData& md)
     md.setTags(tags);
     tags.clear();
     
+    if(modality.compare("Thermal") == 0) {
+        md.setCalibVarsDirs(calibVars);
+        calibVars.clear();
+    }
+    if(modality.compare("Depth") == 0) {
+        md.setRegFrames(regFrames);
+        regFrames.clear();
+    }
 }
 
 
@@ -131,10 +143,11 @@ void ModalityReader::loadDataToMats(string dir, const char* format, vector<cv::M
 		directory_iterator iter(path);
 		for( ; iter != end ; ++iter )
 		{
-			if ( !is_directory( *iter ) && iter->path().extension().string().compare(".png") == 0 )
+			if ( !is_directory( *iter ) && (iter->path().extension().string().compare(".png") == 0  ||
+                                            iter->path().extension().string().compare(".jpg") == 0))
 			{
-                //cout << iter->path().string() << endl;
-				cv::Mat img = cv::imread( iter->path().string(), CV_LOAD_IMAGE_ANYDEPTH );
+                cout << iter->path().string() << endl; //debug
+				cv::Mat img = cv::imread( iter->path().string(), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR );
 				frames.push_back(img);
             }
 		}
@@ -156,13 +169,15 @@ void ModalityReader::loadDataToMats(string dir, const char* format, vector<cv::M
 		directory_iterator iter(path);
 		for( ; iter != end ; ++iter )
 		{
-			if ( !is_directory( *iter ) && iter->path().extension().string().compare(".png") == 0 )
+			if ( !is_directory( *iter ) && (iter->path().extension().string().compare(".png") == 0 ||
+                                            iter->path().extension().string().compare(".jpg") == 0))
 			{
-                //cout << iter->path().string() << endl;
-				cv::Mat img = cv::imread( iter->path().string(), CV_LOAD_IMAGE_ANYDEPTH );
+                cout << iter->path().string() << endl; //debug
+				cv::Mat img = cv::imread( iter->path().string(), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
 				frames.push_back(img);
                 
-                indices.push_back(iter->path().filename().string());
+                string filename =iter->path().filename().string();
+                indices.push_back(filename.erase(filename.size()-4));
 			}
 		}
 	}
@@ -207,7 +222,7 @@ void ModalityReader::loadBoundingRects(string file, vector< vector<cv::Rect> > &
     fs.release();
 }
 
-void ModalityReader::loadCalibVarsDir(string dir, vector<string> calibVarsDirs) {
+void ModalityReader::loadCalibVarsDir(string dir, vector<string>& calibVarsDirs) {
     
     calibVarsDirs.push_back(dir);
     

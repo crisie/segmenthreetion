@@ -50,7 +50,7 @@ int main(int argc, const char* argv[])
     ForegroundParametrization fParam;
     
     int nftl[] = {35,200,80}; //frames needed to learn the background models for each sequence
-    const std::vector<int> nFramesToLearn(nftl, nftl + 2);
+    const std::vector<int> nFramesToLearn(nftl, nftl + 3);
     
     fParam.numFramesToLearn = nFramesToLearn;
     fParam.boundingBoxMinArea = 0.001;
@@ -131,40 +131,43 @@ int main(int argc, const char* argv[])
     dBS.getBoundingRects(dData);
     dBS.adaptGroundTruthToReg(dData);
     dBS.getGroundTruthBoundingRects(dData);
-    dBS.getRoiTags(dData, true);
+    dBS.getRoiTags(dData, false);
     
     writer.write("Depth", dData);
     
     //Color
     reader.read("Color", cData);
     
-    ColorBackgroundSubtractor cBS;
+   ColorBackgroundSubtractor cBS;
     cBS.setMasksOffset(masksOffset);
-    cBS.getMasks(cData, dData);
-    cBS.getBoundingRects(cData, dData);
-    cBS.adaptGroundTruthToReg(cData, dData);
-    cBS.getGroundTruthBoundingRects(cData,dData);
-    cBS.getRoiTags(cData, dData);
+    cBS.getMasks(dData, cData);
+    cBS.getBoundingRects(dData, cData);
+    cBS.adaptGroundTruthToReg(dData, cData);
+    cBS.getGroundTruthBoundingRects(dData,cData);
+    cBS.getRoiTags(dData, cData);
     
+    writer.write("Color", cData);
     // Thermal
     // <------
     reader.read("Thermal", tData);
     
-    
     ThermalBackgroundSubtractor tBS;
     tBS.setMasksOffset(masksOffset);
-    tBS.getMasks(tData, dData);
-    tBS.getBoundingRects(tData, dData);
-    tBS.adaptGroundTruthToReg(tData);
-
+    tBS.getMasks(dData, tData);
+    tBS.getBoundingRects(dData, tData);
+   // tBS.adaptGroundTruthToReg(tData);
+    tBS.getRoiTags(dData, tData);
+    
+    writer.write("Thermal", tData);
+    
     GridPartitioner partitioner;
     partitioner.setGridPartitions(hp, wp);
     partitioner.grid(tData, tGridData); // perform "gridding"
     
-  /*  GridMat tDescriptors;
+    GridMat tDescriptors;
     ThermalFeatureExtractor tFE(tParam);
     tFE.describe(tGridData, tDescriptors); // perform description
-    */
+    
 //    GridMat tLoglikelihoods;
     
     ModalityPrediction<cv::EM> tPrediction;

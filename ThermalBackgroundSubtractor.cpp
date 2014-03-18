@@ -21,41 +21,43 @@ ThermalBackgroundSubtractor::ThermalBackgroundSubtractor()
 { }
 
 
-void ThermalBackgroundSubtractor::getMasks(ModalityData& mdOutput, ModalityData& mdInput) {
+void ThermalBackgroundSubtractor::getMasks(ModalityData& mdInput, ModalityData& mdOutput) {
     
      vector<cv::Mat> masks;
-
-    //TODO: revise getters used!
+    
+    vector<string> calibVarDirs = mdOutput.getCalibVarsDirs();
     
     for(int scene = 0; scene < mdOutput.getNumScenes(); scene++)
     {
         // Create an instance of the registration class
         Registrator minReg;
         
-        minReg.loadMinCalibrationVars(mdOutput.getCalibVarsDirs()[scene]);
+        minReg.loadMinCalibrationVars(calibVarDirs[scene]);
         minReg.setUsePrevDepthPoint(true);
     
         //Duplicate depth frames (one duplicated frame per item in that frame, minimum 1 frame -if no item-)
-        vector<cv::Mat> depthFrames, replicatedDepthFrames, depthMasksCollection;
+        vector<cv::Mat> replicatedDepthFrames, depthMasksCollection;
         //vector<string> depthIndices;
-        vector<int> nMasksPerFrame;
+        vector<int> nMasksPerFrame(mdInput.getSceneSize(scene));
         
-        depthFrames = mdOutput.getFramesInScene(scene);
-        
-        for(unsigned int f = 0; f < mdInput.getFramesInScene(scene).size() ; f++) {
+        for(unsigned int f = 0; f < mdInput.getSceneSize(scene) ; f++) {
             
-            cv::Mat depthFrame = mdInput.getFrameInScene(scene,f);
+            cv::Mat depthFrame = mdInput.getRegFrameInScene(scene,f);
             
             vector<int> uniqueValues;
-            findUniqueValues(mdOutput.getPredictedMaskInScene(scene, f), uniqueValues);
+            findUniqueValues(mdInput.getPredictedMaskInScene(scene, f), uniqueValues);
             
-            replicatedDepthFrames.push_back(depthFrame);
-            nMasksPerFrame[f] = 1;
+            nMasksPerFrame[f] = 0;
             
-            for(unsigned int m = 1; m < uniqueValues.size(); m++) {
+            for(unsigned int m = 0; m < uniqueValues.size(); m++) {
                 replicatedDepthFrames.push_back(depthFrame);
-                depthMasksCollection.push_back(mdOutput.getPredictedMaskInScene(scene, f, m));
+                depthMasksCollection.push_back(mdInput.getPredictedMaskInScene(scene, f, m));
                 nMasksPerFrame[f]++;
+            }
+            
+            if(nMasksPerFrame[f] == 0) {
+                replicatedDepthFrames.push_back(depthFrame);
+                nMasksPerFrame[f] = 1;
             }
             
         }
@@ -92,9 +94,17 @@ void ThermalBackgroundSubtractor::getMasks(ModalityData& mdOutput, ModalityData&
                 findUniqueValues(valuedMask, uniqueValues);
                 for (auto c : uniqueValues)
                     cout << c << ' ';
+                
+                //Debug -  visualization purposes
+                cv::imshow("output", mask);
+                cv::waitKey(10);
             }
             
+            
             masks.push_back(valuedMask);
+            
+            //Debug - visualization purposes
+            cv::imshow("final mask", valuedMask);
             
             //Debug purposes - show mask unique values
             vector<int> uniqueValues;
@@ -107,26 +117,27 @@ void ThermalBackgroundSubtractor::getMasks(ModalityData& mdOutput, ModalityData&
     
     }
     
-    //TODO: save somehow masks in folder
-    
     mdOutput.setPredictedMasks(masks);
     
 }
 
-void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdOutput, ModalityData& mdInput) {
+void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdInput, ModalityData& mdOutput) {
     
-    vector<vector<cv::Rect> > boundingRects(mdInput.getFrames().size());
+    vector<vector<cv::Rect> > boundingRects(mdOutput.getFrames().size());
     
-    for(unsigned int f = 0; f < mdInput.getFrames().size(); f++) {
+    for(unsigned int f = 0; f < mdOutput.getFrames().size(); f++) {
         
         vector<int> uniqueValuesDepthMask;
-        findUniqueValues(mdOutput.getPredictedMask(f), uniqueValuesDepthMask);
+        findUniqueValues(mdInput.getPredictedMask(f), uniqueValuesDepthMask);
+        uniqueValuesDepthMask.erase(std::remove(uniqueValuesDepthMask.begin(), uniqueValuesDepthMask.end(), 0), uniqueValuesDepthMask.end());
+        
+        vector<cv::Rect> bbDepth = mdInput.getPredictedBoundingRectsInFrame(f);
         
         for(unsigned int i = 0; i < uniqueValuesDepthMask.size(); i++)
         {
             cv::Rect bigBoundingBox;
             vector<cv::Rect> maskBoundingBoxes;
-            this->getMaskBoundingBoxes(mdInput.getPredictedMask(f), maskBoundingBoxes);
+            this->getMaskBoundingBoxes(mdOutput.getPredictedMask(f,i), maskBoundingBoxes);
             
             if(!maskBoundingBoxes.empty())
             {
@@ -141,9 +152,9 @@ void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdOutput, Modal
                     boundingRects[f].push_back(bigBoundingBox);
                 }
             }
-            else if(maskBoundingBoxes.empty() && !mdOutput.getPredictedBoundingRectsInFrame(f).empty())
+            else if(maskBoundingBoxes.empty() && !bbDepth.empty())
             {
-                boundingRects[f].push_back(mdOutput.getPredictedBoundingRectsInFrame(f)[i]);
+                boundingRects[f].push_back(bbDepth[i]);
             }
             
         }
@@ -157,6 +168,8 @@ void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdOutput, Modal
     //Debug purposes
     compareNumberBoundingBoxes(mdInput.getPredictedBoundingRects(), mdOutput.getPredictedBoundingRects());
     
+    visualizeBoundingRects("Thermal", mdOutput.getFrames(), mdOutput.getPredictedBoundingRects(), true);
+    
 }
 
 void ThermalBackgroundSubtractor::adaptGroundTruthToReg(ModalityData& md) {
@@ -165,33 +178,38 @@ void ThermalBackgroundSubtractor::adaptGroundTruthToReg(ModalityData& md) {
     
     for(int scene = 0; scene < md.getNumScenes(); scene++)
     {
-        vector<cv::Mat> thermalGtMasks = md.getGroundTruthMasksInScene(scene);
 
-        cv::Mat mask;
-        cv::Mat accumulateMask = cv::Mat::zeros(thermalGtMasks[0].size(), thermalGtMasks[0].type());
+        cv::Mat mask, tempMask(md.getGroundTruthMaskInScene(scene, 0));
+        cv::Mat accumulateMask = cv::Mat::zeros(tempMask.size(), tempMask.type());
         
-        for(unsigned int f = 0; f < thermalGtMasks.size(); f++)
+        for(unsigned int f = 0; f < md.getSceneSize(scene); f++)
         {
-            cv::Mat auxThermalGtMask = cv::Mat::zeros(thermalGtMasks[f].size(), CV_8UC1);
+            cv::Mat auxMask(md.getGroundTruthMaskInScene(scene, f));
+            cv::Mat auxThermalGtMask = cv::Mat::zeros(auxMask.size(), CV_8UC1);
             
-            threshold(thermalGtMasks[f], auxThermalGtMask, 1, 255, CV_THRESH_BINARY);
-            bitwise_or(thermalGtMasks[f],accumulateMask, accumulateMask);
+            threshold(auxMask, auxThermalGtMask, 1, 255, CV_THRESH_BINARY);
+            bitwise_or(auxMask,accumulateMask, accumulateMask);
         }
         
         cvtColor(accumulateMask, accumulateMask, CV_RGB2GRAY);
         accumulateMask.convertTo(accumulateMask, CV_8UC1);
         
-        for(unsigned int f = 0; f < thermalGtMasks.size(); f++)
+        for(unsigned int f = 0; f < md.getSceneSize(scene); f++)
         {
-            cv::Mat frameAux = cv::Mat::zeros(thermalGtMasks[f].size(), thermalGtMasks[f].type());
-            thermalGtMasks[f].copyTo(frameAux, accumulateMask);
+            cv::Mat auxMask(md.getGroundTruthMaskInScene(scene, f));
+            cv::Mat frameAux = cv::Mat::zeros(auxMask.size(), auxMask.type());
+            auxMask.copyTo(frameAux, accumulateMask);
             
             newThermalGtMasks.push_back(frameAux);
         }
-        
+
     }
     
     md.setGroundTruthMasks(newThermalGtMasks);
     
-    //TODO: save in dir somehow
+}
+
+void ThermalBackgroundSubtractor::getRoiTags(ModalityData& mdInput, ModalityData& mdOutput) {
+    
+    mdOutput.setTags(mdInput.getTags());
 }

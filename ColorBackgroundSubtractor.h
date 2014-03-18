@@ -28,15 +28,15 @@ public:
     
     //void setMasksOffset(unsigned char masksOffset);
     
-    void getMasks(ModalityData& mdOutput, ModalityData& mdInput);
+    void getMasks(ModalityData& mdInput, ModalityData& mdOutput);
     
-    void getBoundingRects(ModalityData& mdOutput, ModalityData& mdInput);
+    void getBoundingRects(ModalityData& mdInput, ModalityData& mdOutput);
     
-    void adaptGroundTruthToReg(ModalityData& mdOutput, ModalityData& mdInput);
+    void adaptGroundTruthToReg(ModalityData& mdInput, ModalityData& mdOutput);
     
-    void getRoiTags(ModalityData& mdOutput, ModalityData& mdInput);
+    void getRoiTags(ModalityData& mdInput, ModalityData& mdOutput);
     
-    void getGroundTruthBoundingRects(ModalityData& mdOutput, ModalityData& mdInput);
+    void getGroundTruthBoundingRects(ModalityData& mdInput, ModalityData& mdOutput);
 };
 
 #endif /* defined(__segmenthreetion__ColorBackgroundSubtractor__) */

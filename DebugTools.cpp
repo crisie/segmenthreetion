@@ -6,6 +6,13 @@
 //
 //
 
+#include <string>
+#include <fstream>
+#include <iostream>
+#include <iomanip>
+#include <sstream>
+#include <stdarg.h>
+
 #include "DebugTools.h"
 
 /**
@@ -40,17 +47,17 @@ void visualizeMasksWithinRects(vector<cv::Mat> masks, vector<vector<cv::Rect> > 
 
 /**
  * DEBUG (Auxiliary function)
- * Visualizes in an OpenCV window the sequence of frames with the corresponding bounding boxes surrounding the items found.
+ * Visualizes in an OpenCV window the sequence of frames with the corresponding bounding boxes surrounding the items found and save them (optional).
  * To check wheter the bounding rects have been generated correctly.
  */
-void visualizeBoundingRects(vector<cv::Mat> frames, vector<vector<cv::Rect> > rects)
+void visualizeBoundingRects(string modality, vector<cv::Mat> frames, vector<vector<cv::Rect> > rects, bool save)
 {
     cv::namedWindow("Bounding rects sequence visualization");
     for (int i = 0; i < frames.size(); i++)
     {
         cout << i << " rects: " << rects[i].size() << endl;
-        cv::Mat frame (frames[i]);
-        
+        cv::Mat frame;
+        frames[i].copyTo(frame);
         bool any = false;
         for (int j = 0; j < rects[i].size(); j++)
         {
@@ -60,16 +67,32 @@ void visualizeBoundingRects(vector<cv::Mat> frames, vector<vector<cv::Rect> > re
         }
         imshow("Bounded masks sequence visualization", frame);
         
+        if(save) {
+            std::vector<int> qualityType;
+            qualityType.push_back(CV_IMWRITE_PNG_COMPRESSION);
+            qualityType.push_back(3);
+            stringstream aa;
+            aa << "../../Sequences/" << modality << "/" << zeroPadNumber(i) << ".png";
+            string filename = aa.str();
+            aa.str("");
+            cv::imwrite(filename,frame,qualityType);
+        }
+        
         if (any)
-            cv::waitKey();
-        else
             cv::waitKey(10);
+        else
+            cv::waitKey(10); //10
         
     }
 }
 
-
-
+string zeroPadNumber(int num)
+{
+    ostringstream ss;
+    ss << std::setw(5) << setfill('0') << num;
+    std::string result = ss.str();
+    return result;
+}
 
 /**
  * DEBUG (Auxiliary function)

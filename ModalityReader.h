@@ -42,7 +42,7 @@ private:
     // Load people bounding boxes (rects)
     void loadBoundingRects(std::string file, std::vector< std::vector<cv::Rect> >& rects, std::vector< std::vector<int> >& tags);
     // Save calibVars files directories
-    void loadCalibVarsDir(string dir, vector<string> calibVarsDirs);
+    void loadCalibVarsDir(string dir, vector<string>& calibVarsDirs);
 };
 
 #endif /* defined(__segmenthreetion__ModalityReader__) */
