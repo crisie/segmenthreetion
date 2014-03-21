@@ -51,8 +51,21 @@ float Validation::getMaskOverlap(cv::Mat predictedMask, cv::Mat gtMask, cv::Mat 
     
     float overlap = 0.0;
     
-    vector<int> gtMaskPersonId;
-    findUniqueValues(gtMask, gtMaskPersonId);
+    vector<int> gtMaskPersonID;
+    findUniqueValues(gtMask, gtMaskPersonID);
+    
+    //labeled_result_mask: we already have one label per blob (200, 201, 202....)
+    vector<int> predictedMaskPersonID;
+    findUniqueValues(predictedMask, predictedMaskPersonID);
+    predictedMaskPersonID.erase(std::remove(predictedMaskPersonID.begin(), predictedMaskPersonID.end(), 0), predictedMaskPersonID.end());
+    
+    cv::Mat labeledGtMask = cv::Mat::zeros(gtMask.size(), CV_8UC1);
+    vector<vector<cv::Point> > contours;
+    findContours(gtMask, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+    for(int c = 0; c < contours.size(); c++)
+    {
+        drawContours(labeledGtMask, contours, c, c, CV_FILLED, 8, vector<cv::Vec4i>());
+    }
     
     
     
