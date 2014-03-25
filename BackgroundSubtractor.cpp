@@ -183,7 +183,7 @@ void BackgroundSubtractor::checkWhitePixels(cv::Rect & box, cv::Mat frame) {
 
 void BackgroundSubtractor::getMaximalBoundingBox(vector<cv::Rect> boundingBox, cv::Rect & outputBoundingBox) {
 	
-    cv::Point tl(INFINITY, INFINITY);
+	cv::Point tl(std::numeric_limits<int>::infinity(), std::numeric_limits<int>::infinity());
     cv::Point br(-1,-1);
 	
     for(unsigned int i = 0; i < boundingBox.size(); i++) {

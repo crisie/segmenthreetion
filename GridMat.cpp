@@ -284,12 +284,12 @@ void GridMat::set(cv::Mat cell, unsigned int i, unsigned int j)
 
 GridMat GridMat::vget(cv::Mat indices, bool logical)
 {
-    this->getIndexedCellElements(indices, 0, logical);
+    return this->getIndexedCellElements(indices, 0, logical);
 }
 
 GridMat GridMat::hget(cv::Mat indices, bool logical)
 {
-    this->getIndexedCellElements(indices, 1, logical);
+    return this->getIndexedCellElements(indices, 1, logical);
 }
 
 void GridMat::vset(GridMat grid, cv::Mat indices, bool logical)

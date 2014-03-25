@@ -13,6 +13,8 @@
 
 #include "ColorParametrization.hpp"
 
+#define M_PI 3.14159
+
 using namespace std;
 
 class ColorFeatureExtractor : public FeatureExtractor
