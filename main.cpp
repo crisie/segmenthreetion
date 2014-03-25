@@ -119,46 +119,47 @@ int main(int argc, const char* argv[])
     ModalityReader reader(dataPath);
     reader.setMasksOffset(masksOffset);
     
-    
-    ModalityWriter writer(dataPath);
+//    ModalityWriter writer(dataPath);
     
     // Depth
-    reader.read("Depth", dData);
+//    reader.read("Depth", dData);
     
-    DepthBackgroundSubtractor dBS(fParam);
-    dBS.setMasksOffset(masksOffset);
-    dBS.getMasks(dData);
-    dBS.getBoundingRects(dData);
-    dBS.adaptGroundTruthToReg(dData);
-    dBS.getGroundTruthBoundingRects(dData);
-    dBS.getRoiTags(dData, false);
-    
-    writer.write("Depth", dData);
+//    DepthBackgroundSubtractor dBS(fParam);
+//    dBS.setMasksOffset(masksOffset);
+//    dBS.getMasks(dData);
+//    dBS.getBoundingRects(dData);
+//    dBS.adaptGroundTruthToReg(dData);
+//    dBS.getGroundTruthBoundingRects(dData);
+//    dBS.getRoiTags(dData, false);
+//    
+//    writer.write("Depth", dData);
     
     //Color
-    reader.read("Color", cData);
+//    reader.read("Color", cData);
     
-   ColorBackgroundSubtractor cBS;
-    cBS.setMasksOffset(masksOffset);
-    cBS.getMasks(dData, cData);
-    cBS.getBoundingRects(dData, cData);
-    cBS.adaptGroundTruthToReg(dData, cData);
-    cBS.getGroundTruthBoundingRects(dData,cData);
-    cBS.getRoiTags(dData, cData);
+//    ColorBackgroundSubtractor cBS;
+//    cBS.setMasksOffset(masksOffset);
+//    cBS.getMasks(dData, cData);
+//    cBS.getBoundingRects(dData, cData);
+//    cBS.adaptGroundTruthToReg(dData, cData);
+//    cBS.getGroundTruthBoundingRects(dData,cData);
+//    cBS.getRoiTags(dData, cData);
+//    
+//    writer.write("Color", cData);
     
-    writer.write("Color", cData);
     // Thermal
     // <------
     reader.read("Thermal", tData);
     
-    ThermalBackgroundSubtractor tBS;
-    tBS.setMasksOffset(masksOffset);
-    tBS.getMasks(dData, tData);
-    tBS.getBoundingRects(dData, tData);
-   // tBS.adaptGroundTruthToReg(tData);
-    tBS.getRoiTags(dData, tData);
+//    ThermalBackgroundSubtractor tBS;
+//    tBS.setMasksOffset(masksOffset);
+//    tBS.getMasks(dData, tData);
+//    tBS.getBoundingRects(dData, tData);
+//   // tBS.adaptGroundTruthToReg(tData);
+//    tBS.getRoiTags(dData, tData);
+//    
+//    writer.write("Thermal", tData);
     
-    writer.write("Thermal", tData);
     
     GridPartitioner partitioner;
     partitioner.setGridPartitions(hp, wp);

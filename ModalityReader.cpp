@@ -117,11 +117,14 @@ void ModalityReader::read(std::string modality, ModalityData& md)
     md.setTags(tags);
     tags.clear();
     
-    if(modality.compare("Thermal") == 0) {
+    if(modality.compare("Thermal") == 0)
+    {
         md.setCalibVarsDirs(calibVars);
         calibVars.clear();
     }
-    if(modality.compare("Depth") == 0) {
+    
+    if(modality.compare("Depth") == 0)
+    {
         md.setRegFrames(regFrames);
         regFrames.clear();
     }
@@ -146,7 +149,7 @@ void ModalityReader::loadDataToMats(string dir, const char* format, vector<cv::M
 			if ( !is_directory( *iter ) && (iter->path().extension().string().compare(".png") == 0  ||
                                             iter->path().extension().string().compare(".jpg") == 0))
 			{
-                cout << iter->path().string() << endl; //debug
+                //cout << iter->path().string() << endl; //debug
 				cv::Mat img = cv::imread( iter->path().string(), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR );
 				frames.push_back(img);
             }
@@ -172,7 +175,7 @@ void ModalityReader::loadDataToMats(string dir, const char* format, vector<cv::M
 			if ( !is_directory( *iter ) && (iter->path().extension().string().compare(".png") == 0 ||
                                             iter->path().extension().string().compare(".jpg") == 0))
 			{
-                cout << iter->path().string() << endl; //debug
+                //cout << iter->path().string() << endl; //debug
 				cv::Mat img = cv::imread( iter->path().string(), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
 				frames.push_back(img);
                 
