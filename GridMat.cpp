@@ -105,6 +105,8 @@ GridMat GridMat::getIndexedCellElementsLogically(cv::Mat indices, int dim)
         
         indexed.set(cellPartition, i, j);
     }
+
+	return indexed;
 }
 
 void GridMat::setIndexedCellElementsLogically(GridMat grid, cv::Mat indices, int dim)

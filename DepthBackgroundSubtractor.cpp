@@ -392,8 +392,8 @@ void DepthBackgroundSubtractor::extractItemsFromMask(cv::Mat frame, cv::Mat & ma
             //Debug purposes - show mask unique valuess
             vector<int> uniqueValues;
             findUniqueValues(item[o].first, uniqueValues);
-            for (auto c : uniqueValues)
-                cout << c << ' ';
+            //for (auto c : uniqueValues)
+            //    cout << c << ' ';
             
             nItem++;
         }
@@ -404,9 +404,8 @@ void DepthBackgroundSubtractor::extractItemsFromMask(cv::Mat frame, cv::Mat & ma
     //Debug purposes - show mask unique values
     vector<int> uniqueValues;
     findUniqueValues(mask, uniqueValues);
-    for (auto c : uniqueValues)
-        cout << c << ' ';
-    
+    //for (auto c : uniqueValues)
+    //    cout << c << ' ';
 }
 
 void DepthBackgroundSubtractor::adaptGroundTruthToReg(ModalityData& md) {

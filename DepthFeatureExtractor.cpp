@@ -56,7 +56,7 @@ void DepthFeatureExtractor::describe(ModalityGridData data, GridMat& descriptors
             
             // Normals orientation descriptor
             cv::Mat dNormalsOrientsHist(1, (m_DepthParam.thetaBins + m_DepthParam.phiBins), CV_32F);
-            dNormalsOrientsHist.setTo(NAN);
+			dNormalsOrientsHist.setTo(std::numeric_limits<float>::quiet_NaN());
             describeNormalsOrients(cell, cellMask, dNormalsOrientsHist);
             
             descriptors.vconcat(dNormalsOrientsHist, i, j); // row in a matrix of descriptors

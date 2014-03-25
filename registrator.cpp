@@ -2,8 +2,16 @@
 //
 #include "registrator.h"
 
+#include <sys/stat.h>
+#include <string>
+#include <fstream>
+#include <iostream>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/fstream.hpp>
+
 using namespace std;
 using namespace cv;
+using namespace boost::filesystem;
 
 Registrator::Registrator()
 {
@@ -1012,27 +1020,25 @@ void Registrator::saveRegisteredContours(Mat depthContourImage, Mat thermalConto
 }
 
 void Registrator::buildContourDirectory(string rgbLoadPath, vector<string> &rgbIndices)
-{
-	// Load contour images in RGB folder using dirent.h
-	DIR *dr;
-	int count = 0,len;
-	struct dirent *ent;
-	const char * cRgbPath = rgbLoadPath.c_str();
-	Mat tmpContourImg;
-    
-	dr = opendir(cRgbPath);
-	if (dr != NULL) {
-		while ((ent = readdir(dr)) != NULL) {
-			// While we have not reached the end of the folder, proceed
-			len = int(strlen(ent ->d_name));
-			if (len >= 4) {
-				if (strcmp (".png",&(ent->d_name[len-4])) == 0) {
-					rgbIndices.push_back(ent->d_name);
-				}
+{    
+	rgbIndices.clear();
+
+    const char* path = rgbLoadPath.c_str();
+	if( exists( path ) )
+	{
+        boost::filesystem::
+		directory_iterator end;
+		directory_iterator iter(path);
+		for( ; iter != end ; ++iter )
+		{
+			if ( !is_directory( *iter ) && (iter->path().extension().string().compare(".png") == 0 ||
+                                            iter->path().extension().string().compare(".jpg") == 0))
+			{
+                string filename = iter->path().filename().string();
+                rgbIndices.push_back(filename.erase(filename.size()-4));
 			}
 		}
 	}
-    
 }
 
 void Registrator::saveRegisteredImages(Mat depthImage, string depthSavePath, string imgNbr)
@@ -1052,22 +1058,20 @@ void Registrator::buildImageDirectory(string rgbLoadPath, vector<string>& rgbInd
 
 void Registrator::buildImageDirectory(string rgbLoadPath, vector<string>& rgbIndices, string filetype)
 {
-	DIR *dr;
-	int count = 0,len;
-	struct dirent *ent;
-	const char * cRgbPath = rgbLoadPath.c_str();
-	const char * fType = filetype.c_str();
 	rgbIndices.clear();
-    
-	dr = opendir(cRgbPath);
-	if (dr != NULL) {
-		while ((ent = readdir(dr)) != NULL) {
-			// While we have not reached the end of the folder, proceed
-			len = int(strlen(ent ->d_name));
-			if (len >= 4) {
-				if (strcmp (fType,&(ent->d_name[len-4])) == 0) {
-					rgbIndices.push_back(ent->d_name);
-				}
+
+    const char* path = rgbLoadPath.c_str();
+	if( exists( path ) )
+	{
+        boost::filesystem::
+		directory_iterator end;
+		directory_iterator iter(path);
+		for( ; iter != end ; ++iter )
+		{
+			if ( !is_directory( *iter ) && iter->path().extension().string().compare(filetype.c_str()) == 0 )
+			{
+                string filename = iter->path().filename().string();
+                rgbIndices.push_back(filename.erase(filename.size()-4));
 			}
 		}
 	}
@@ -1553,23 +1557,24 @@ void Registrator::initWindows(int imgNbr)
 	namedWindow("Depth",CV_WINDOW_AUTOSIZE);
     
 	// Get number of images in rgb folder
-	DIR *dr;
-	int count = 0,len;
-	struct dirent *pDirent;
-	const char * cRgbPath = this->rgbImgPath.c_str();
-    
-	dr = opendir(cRgbPath);
-	if (dr != NULL) {
-		while ((pDirent = readdir(dr)) != NULL) {
-			len = int(strlen(pDirent ->d_name));
-			if (len >= 4) {
-				if (strcmp (".jpg",&(pDirent->d_name[len-4])) == 0) {
-					count++;
-				}
+	int count = 0;
+    const char* path = this->rgbImgPath.c_str();
+
+	if( exists( path ) )
+	{
+        boost::filesystem::
+		directory_iterator end;
+		directory_iterator iter(path);
+		for( ; iter != end ; ++iter )
+		{
+			if ( !is_directory( *iter ) && (iter->path().extension().string().compare(".jpg") == 0 ||
+											iter->path().extension().string().compare(".png") == 0) )
+			{
+				count++;
 			}
 		}
 	}
-	
+
 	// Create trackbar
 	cvCreateTrackbar2("Frame","RGB",&imgNbr,count, Registrator::updateFrames, this);
 	showModalityImages(rgbImgPath, tImgPath, dImgPath,imgNbr);

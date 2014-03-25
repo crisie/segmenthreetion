@@ -7,7 +7,7 @@
 #include <iomanip>
 #include <string>
 #include <sstream>
-#include <dirent.h>
+//#include <dirent.h> // Deprecated to be platform-dependent
 
 #include "opencv2/calib3d/calib3d.hpp"
 #include "opencv2/imgproc/imgproc.hpp"

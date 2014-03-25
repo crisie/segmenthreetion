@@ -60,8 +60,8 @@ cv::Mat shuffledVector(int n, cv::RNG randGen)
  */
 void cvpartition(int n, int k, int seed, cv::Mat& partitions)
 {
-    int foldElems = floor(n/k);
-    int extraElems = n - (k * floor(n/k));
+    int foldElems = std::floorf(n/k);
+    int extraElems = n - (k * std::floorf(n/k));
 
     cv::Mat indices = shuffledVector(n, cv::RNG(seed));
     

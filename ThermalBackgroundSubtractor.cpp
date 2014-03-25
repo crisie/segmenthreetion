@@ -88,12 +88,12 @@ void ThermalBackgroundSubtractor::getMasks(ModalityData& mdInput, ModalityData& 
                 //Debug purposes - show mask unique values
                 vector<int> uniqueValues;
                 findUniqueValues(mask, uniqueValues);
-                for (auto c : uniqueValues)
-                    cout << c << ' ';
+                //for (auto c : uniqueValues)
+                //    cout << c << ' ';
                 
                 findUniqueValues(valuedMask, uniqueValues);
-                for (auto c : uniqueValues)
-                    cout << c << ' ';
+                //for (auto c : uniqueValues)
+                //    cout << c << ' ';
                 
                 //Debug -  visualization purposes
                 cv::imshow("output", mask);
@@ -109,8 +109,8 @@ void ThermalBackgroundSubtractor::getMasks(ModalityData& mdInput, ModalityData& 
             //Debug purposes - show mask unique values
             vector<int> uniqueValues;
             findUniqueValues(valuedMask, uniqueValues);
-            for (auto c : uniqueValues)
-                cout << c << ' ';
+            //for (auto c : uniqueValues)
+            //    cout << c << ' ';
             
             cout << endl;
         }
