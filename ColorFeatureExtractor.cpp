@@ -176,9 +176,7 @@ void ColorFeatureExtractor::describeColorHog(const cv::Mat cell, const cv::Mat c
 void ColorFeatureExtractor::describe(ModalityGridData data, GridMat & descriptors)
 {
 	for (int k = 0; k < data.getGridsFrames().size(); k++)
-	{
-		cout << "k : " << k <<  endl;
-        
+	{        
         GridMat grid = data.getGridFrame(k);
         GridMat gmask = data.getGridMask(k);
         
@@ -187,7 +185,8 @@ void ColorFeatureExtractor::describe(ModalityGridData data, GridMat & descriptor
             cv::Mat & cell = grid.at(i,j);
             cv::Mat & tmpCellMask = gmask.at(i,j);
             cv::Mat cellMask = cv::Mat::zeros(tmpCellMask.rows, tmpCellMask.cols, CV_8UC1);
-            cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);
+            if (tmpCellMask.channels() == 3)
+                cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);
             threshold(tmpCellMask,tmpCellMask,1,255,CV_THRESH_BINARY);
             tmpCellMask.convertTo(cellMask, CV_8UC1);
             
