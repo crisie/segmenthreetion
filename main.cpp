@@ -138,6 +138,7 @@ int main(int argc, const char* argv[])
 //    dBS.getRoiTags(dData, false);
 //    
 //    writer.write("Depth", dData);
+
     
     //Color
 //    reader.read("Color", cData);
