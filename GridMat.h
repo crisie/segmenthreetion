@@ -59,8 +59,8 @@ public:
 
     void hconcat(GridMat& other);
     void vconcat(GridMat& other);
-    void hconcat(cv::Mat mat, unsigned int i, unsigned int j);
-    void vconcat(cv::Mat mat, unsigned int i, unsigned int j);
+    void hconcat(cv::Mat& mat, unsigned int i, unsigned int j);
+    void vconcat(cv::Mat& mat, unsigned int i, unsigned int j);
     
     void mean(GridMat& gmean, int dim = 0);
     void max(GridMat& gmax, int dim = 0);
@@ -96,11 +96,11 @@ private:
     GridMat getIndexedCellElements(cv::Mat indices, int dim = 0, bool logical = true);
     void setIndexedCellElements(GridMat& grid, cv::Mat indices, int dim = 0, bool logical = true);
     
-    GridMat getIndexedCellElementsLogically(cv::Mat indices, int dim = 0);
-    void setIndexedCellElementsLogically(GridMat grid, cv::Mat indices, int dim = 0);
+    GridMat getIndexedCellElementsLogically(cv::Mat logicals, int dim = 0);
+    void setIndexedCellElementsLogically(GridMat& grid, cv::Mat logicals, int dim = 0);
     
     GridMat getIndexedCellElementsPositionally(cv::Mat indices, int dim = 0);
-    void setIndexedCellElementsPositionally(GridMat grid, cv::Mat indices, int dim = 0);
+    void setIndexedCellElementsPositionally(GridMat& grid, cv::Mat indices, int dim = 0);
 };
 
 

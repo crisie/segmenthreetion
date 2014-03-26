@@ -28,19 +28,24 @@ public:
     /*ModalityGridData(vector<GridMat> gframes, vector<GridMat> gmasks, cv::Mat gframeids, cv::Mat gpositions, cv::Mat tags)
             : m_GFrames(gframes), m_GMasks(gmasks), m_GFrameIDs(gframeids), m_GPositions(gpositions), m_Tags(tags) {}
     */
-    ModalityGridData(ModalityGridData& other, cv::Mat indices)
+    ModalityGridData(ModalityGridData& other, cv::Mat logicals)
     {
         for (int i = 0; i < other.getTags().size(); i++)
         {
-            int index = (indices.rows > 1) ? indices.at<int>(i,0) : indices.at<int>(0,i);
-
-            addGridFrame(other.getGridFrame(index));
-            addGridMask(other.getGridMask(index));
-            addGridFrameID(other.getGridFrameID(index));
-            addFrameFilename(other.getFrameFilename(index));
-            addFrameResolution(other.getFrameResolution(index));
-            addGridBoundingRect(other.getGridBoundingRect(index));
-            addTag(other.getTag(index));
+            unsigned char logical = (logicals.rows > 1) ? logicals.at<int>(i,0) : logicals.at<int>(0,i);
+            if (logical)
+            {
+                if (!other.isMock())
+                {
+                    addGridFrame(other.getGridFrame(i));
+                    addGridMask(other.getGridMask(i));
+                }
+                addGridFrameID(other.getGridFrameID(i));
+                addFrameFilename(other.getFrameFilename(i));
+                addFrameResolution(other.getFrameResolution(i));
+                addGridBoundingRect(other.getGridBoundingRect(i));
+                addTag(other.getTag(i));
+            }
         }
     }
 
