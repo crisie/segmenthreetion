@@ -154,7 +154,7 @@ void ModalityPrediction<cv::EM>::setLoglikelihoodThresholds(vector<int> t)
 void ModalityPrediction<cv::EM>::predict(GridMat& predictions, GridMat& loglikelihoods)
 {
     cv::Mat partitions;
-    cvpartition(m_data.getTags(), m_testK, m_seed, partitions);
+    cvpartition(m_data.getTagsMat(), m_testK, m_seed, partitions);
     
     GridMat predictionsTe;
     GridMat loglikelihoodsTe;
@@ -173,7 +173,7 @@ void ModalityPrediction<cv::EM>::predict(GridMat& predictions, GridMat& loglikel
                        selectedParams);
         
         GridPredictor<cv::EM> predictor;
-        predictor.setData(descriptorsTrFold, dataTrFold.getTags());
+        predictor.setData(descriptorsTrFold, dataTrFold.getTagsMat());
         predictor.setParameters(selectedParams);
         predictor.train();
         
@@ -240,7 +240,7 @@ void ModalityPrediction<cv::EM>::modelSelection(ModalityGridData data, GridMat d
     // Partitionate the data in folds
     
     cv::Mat partitions;
-    cvpartition(m_data.getTags(), m_modelSelecK, m_seed, partitions);
+    cvpartition(m_data.getTagsMat(), m_modelSelecK, m_seed, partitions);
     
     // Instanciate a hp-by-wp GridMat of accuracies. A cell contains a matrix
     // being the rows the parameters' combinations and columns fold-runs
@@ -260,7 +260,7 @@ void ModalityPrediction<cv::EM>::modelSelection(ModalityGridData data, GridMat d
             
             // Create predictor and its parametrization
             GridPredictor<cv::EM> predictor;
-            predictor.setData(descriptorsTr, dataTr.getTags());
+            predictor.setData(descriptorsTr, dataTr.getTagsMat());
             
             cv::Mat nmixtures (data.hp(), data.wp(), cv::DataType<int>::type);
             cv::Mat loglikes (data.hp(), data.wp(), cv::DataType<int>::type);
@@ -280,7 +280,7 @@ void ModalityPrediction<cv::EM>::modelSelection(ModalityGridData data, GridMat d
             
             // Compute an accuracy measure
             cv::Mat accs; // (m_hp * m_wp) accuracies get by params combination in k-th fold
-            accuracy(dataVal.getTags(), predictionsVal, accs);
+            accuracy(dataVal.getTagsMat(), predictionsVal, accs);
             
             GridMat paramsAccs (accs, data.hp(), data.wp());
             foldAccs.vconcat(paramsAccs);
@@ -302,4 +302,4 @@ void ModalityPrediction<cv::EM>::accuracy(cv::Mat actuals, GridMat predictions, 
 
 // Explicit template instanciation (to avoid linking errors)
 template class ModalityPredictionBase<cv::EM>;
-template class ModalityPrediction<cv::EM>;
+//template class ModalityPrediction<cv::EM>;

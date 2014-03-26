@@ -19,6 +19,8 @@
 using namespace boost::filesystem;
 using namespace std;
 
+#include "GridMat.h"
+
 
 ModalityReader::ModalityReader() : m_MasksOffset(200)
 {
@@ -72,7 +74,7 @@ void ModalityReader::read(std::string modality, ModalityData& md)
     vector<cv::Mat> gtMasks;
     vector<cv::Mat> regFrames;
     
-    vector<string> framesIndices;
+    vector<string> filenames;
     
     vector< vector<cv::Rect> > rects;
     vector< vector<int> > tags;
@@ -82,7 +84,7 @@ void ModalityReader::read(std::string modality, ModalityData& md)
     int nFrames = 0;
     for (int i = 0; i < m_ScenesPaths.size(); i++)
     {
-        loadDataToMats   (m_ScenesPaths[i] + "/Frames/" + modality + "/", "jpg", frames, framesIndices);
+        loadDataToMats   (m_ScenesPaths[i] + "/Frames/" + modality + "/", "jpg", frames, filenames);
         loadDataToMats   (m_ScenesPaths[i] + "/Masks/" + modality + "/", "png", masks);
         loadDataToMats(m_ScenesPaths[i] + "/GroundTruth/" + modality + "/", "png", gtMasks);
         loadBoundingRects(m_ScenesPaths[i] + "/Masks/" + modality + ".yml", rects, tags);
@@ -90,7 +92,7 @@ void ModalityReader::read(std::string modality, ModalityData& md)
             loadCalibVarsDir (m_ScenesPaths[i] + "/calibVars.yml", calibVars);
         }
         if(modality.compare("Depth") == 0) {
-            loadDataToMats(m_ScenesPaths[i] + "/Frames/" + modality + "Raw/", "jpg", regFrames);
+            loadDataToMats(m_ScenesPaths[i] + "/Frames/" + modality + "Raw/", "png", regFrames);
         }
         
         framesPerScene.push_back(std::make_pair(nFrames, frames.size() - 1));
@@ -101,8 +103,8 @@ void ModalityReader::read(std::string modality, ModalityData& md)
     md.setSceneLimits(framesPerScene);
     frames.clear(); // and clear
     
-    md.setFramesIndices(framesIndices);
-    framesIndices.clear();
+    md.setFramesIndices(filenames);
+    filenames.clear();
     
     md.setPredictedMasks(masks);
     md.setMasksOffset(m_MasksOffset);
@@ -130,6 +132,81 @@ void ModalityReader::read(std::string modality, ModalityData& md)
     }
 }
 
+
+void ModalityReader::read(std::string modality, std::string parentDir, const char* filetype, int hp, int wp, ModalityGridData& mgd)
+{
+	mgd.clear();
+
+	// auxiliary    
+	vector<string> filenames;
+	vector<vector<cv::Rect> > rects;
+	vector<vector<int> > tags;
+    
+	loadFilenames	 (parentDir + "/Frames/" + modality + "/", filenames);
+	loadBoundingRects(parentDir + "/Masks/" + modality + ".yml", rects, tags);
+
+	for (int f = 0; f < filenames.size(); f++)
+	{
+		string framePath = parentDir + "/Frames/" + modality + "/" + filenames[f] + "." + filetype;
+		string maskPath = parentDir + "/Masks/" + modality + "/" + filenames[f] + ".png";
+
+		cv::Mat frame = cv::imread(framePath, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+		cv::Mat mask  = cv::imread(maskPath, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+
+		for (int r = 0; r < rects[f].size(); r++)
+		{
+			if (rects[f][r].height >= hp && rects[f][r].width >= wp)
+			{
+				// Frame
+				cv::Mat subjectroi (frame, rects[f][r]); // Get a roi in frame defined by the rectangle.
+				GridMat gsubject (subjectroi, hp, wp);
+				mgd.addGridFrame( gsubject );
+
+				// Mask
+				cv::Mat maskroi (mask, rects[f][r]);
+				GridMat gmask (maskroi, hp, wp);
+				mgd.addGridMask( gmask );
+                
+				// Frame id
+				mgd.addGridFrameID(f);
+
+				// Bounding rect
+				mgd.addGridBoundingRect(rects[f][r]);
+
+				// Tag
+				mgd.addTag(tags[f][r]);
+			}
+		}
+	}
+}
+
+
+/**
+ * Load data to opencv's cv::Mats
+ *
+ * This method uses OpenCV and Boost.
+ */
+void ModalityReader::loadFilenames(string dir, vector<string>& filenames)
+{
+	filenames.clear();
+
+    const char* path = dir.c_str();
+	if( exists( path ) )
+	{
+        boost::filesystem::
+		directory_iterator end;
+		directory_iterator iter(path);
+		for( ; iter != end ; ++iter )
+		{
+			if ( !is_directory( *iter ) && (iter->path().extension().string().compare(".png") == 0  ||
+                                            iter->path().extension().string().compare(".jpg") == 0))
+			{
+				string filename = iter->path().filename().string();
+				filenames.push_back(filename.substr(0,filename.size()-4));
+            }
+		}
+	}
+}
 
 /**
  * Load data to opencv's cv::Mats

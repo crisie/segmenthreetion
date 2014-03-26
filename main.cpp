@@ -17,6 +17,10 @@
 #include "ColorBackgroundSubtractor.h"
 #include "ThermalBackgroundSubtractor.h"
 
+
+#include "ColorFeatureExtractor.h"
+#include "MotionFeatureExtractor.h"
+#include "DepthFeatureExtractor.h"
 #include "ThermalFeatureExtractor.h"
 
 #include "ColorParametrization.hpp"
@@ -41,11 +45,19 @@ int main(int argc, const char* argv[])
     //
     
     // Dataset handling
+	// Create a reader pointing the data streams
+
+#ifdef _WIN32
+	string dataPath = "../Sequences/";
+#elif __APPLE__
+	string dataPath = "../../Sequences/";
+#endif
+
+	string sequences[] = {"Scene1/", "Scene2/", "Scene3/"};
+	
+	const unsigned char masksOffset = 200;
     
-    string dataPath = "../../Sequences/";
-    const unsigned char masksOffset = 200;
-    
-    //Background subtraction
+	//Background subtraction
     
     ForegroundParametrization fParam;
     
@@ -106,16 +118,9 @@ int main(int argc, const char* argv[])
     //
     
     ModalityData dData;
-    ModalityData dGridData;
-    
     ModalityData cData;
-    ModalityData cGridData;
-
-    
     ModalityData tData;
-    ModalityGridData tGridData;
-    
-    
+   
     ModalityReader reader(dataPath);
     reader.setMasksOffset(masksOffset);
     
@@ -149,7 +154,7 @@ int main(int argc, const char* argv[])
     
     // Thermal
     // <------
-    reader.read("Thermal", tData);
+	//reader.read("Thermal", tData);
     
 //    ThermalBackgroundSubtractor tBS;
 //    tBS.setMasksOffset(masksOffset);
@@ -159,19 +164,53 @@ int main(int argc, const char* argv[])
 //    tBS.getRoiTags(dData, tData);
 //    
 //    writer.write("Thermal", tData);
-    
-    
-    GridPartitioner partitioner;
-    partitioner.setGridPartitions(hp, wp);
-    partitioner.grid(tData, tGridData); // perform "gridding"
-    
-    GridMat tDescriptors;
-    ThermalFeatureExtractor tFE(tParam);
-    tFE.describe(tGridData, tDescriptors); // perform description
-    
+
+
+
+   /* ModalityGridData cGridData;
+    GridMat cDescriptors, mDescriptors;
+
+    ColorFeatureExtractor cFE(cParam);
+	MotionFeatureExtractor mFE(mParam);
+
+	for (int s = 0; s < sizeof(sequences)/sizeof(sequences[0]); s++)
+	{
+		reader.read("Color", dataPath + sequences[s], "jpg", hp, wp, cGridData);
+
+		cFE.describe(cGridData, cDescriptors);
+		mFE.describe(cGridData, mDescriptors);
+	}
+
+	cDescriptors.saveFS("Color.yml");
+	mDescriptors.saveFS("Motion.yml");*/
+
+	ModalityGridData dGridData;
+	GridMat dDescriptors;
+    DepthFeatureExtractor dFE(dParam);
+
+	for (int s = 0; s < sizeof(sequences)/sizeof(sequences[0]); s++)
+	{
+		reader.read("Depth", dataPath + sequences[s], "png", hp, wp, dGridData);
+
+		dFE.describe(dGridData, dDescriptors);
+	}
+
+	dDescriptors.saveFS(dataPath + "Depth.yml");
+
+	//ModalityGridData tGridData;
+	//GridMat tDescriptors;
+ //   ThermalFeatureExtractor tFE(tParam);
+
+	//for (int s = 0; s < sizeof(sequences)/sizeof(sequences[0]); s++)
+	//{
+	//	reader.read("Thermal", dataPath + sequences[s], "jpg", hp, wp, tGridData);
+	//	tFE.describe(tGridData, tDescriptors); // perform description
+	//}
+
+	   
 //    GridMat tLoglikelihoods;
     
-    ModalityPrediction<cv::EM> tPrediction;
+    //ModalityPrediction<cv::EM> tPrediction;
 //    tPredictor.setModelSelection(kModelSelec, expand(nmixtures, nlikelicuts));
 //    tPredictor.setModelSelection(kTest);
 //    

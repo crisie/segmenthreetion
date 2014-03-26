@@ -37,7 +37,6 @@ void GridPartitioner::grid(ModalityData& md, ModalityGridData& mgd)
     
     vector<GridMat> gframes;
     vector<GridMat> gmasks;
-    vector<GridMat> gpredictedmasks;
     cv::Mat gframeids;
     vector<cv::Rect> gboundingrects;
     cv::Mat tags;
@@ -45,14 +44,11 @@ void GridPartitioner::grid(ModalityData& md, ModalityGridData& mgd)
 //    // Grid frames and masks
     gridFrames(md, gframes, gframeids);
     gridMasks(md, gmasks, gboundingrects, tags);
-    gridMasks(md, gpredictedmasks);
-    
     //visualizeGridmats(gframes_train); // DEBUG
     //visualizeGridmats(gmasks_train); // DEBUG
     
     mgd.setGridsFrames(gframes);
     mgd.setGridsMasks(gmasks);
-    mgd.setGridsPredictedMasks(gpredictedmasks);
     mgd.setGridsFrameIDs(gframeids);
     //mgd.setFramesResolutions(gresolutions);
     mgd.setGridsBoundingRects(gboundingrects);
