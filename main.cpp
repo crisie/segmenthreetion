@@ -167,7 +167,7 @@ int main(int argc, const char* argv[])
 
 
 
-   /* ModalityGridData cGridData;
+    ModalityGridData cGridData;
     GridMat cDescriptors, mDescriptors;
 
     ColorFeatureExtractor cFE(cParam);
@@ -175,27 +175,29 @@ int main(int argc, const char* argv[])
 
 	for (int s = 0; s < sizeof(sequences)/sizeof(sequences[0]); s++)
 	{
+        cout << "Reading color frames in scene " << s << ".." << endl;
 		reader.read("Color", dataPath + sequences[s], "jpg", hp, wp, cGridData);
-
+        cout << "Describing color..." << endl;
 		cFE.describe(cGridData, cDescriptors);
+        cout << "Describing motion..." << endl;
 		mFE.describe(cGridData, mDescriptors);
 	}
 
 	cDescriptors.saveFS("Color.yml");
-	mDescriptors.saveFS("Motion.yml");*/
+	mDescriptors.saveFS("Motion.yml");
 
-	ModalityGridData dGridData;
-	GridMat dDescriptors;
-    DepthFeatureExtractor dFE(dParam);
-
-	for (int s = 0; s < sizeof(sequences)/sizeof(sequences[0]); s++)
-	{
-		reader.read("Depth", dataPath + sequences[s], "png", hp, wp, dGridData);
-
-		dFE.describe(dGridData, dDescriptors);
-	}
-
-	dDescriptors.saveFS(dataPath + "Depth.yml");
+//	ModalityGridData dGridData;
+//	GridMat dDescriptors;
+//    DepthFeatureExtractor dFE(dParam);
+//
+//	for (int s = 0; s < sizeof(sequences)/sizeof(sequences[0]); s++)
+//	{
+//		reader.read("Depth", dataPath + sequences[s], "png", hp, wp, dGridData);
+//
+//		dFE.describe(dGridData, dDescriptors);
+//	}
+//
+//	dDescriptors.saveFS(dataPath + "Depth.yml");
 
 	//ModalityGridData tGridData;
 	//GridMat tDescriptors;

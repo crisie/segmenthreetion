@@ -129,6 +129,11 @@ public:
         return m_Tags;
     }
 
+	cv::Mat getGridsFrameIDsMat()
+    {
+		return cv::Mat(m_GFrameIDs.size(), 1, cv::DataType<int>::type, m_GFrameIDs.data());
+    }
+    
 	cv::Mat getTagsMat()
     {
 		return cv::Mat(m_Tags.size(), 1, cv::DataType<int>::type, m_Tags.data());

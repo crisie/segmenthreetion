@@ -60,7 +60,7 @@ void GridMapWriter<T>::write(ModalityGridData& mgd, int n, GridMat& values, std:
         cv::Mat map (mgd.getFrameResolution(f).y, mgd.getFrameResolution(f).x, cv::DataType<T>::type);
         
         cv::Mat frameIndices;
-        cv::findNonZero(mgd.getGridsFrameIDs() == f, frameIndices);
+        cv::findNonZero(mgd.getGridsFrameIDsMat() == f, frameIndices);
         for (int k = 0; k < frameIndices.rows; k++) // "g++", huhu :'D
         {
             for (int i = 0; i < mgd.hp(); i++) for (int j = 0; j < mgd.wp(); j++)
