@@ -143,25 +143,45 @@ void ModalityReader::read(std::string modality, std::string parentDir, const cha
 	vector<vector<cv::Rect> > rects; // Bounding rects at frame level (having several per frame)
 	vector<vector<int> > tags; // Tags corresponding to the bounding rects
     
-	loadFilenames	 (parentDir + "/Frames/" + modality + "/", filenames);
-	loadBoundingRects(parentDir + "/Masks/" + modality + ".yml", rects, tags);
+    if (modality.compare("Motion") != 0)
+    {
+        loadFilenames	 (parentDir + "/Frames/" + modality + "/", filenames);
+        loadBoundingRects(parentDir + "/Masks/" + modality + ".yml", rects, tags);
+    }
+    else
+    {
+        loadFilenames	 (parentDir + "/Frames/Color/", filenames);
+        loadBoundingRects(parentDir + "/Masks/Color.yml", rects, tags);
+    }
 
     // Load frame-wise (Mat), extract the roi represented by the bounding boxes,
     // grid the rois (GridMat), and store in GridModalityData object
     
 	for (int f = 0; f < filenames.size(); f++)
 	{
-        // Load the frame and its mask
+        if (rects[f].size() < 1)
+            continue;
         
-		string framePath = parentDir + "/Frames/" + modality + "/" + filenames[f] + "." + filetype;
-		string maskPath = parentDir + "/Masks/" + modality + "/" + filenames[f] + ".png";
-
+        // Load the frame and its mask
+        string framePath, maskPath;
+        
+        if (modality.compare("Motion") != 0)
+        {
+            framePath = parentDir + "/Frames/" + modality + "/" + filenames[f] + "." + filetype;
+            maskPath = parentDir + "/Masks/" + modality + "/" + filenames[f] + ".png";
+        }
+        else
+        {
+            framePath = parentDir + "/Frames/Color/" + filenames[f] + "." + filetype;
+            maskPath = parentDir + "/Masks/Color/" + filenames[f] + ".png";
+        }
+            
 		cv::Mat frame = cv::imread(framePath, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
 		cv::Mat mask  = cv::imread(maskPath, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
 
         // (Motion modality) load also a second color frame to compute the actual motion frame
         // --------------------------------------------------------------------------------------
-        if (modality.compare("Motion"))
+        if (modality.compare("Motion") == 0)
         {
             cv::Mat prevFrame;
             cv::Mat currFrame(frame);
@@ -180,6 +200,8 @@ void ModalityReader::read(std::string modality, std::string parentDir, const cha
 
 		for (int r = 0; r < rects[f].size(); r++)
 		{
+            // Create the grid structures
+            
 			if (rects[f][r].height >= hp && rects[f][r].width >= wp)
 			{
 				cv::Mat subjectroi (frame, rects[f][r]); // Get a roi in frame defined by the rectangle.

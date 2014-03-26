@@ -166,27 +166,43 @@ int main(int argc, const char* argv[])
 //    
 //    writer.write("Thermal", tData);
 
+    
+    // Color description
 
+//    ModalityGridData cGridData;
+//    GridMat cDescriptors;
+//
+//    ColorFeatureExtractor cFE(cParam);
+//	for (int s = 0; s < sizeof(sequences)/sizeof(sequences[0]); s++)
+//	{
+//        cout << "Reading color frames in scene " << s << ".." << endl;
+//		reader.read("Color", dataPath + sequences[s], "jpg", hp, wp, cGridData);
+//        cout << "Describing color..." << endl;
+//		cFE.describe(cGridData, cDescriptors);
+//	}
+//    
+//    cDescriptors.saveFS("Color.yml");
 
-    ModalityGridData cGridData;
-    GridMat cDescriptors, mDescriptors;
-
-    ColorFeatureExtractor cFE(cParam);
-	MotionFeatureExtractor mFE(mParam);
-
-	for (int s = 0; s < sizeof(sequences)/sizeof(sequences[0]); s++)
+    
+    // Motion description
+    
+    ModalityGridData mGridData;
+    GridMat mDescriptors;
+    
+    MotionFeatureExtractor mFE(mParam);
+    for (int s = 0; s < sizeof(sequences)/sizeof(sequences[0]); s++)
 	{
-        cout << "Reading color frames in scene " << s << ".." << endl;
-		reader.read("Color", dataPath + sequences[s], "jpg", hp, wp, cGridData);
-        //cout << "Describing color..." << endl;
-		//cFE.describe(cGridData, cDescriptors);
+        cout << "Computing motion (from read color) frames in scene " << s << ".." << endl;
+		reader.read("Motion", dataPath + sequences[s], "jpg", hp, wp, mGridData);
         cout << "Describing motion..." << endl;
-		mFE.describe(cGridData, mDescriptors);
+        mFE.describe(mGridData, mDescriptors);
 	}
 
-	cDescriptors.saveFS("Color.yml");
 	mDescriptors.saveFS("Motion.yml");
 
+    
+    // Depth description
+    
 //	ModalityGridData dGridData;
 //	GridMat dDescriptors;
 //    DepthFeatureExtractor dFE(dParam);
@@ -200,6 +216,9 @@ int main(int argc, const char* argv[])
 //
 //	dDescriptors.saveFS(dataPath + "Depth.yml");
 
+    
+    // Thermal description
+    
 	//ModalityGridData tGridData;
 	//GridMat tDescriptors;
  //   ThermalFeatureExtractor tFE(tParam);

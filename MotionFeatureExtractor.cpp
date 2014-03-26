@@ -29,10 +29,8 @@ void MotionFeatureExtractor::setParam(MotionParametrization param)
 
 void MotionFeatureExtractor::describe(ModalityGridData data, GridMat& descriptors)
 {
-	for(int k = 0; k < data.getGridsFrames().size(); k++)
+	for (int k = 0; k < data.getGridsFrames().size(); k++)
 	{
-		cout << "k : " << k <<  endl;
-        
         GridMat grid = data.getGridFrame(k);
         GridMat gmask = data.getGridMask(k);
         
@@ -58,39 +56,16 @@ void MotionFeatureExtractor::describe(ModalityGridData data, GridMat& descriptor
 void MotionFeatureExtractor::describeMotionOrientedFlow(const cv::Mat cell, const cv::Mat cellMask, cv::Mat & tOrientedFlowHist)
 {
 	int ofbins = m_Param.hoofbins;
-	//imshow("cell", cell);
-    
-//    cv::namedWindow("image");
-//    cv::imshow("image", cell);
-//    cv::waitKey();
-    cv::Mat cellTmp;
-    cell.convertTo(cellTmp, CV_64F);
-    
-    cv::Mat cellSeg;               //)= cv::Mat::zeros(cell.rows, cell.cols, CV_64F);
+
+    cv::Mat cellSeg = cv::Mat::zeros(cell.rows, cell.cols, cell.type());
 	cell.copyTo(cellSeg, cellMask);
-	//imshow("cellSeg", cellSeg);
-    cv::Mat tmpHist = cv::Mat::zeros(1, ofbins, cv::DataType<float>::type);
-    
-    cv::Mat cellGradOrients = cv::Mat::zeros(cellSeg.rows, cellSeg.cols, CV_64F);
-	//Mat cellSegX = cellSeg.at<Point2f>().x;
-	//Mat cellSegY = cellSeg.at<Point2f>().y;
+
+    cv::Mat cellGradOrients = cv::Mat::zeros(cellSeg.rows, cellSeg.cols, cellSeg.type());
 	vector<cv::Mat> comps(2);
 	split(cellSeg, comps);
-	if(comps[0].size() != comps[1].size()) {
-		cout << "no tengo la misma size" << endl;
-	}
-	if(comps[1].type() != cellGradOrients.type()) {
-        cout << cellSeg.type()  << " " << comps[1].type() << " " << cellGradOrients.type() << endl;
-		cout << "no tengo el mismo tipo" << endl;
-	}
-	if(cellGradOrients.depth() != CV_32F || cellGradOrients.depth() != CV_64F) {
-		cout << "no tengo la depth apropiada" << endl;
-	}
     cv::phase(comps[0], comps[1], cellGradOrients, true);
-	//imshow("comps 0", comps[0]);
-	//imshow("comps 1", comps[1]);
-	//imshow("cellGradOrients", cellGradOrients);
-    
+
+    cv::Mat tmpHist = cv::Mat::zeros(1, ofbins, cv::DataType<float>::type);
 	for (int i = 0; i < cellSeg.rows; i++) for (int j = 0; j < cellSeg.cols; j++)
 	{
         cv::Point2f fxy = cellSeg.at<cv::Point2f>(i,j);
@@ -103,18 +78,8 @@ void MotionFeatureExtractor::describeMotionOrientedFlow(const cv::Mat cell, cons
 		//cout << "orientation : " << orientation << endl;
 		//cout << "magnitude : " << tmpHist.at<float>(0, bin) << endl;
 	}
-    
-    cellSeg.release();
-    cellGradOrients.release();
-    
-    //destroyWindow("cell");
-    //destroyWindow("cellSeg");
-    //destroyWindow("comps 0");
-    //destroyWindow("comps 1");
-    //destroyWindow("cellGradOrients");
+
     hypercubeNorm(tmpHist, tOrientedFlowHist);
-    tmpHist.release();
-    
 }
 
 

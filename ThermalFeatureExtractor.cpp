@@ -38,10 +38,10 @@ void ThermalFeatureExtractor::setParam(ThermalParametrization thermalParam)
 
 void ThermalFeatureExtractor::describe(ModalityGridData data, GridMat& descriptors)
 {
-    //    namedWindow("god");
-    
     for (int k = 0; k < data.getGridsFrames().size(); k++)
     {
+        if (k % 100 == 0) cout << 100.0 * k / data.getGridsFrames().size() << "%" <<  endl;
+        
         GridMat grid = data.getGridFrame(k);
         GridMat gmask = data.getGridMask(k);
         
