@@ -28,6 +28,7 @@ public:
     GridMat(unsigned int hp = 2, unsigned int wp = 2);
     GridMat(unsigned int hp, unsigned int wp, unsigned int helems, unsigned int welems, int type = CV_32FC1);
     GridMat(cv::Mat mat, unsigned int hp = 2, unsigned int wp = 2);
+    GridMat(const GridMat& other);
     GridMat(GridMat& other, cv::Mat indices, int dim = 0, bool logical = true);
 
     void create(unsigned int hp = 2, unsigned int wp = 2);

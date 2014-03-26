@@ -183,7 +183,7 @@ int main(int argc, const char* argv[])
 //	for (int s = 0; s < sequences.size(); s++)
 //	{
 //        cout << "Reading color frames in scene " << s << ".." << endl;
-//		reader.read("Color", dataPath + sequences[s], "jpg", hp, wp, cGridData);
+//		reader.read("Color", sequences[s], "jpg", hp, wp, cGridData);
 //        cout << "Describing color..." << endl;
 //		cFE.describe(cGridData, cDescriptors);
 //	}
@@ -204,7 +204,7 @@ int main(int argc, const char* argv[])
 //    for (int s = 0; s < sequences.size(); s++)
 //	{
 //        cout << "Computing motion (from read color) frames in scene " << s << ".." << endl;
-//		reader.read("Motion", dataPath + sequences[s], "jpg", hp, wp, mGridData);
+//		reader.read("Motion", sequences[s], "jpg", hp, wp, mGridData);
 //        cout << "Describing motion..." << endl;
 //        mFE.describe(mGridData, mDescriptors);
 //	}
@@ -214,18 +214,18 @@ int main(int argc, const char* argv[])
     
     // Depth description
     
-//	ModalityGridData dGridData;
-//	GridMat dDescriptors;
-//    DepthFeatureExtractor dFE(dParam);
-//
-//	for (int s = 0; s < sequences.size(); s++)
-//	{
-//		reader.read("Depth", dataPath + sequences[s], "png", hp, wp, dGridData);
-//
-//		dFE.describe(dGridData, dDescriptors);
-//	}
-//
-//	dDescriptors.saveFS("Depth.yml");
+	ModalityGridData dGridData;
+	GridMat dDescriptors;
+    DepthFeatureExtractor dFE(dParam);
+
+	for (int s = 0; s < sequences.size(); s++)
+	{
+		reader.read("Depth", sequences[s], "png", hp, wp, dGridData);
+
+		dFE.describe(dGridData, dDescriptors);
+	}
+
+	dDescriptors.save("Depth.yml");
 
     
     // Thermal description
@@ -237,7 +237,7 @@ int main(int argc, const char* argv[])
 //	for (int s = 0; s < sequences.size(); s++)
 //	{
 //        cout << "Reading thermal frames in scene " << s << ".." << endl;
-//		reader.read("Thermal", dataPath + sequences[s], "jpg", hp, wp, tGridData);
+//		reader.read("Thermal", sequences[s], "jpg", hp, wp, tGridData);
 //        cout << "Describing thermal..." << endl;
 //		tFE.describe(tGridData, tDescriptors);
 //	}

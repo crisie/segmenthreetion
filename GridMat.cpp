@@ -52,6 +52,12 @@ GridMat::GridMat(cv::Mat mat, unsigned int crows, unsigned int ccols)
     }
 }
 
+GridMat::GridMat(const GridMat& other)
+{
+    m_crows = other.m_crows;
+    m_ccols = other.m_ccols;
+    m_grid = other.m_grid;
+}
 
 GridMat::GridMat(GridMat& other, cv::Mat indices, int dim, bool logical)
 {
@@ -114,7 +120,6 @@ GridMat GridMat::getIndexedCellElementsLogically(cv::Mat logicals, int dim)
 void GridMat::setIndexedCellElementsLogically(GridMat& grid, cv::Mat logicals, int dim)
 {
     int nelems = (logicals.rows > 1) ? logicals.rows : logicals.cols;
-    
     for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.crows(); j++)
     {
         for (int k = 0; k < nelems; k++)
@@ -518,6 +523,11 @@ void GridMat::save(const std::string & filename)
 void GridMat::load(const std::string & filename)
 {
 	cv::FileStorage fs(filename, cv::FileStorage::READ);
+    if (!fs.isOpened())
+    {
+        cerr << filename << " not found" << endl;
+        return;
+    }
    
 	(int) fs["crows"] >> m_crows;
 	(int) fs["ccols"] >> m_ccols;

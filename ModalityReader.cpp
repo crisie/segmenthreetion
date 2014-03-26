@@ -133,6 +133,13 @@ void ModalityReader::read(std::string modality, ModalityData& md)
     }
 }
 
+void ModalityReader::read(string modality, string sceneDir, const char* filetype, int hp, int wp, ModalityGridData& mgd)
+{
+    vector<string> scenesDirs;
+    scenesDirs.push_back(sceneDir);
+    
+    read(modality, m_DataPath, scenesDirs, filetype, hp, wp, mgd);
+}
 
 void ModalityReader::read(string modality, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd)
 {
@@ -145,11 +152,11 @@ void ModalityReader::read(string modality, string dataPath, vector<string> scene
     
     for (int s = 0; s < sceneDirs.size(); s++)
     {
-        read(modality, dataPath + sceneDirs[s], filetype, hp, wp, mgd);
+        readScene(modality, dataPath + sceneDirs[s], filetype, hp, wp, mgd);
     }
 }
 
-void ModalityReader::read(string modality, string scenePath, const char* filetype, int hp, int wp, ModalityGridData& mgd)
+void ModalityReader::readScene(string modality, string scenePath, const char* filetype, int hp, int wp, ModalityGridData& mgd)
 {
 	// auxiliary
 	vector<string> filenames; // Frames' filenames from <dataDir>/Frames/<modality>/
@@ -248,6 +255,14 @@ void ModalityReader::read(string modality, string scenePath, const char* filetyp
 /*
  * Read only the metadata (frames' filenames, bounding rects, tags, etc)
  */
+void ModalityReader::mockread(string modality, string sceneDir, const char* filetype, int hp, int wp, ModalityGridData& mgd)
+{
+    vector<string> scenesDirs;
+    scenesDirs.push_back(sceneDir);
+    
+    mockread(modality, m_DataPath, scenesDirs, filetype, hp, wp, mgd);
+}
+
 void ModalityReader::mockread(string modality, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd)
 {
     mockread(modality, m_DataPath, sceneDirs, filetype, hp, wp, mgd);
@@ -259,11 +274,11 @@ void ModalityReader::mockread(string modality, string dataPath, vector<string> s
     
     for (int s = 0; s < sceneDirs.size(); s++)
     {
-        mockread(modality, dataPath + sceneDirs[s], filetype, hp, wp, mgd);
+        mockreadScene(modality, dataPath + sceneDirs[s], filetype, hp, wp, mgd);
     }
 }
 
-void ModalityReader::mockread(string modality, string scenePath, const char* filetype, int hp, int wp, ModalityGridData& mgd)
+void ModalityReader::mockreadScene(string modality, string scenePath, const char* filetype, int hp, int wp, ModalityGridData& mgd)
 {
 	// auxiliary
 	vector<string> filenames; // Frames' filenames from <dataDir>/Frames/<modality>/

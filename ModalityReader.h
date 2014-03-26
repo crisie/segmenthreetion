@@ -35,12 +35,14 @@ public:
 	// void read(string modality, vector<string> sceneDirs, const char* filetype, ModalityData& md);
     
     // Read and grid all the data
-    void read(string modality, string dataPath, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd);
+    void read(string modality, string sceneDir, const char* filetype, int hp, int wp, ModalityGridData& mgd);
 	void read(string modality, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd);
+    void read(string modality, string dataPath, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd);
     
     // Read and grid all some data (omit frames and masks)
-    void mockread(string modality, string dataPath, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd);
+    void mockread(string modality, string sceneDir, const char* filetype, int hp, int wp, ModalityGridData& mgd);
 	void mockread(string modality, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd);
+    void mockread(string modality, string dataPath, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd);
     
 private:
     string m_DataPath;
@@ -49,8 +51,8 @@ private:
     
     // TODO:
     // void read(string modality, string scenePath, const char* filetype, ModalityData& md);
-    void read(string modality, string scenePath, const char* filetype, int hp, int wp, ModalityGridData& mgd);
-    void mockread(string modality, string scenePath, const char* filetype, int hp, int wp, ModalityGridData& mgd);
+    void readScene(string modality, string scenePath, const char* filetype, int hp, int wp, ModalityGridData& mgd);
+    void mockreadScene(string modality, string scenePath, const char* filetype, int hp, int wp, ModalityGridData& mgd);
     
 	void loadFilenames(string dir, const char* fileExtension, vector<string>& filenames);
     // Load frames of a modality within a directory

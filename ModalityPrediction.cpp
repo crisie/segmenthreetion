@@ -158,12 +158,17 @@ void ModalityPrediction<cv::EM>::predict(GridMat& predictions, GridMat& loglikel
     
     vector<GridPredictor<cv::EM> > predictors;
     
-    for (int i = 0; i < m_testK; i++)
+    for (int k = 0; k < m_testK; k++)
     {
-        ModalityGridData dataTrFold (m_data, partitions != i);
-        ModalityGridData dataTeFold (m_data, partitions == i);
-        GridMat descriptorsTrFold (m_descriptors, partitions != i);
-        GridMat descriptorsTeFold (m_descriptors, partitions == i);
+        cout << "Out-of-sample CV. It: " << k << endl;
+        
+        cout << "db 0a" << endl;
+        ModalityGridData dataTrFold (m_data, partitions != k);
+        ModalityGridData dataTeFold (m_data, partitions == k);
+        cout << "db 0b" << endl;
+        GridMat descriptorsTrFold (m_descriptors, partitions != k);
+        GridMat descriptorsTeFold (m_descriptors, partitions == k);
+        cout << "db 0c" << endl;
         
         GridMat selectedParams;
         modelSelection(dataTrFold, descriptorsTrFold,
@@ -178,8 +183,8 @@ void ModalityPrediction<cv::EM>::predict(GridMat& predictions, GridMat& loglikel
         GridMat predictionsTeFold, loglikelihoodsTeFold;
         predictor.predict(descriptorsTeFold, predictionsTeFold, loglikelihoodsTeFold);
         
-        predictions.vset(predictionsTeFold, partitions == i);
-        loglikelihoods.vset(loglikelihoodsTeFold, partitions == i);
+        predictions.vset(predictionsTeFold, partitions == k);
+        loglikelihoods.vset(loglikelihoodsTeFold, partitions == k);
     }
 }
 
@@ -232,13 +237,15 @@ void ModalityPrediction<cv::EM>::modelSelection(ModalityGridData data, GridMat d
     params.push_back(vector<double>(nmixtures.begin(), nmixtures.end()));
     params.push_back(vector<double>(loglikelihoods.begin(), loglikelihoods.end()));
     
+    cout << "Expanding parameters.." << endl;
     cv::Mat expandedParams;
     expandParameters(params, expandedParams);
+    cout << expandedParams << endl;
     
     // Partitionate the data in folds
     
     cv::Mat partitions;
-    cvpartition(m_data.getTagsMat(), m_modelSelecK, m_seed, partitions);
+    cvpartition(data.getTagsMat(), m_modelSelecK, m_seed, partitions);
     
     // Instanciate a hp-by-wp GridMat of accuracies. A cell contains a matrix
     // being the rows the parameters' combinations and columns fold-runs
@@ -247,30 +254,46 @@ void ModalityPrediction<cv::EM>::modelSelection(ModalityGridData data, GridMat d
     vector<GridPredictor<cv::EM> > predictors;
     for (int k = 0; k < m_modelSelecK; k++)
     {
-        GridMat foldAccs;
+        cout << "Model selection CV. It: " << k << endl;
+        
+        // Get fold's data
+        ModalityGridData dataTr (data, partitions != k);
+        ModalityGridData dataVal (data, partitions == k);
+
+        cout << "db 1a" << endl;
+        cout << descriptors << endl;
+        GridMat descriptorsTr (descriptors, partitions != k);
+        GridMat descriptorsVal (descriptors, partitions == k);
+        
+        GridMat foldAccs; // results
+        
         for (int m = 0; m < expandedParams.rows; m++)
         {
-            // Get fold's data
-            ModalityGridData dataTr (data, partitions != k);
-            ModalityGridData dataVal (data, partitions == k);
-            GridMat descriptorsTr (descriptors, partitions != k);
-            GridMat descriptorsVal (descriptors, partitions == k);
+            cout << "param. comb.: " << m << "/" << expandedParams.rows << endl;
             
             // Create predictor and its parametrization
             GridPredictor<cv::EM> predictor;
             predictor.setData(descriptorsTr, dataTr.getTagsMat());
             
+            cout << "db 1b" << endl;
+            
             cv::Mat nmixtures (data.hp(), data.wp(), cv::DataType<int>::type);
             cv::Mat loglikes (data.hp(), data.wp(), cv::DataType<int>::type);
+            
+            cout << "db 1c" << endl;
             
             nmixtures.setTo(expandedParams.at<double>(m,0));
             loglikes.setTo(expandedParams.at<double>(m,1));
             
+            cout << "db 1d" << endl;
+            
             predictor.setNumOfMixtures(nmixtures);
             predictor.setLoglikelihoodThreshold(loglikes);
             
+            cout << "db 1e" << endl;
             // Train
             predictor.train();
+            cout << "db 1f" << endl;
             
             // Test
             GridMat predictionsVal, loglikelihoodsVal;
