@@ -176,7 +176,7 @@ void ColorFeatureExtractor::describeColorHog(const cv::Mat cell, const cv::Mat c
 void ColorFeatureExtractor::describe(ModalityGridData data, GridMat & descriptors)
 {
 	for (int k = 0; k < data.getGridsFrames().size(); k++)
-	{        
+	{
         GridMat grid = data.getGridFrame(k);
         GridMat gmask = data.getGridMask(k);
         

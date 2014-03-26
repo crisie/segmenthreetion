@@ -27,13 +27,14 @@ public:
     
     cv::Mat get_hogdescriptor_visu(cv::Mat origImg, cv::Mat mask, vector<float> descriptorValues);
     
+    // Auxiliary
+    static void computeOpticalFlow(vector<cv::Mat> colorFrames, vector<cv::Mat> & motionFrames);
+    static void computeOpticalFlow(pair<cv::Mat,cv::Mat> colorFrames, cv::Mat & motionFrame);
+    
 private:
     MotionParametrization m_Param;
     
     void describeMotionOrientedFlow(const cv::Mat grid, const cv::Mat mask, cv::Mat & mOrientedFlowHist);
-    
-    // Auxiliary
-    void computeOpticalFlow(vector<cv::Mat> colorFrames, vector<cv::Mat> & motionFrames);
 };
 
 #endif /* defined(__segmenthreetion__MotionFeatureExtractor__) */

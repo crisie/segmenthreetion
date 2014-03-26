@@ -20,6 +20,7 @@ using namespace boost::filesystem;
 using namespace std;
 
 #include "GridMat.h"
+#include "MotionFeatureExtractor.h"
 
 
 ModalityReader::ModalityReader() : m_MasksOffset(200)
@@ -137,27 +138,50 @@ void ModalityReader::read(std::string modality, std::string parentDir, const cha
 {
 	mgd.clear();
 
-	// auxiliary    
-	vector<string> filenames;
-	vector<vector<cv::Rect> > rects;
-	vector<vector<int> > tags;
+	// auxiliary
+	vector<string> filenames; // Frames' filenames from <parentDir>/Frames/<modality>/
+	vector<vector<cv::Rect> > rects; // Bounding rects at frame level (having several per frame)
+	vector<vector<int> > tags; // Tags corresponding to the bounding rects
     
 	loadFilenames	 (parentDir + "/Frames/" + modality + "/", filenames);
 	loadBoundingRects(parentDir + "/Masks/" + modality + ".yml", rects, tags);
 
+    // Load frame-wise (Mat), extract the roi represented by the bounding boxes,
+    // grid the rois (GridMat), and store in GridModalityData object
+    
 	for (int f = 0; f < filenames.size(); f++)
 	{
+        // Load the frame and its mask
+        
 		string framePath = parentDir + "/Frames/" + modality + "/" + filenames[f] + "." + filetype;
 		string maskPath = parentDir + "/Masks/" + modality + "/" + filenames[f] + ".png";
 
 		cv::Mat frame = cv::imread(framePath, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
 		cv::Mat mask  = cv::imread(maskPath, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
 
+        // (Motion modality) load also a second color frame to compute the actual motion frame
+        // --------------------------------------------------------------------------------------
+        if (modality.compare("Motion"))
+        {
+            cv::Mat prevFrame;
+            cv::Mat currFrame(frame);
+            
+            if (f == 0)
+                currFrame.copyTo(prevFrame);
+            else
+                prevFrame = cv::imread(parentDir + "/Frames/Color/" + filenames[f-1] + "." + filetype,
+                                       CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+            
+            MotionFeatureExtractor::computeOpticalFlow(pair<cv::Mat,cv::Mat>(prevFrame,currFrame), frame);
+        }
+        // --------------------------------------------------------------------------------------
+        
+        // Look the bounding rects in it...
+
 		for (int r = 0; r < rects[f].size(); r++)
 		{
 			if (rects[f][r].height >= hp && rects[f][r].width >= wp)
 			{
-				// Frame
 				cv::Mat subjectroi (frame, rects[f][r]); // Get a roi in frame defined by the rectangle.
 				GridMat gsubject (subjectroi, hp, wp);
 				mgd.addGridFrame( gsubject );

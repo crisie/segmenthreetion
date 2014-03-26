@@ -177,8 +177,8 @@ int main(int argc, const char* argv[])
 	{
         cout << "Reading color frames in scene " << s << ".." << endl;
 		reader.read("Color", dataPath + sequences[s], "jpg", hp, wp, cGridData);
-        cout << "Describing color..." << endl;
-		cFE.describe(cGridData, cDescriptors);
+        //cout << "Describing color..." << endl;
+		//cFE.describe(cGridData, cDescriptors);
         cout << "Describing motion..." << endl;
 		mFE.describe(cGridData, mDescriptors);
 	}

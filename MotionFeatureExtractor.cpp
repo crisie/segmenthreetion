@@ -41,7 +41,8 @@ void MotionFeatureExtractor::describe(ModalityGridData data, GridMat& descriptor
             cv::Mat & cell = grid.at(i,j);
             cv::Mat & tmpCellMask = gmask.at(i,j);
             cv::Mat cellMask = cv::Mat::zeros(tmpCellMask.rows, tmpCellMask.cols, CV_8UC1);
-            cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);
+            if (tmpCellMask.channels() == 3)
+                cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);
             threshold(tmpCellMask,tmpCellMask,1,255,CV_THRESH_BINARY);
             tmpCellMask.convertTo(cellMask, CV_8UC1);
             
@@ -58,26 +59,34 @@ void MotionFeatureExtractor::describeMotionOrientedFlow(const cv::Mat cell, cons
 {
 	int ofbins = m_Param.hoofbins;
 	//imshow("cell", cell);
-    cv::Mat cellSeg = cv::Mat::zeros(cell.rows, cell.cols, cell.type());
+    
+//    cv::namedWindow("image");
+//    cv::imshow("image", cell);
+//    cv::waitKey();
+    cv::Mat cellTmp;
+    cell.convertTo(cellTmp, CV_64F);
+    
+    cv::Mat cellSeg;               //)= cv::Mat::zeros(cell.rows, cell.cols, CV_64F);
 	cell.copyTo(cellSeg, cellMask);
 	//imshow("cellSeg", cellSeg);
     cv::Mat tmpHist = cv::Mat::zeros(1, ofbins, cv::DataType<float>::type);
     
-    cv::Mat cellGradOrients = cv::Mat::zeros(cellSeg.rows, cellSeg.cols, CV_64FC1);
+    cv::Mat cellGradOrients = cv::Mat::zeros(cellSeg.rows, cellSeg.cols, CV_64F);
 	//Mat cellSegX = cellSeg.at<Point2f>().x;
 	//Mat cellSegY = cellSeg.at<Point2f>().y;
 	vector<cv::Mat> comps(2);
 	split(cellSeg, comps);
-    //	if(comps[0].size() != comps[1].size()) {
-    //		cout << "no tengo la misma size" << endl;
-    //	}
-    //	if(comps[1].type() != cellGradOrients.type()) {
-    //		cout << "no tengo el mismo tipo" << endl;
-    //	}
-    //	if(cellGradOrients.depth() != CV_32F || cellGradOrients.depth() != CV_64F) {
-    //		cout << "no tengo la depth apropiada" << endl;
-    //	}
-	phase(comps[0], comps[1], cellGradOrients, true);
+	if(comps[0].size() != comps[1].size()) {
+		cout << "no tengo la misma size" << endl;
+	}
+	if(comps[1].type() != cellGradOrients.type()) {
+        cout << cellSeg.type()  << " " << comps[1].type() << " " << cellGradOrients.type() << endl;
+		cout << "no tengo el mismo tipo" << endl;
+	}
+	if(cellGradOrients.depth() != CV_32F || cellGradOrients.depth() != CV_64F) {
+		cout << "no tengo la depth apropiada" << endl;
+	}
+    cv::phase(comps[0], comps[1], cellGradOrients, true);
 	//imshow("comps 0", comps[0]);
 	//imshow("comps 1", comps[1]);
 	//imshow("cellGradOrients", cellGradOrients);
@@ -165,4 +174,29 @@ void MotionFeatureExtractor::computeOpticalFlow(vector<cv::Mat> colorFrames, vec
 	//last_flow.release();
 	frame.release();
 	prev_frame.release();
+}
+
+
+void MotionFeatureExtractor::computeOpticalFlow(pair<cv::Mat,cv::Mat> colorFrames, cv::Mat & motionFrame)
+{
+	//CHANGE!!!
+	double pyr_scale = 0.5;
+	int levels = 3;
+    int winsize = 2;
+	//int winsize = 15;
+	int iterations = 3;
+	int poly_n = 5;
+    double poly_sigma = 1.1;
+	//double poly_sigma = 1.2;
+	int flags = 0;
+
+    cv::Mat tmpPrevFrame, tmpCurrFrame;
+    cvtColor(colorFrames.first, tmpPrevFrame, CV_RGB2GRAY);
+    cvtColor(colorFrames.second, tmpCurrFrame, CV_RGB2GRAY);
+    
+    //optical flow from previous frame to current frame (forward)
+    cv::Mat flow;
+    calcOpticalFlowFarneback(tmpPrevFrame, tmpCurrFrame, motionFrame, pyr_scale, levels,
+                             winsize, iterations, poly_n, poly_sigma, flags);
+
 }
