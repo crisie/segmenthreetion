@@ -72,7 +72,8 @@ public:
 //    template<typename T>
 //    void argmin(GridMat& gargmax);
     
-	void saveFS(const string & filename);
+	void save(const string & filename);
+    void load(const string & filename);
     void show(const char* namedWindow);
 
     void release();

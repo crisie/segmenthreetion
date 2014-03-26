@@ -486,13 +486,13 @@ void GridMat::sum(GridMat&gsum, int dim)
 //}
 
 
-void GridMat::saveFS(const std::string & filename)
+void GridMat::save(const std::string & filename)
 {
 	cv::FileStorage fs(filename, cv::FileStorage::WRITE);
-
+    
 	fs << "crows" << (int) m_crows;
 	fs << "ccols" << (int) m_ccols;
-
+    
 	for (unsigned int row = 0; row < m_crows; row++)
 	{
 		for (int col = 0; col < m_ccols; col++)
@@ -502,7 +502,30 @@ void GridMat::saveFS(const std::string & filename)
 			fs << ss.str() << this->at(row,col);
 		}
 	}
+    
+	fs.release();
+}
 
+
+void GridMat::load(const std::string & filename)
+{
+	cv::FileStorage fs(filename, cv::FileStorage::READ);
+   
+	(int) fs["crows"] >> m_crows;
+	(int) fs["ccols"] >> m_ccols;
+    
+	for (unsigned int row = 0; row < m_crows; row++)
+	{
+		for (int col = 0; col < m_ccols; col++)
+		{
+			std::stringstream ss;
+			ss << "d" << row << col;
+            cv::Mat aux;
+            fs[ss.str().c_str()] >> aux;
+			this->set(aux, row, col);
+		}
+	}
+    
 	fs.release();
 }
 

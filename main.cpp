@@ -186,19 +186,19 @@ int main(int argc, const char* argv[])
     
     // Motion description
     
-    ModalityGridData mGridData;
-    GridMat mDescriptors;
-    
-    MotionFeatureExtractor mFE(mParam);
-    for (int s = 0; s < sizeof(sequences)/sizeof(sequences[0]); s++)
-	{
-        cout << "Computing motion (from read color) frames in scene " << s << ".." << endl;
-		reader.read("Motion", dataPath + sequences[s], "jpg", hp, wp, mGridData);
-        cout << "Describing motion..." << endl;
-        mFE.describe(mGridData, mDescriptors);
-	}
-
-	mDescriptors.saveFS("Motion.yml");
+//    ModalityGridData mGridData;
+//    GridMat mDescriptors;
+//    
+//    MotionFeatureExtractor mFE(mParam);
+//    for (int s = 0; s < sizeof(sequences)/sizeof(sequences[0]); s++)
+//	{
+//        cout << "Computing motion (from read color) frames in scene " << s << ".." << endl;
+//		reader.read("Motion", dataPath + sequences[s], "jpg", hp, wp, mGridData);
+//        cout << "Describing motion..." << endl;
+//        mFE.describe(mGridData, mDescriptors);
+//	}
+//
+//	mDescriptors.saveFS("Motion.yml");
 
     
     // Depth description
@@ -214,22 +214,27 @@ int main(int argc, const char* argv[])
 //		dFE.describe(dGridData, dDescriptors);
 //	}
 //
-//	dDescriptors.saveFS(dataPath + "Depth.yml");
+//	dDescriptors.saveFS("Depth.yml");
 
     
     // Thermal description
     
-	//ModalityGridData tGridData;
-	//GridMat tDescriptors;
- //   ThermalFeatureExtractor tFE(tParam);
+//    ModalityGridData tGridData;
+//    GridMat tDescriptors;
+//    
+//    ThermalFeatureExtractor tFE(tParam);
+//	for (int s = 0; s < sizeof(sequences)/sizeof(sequences[0]); s++)
+//	{
+//        cout << "Reading thermal frames in scene " << s << ".." << endl;
+//		reader.read("Thermal", dataPath + sequences[s], "jpg", hp, wp, tGridData);
+//        cout << "Describing thermal..." << endl;
+//		tFE.describe(tGridData, tDescriptors);
+//	}
+//    
+//    tDescriptors.save("Thermal.yml");
 
-	//for (int s = 0; s < sizeof(sequences)/sizeof(sequences[0]); s++)
-	//{
-	//	reader.read("Thermal", dataPath + sequences[s], "jpg", hp, wp, tGridData);
-	//	tFE.describe(tGridData, tDescriptors); // perform description
-	//}
-
-	   
+    GridMat tDescriptors;
+    tDescriptors.load("Thermal.yml");
 //    GridMat tLoglikelihoods;
     
     //ModalityPrediction<cv::EM> tPrediction;
