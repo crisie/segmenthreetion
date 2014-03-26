@@ -36,6 +36,9 @@
 
 #include <iostream>
 
+#include <boost/assign/std/vector.hpp>
+
+using namespace boost::assign;
 using namespace std;
 
 int main(int argc, const char* argv[])
@@ -53,7 +56,8 @@ int main(int argc, const char* argv[])
 	string dataPath = "../../Sequences/";
 #endif
 
-	string sequences[] = {"Scene1/", "Scene2/", "Scene3/"};
+	vector<string> sequences;
+    sequences += "Scene1/", "Scene2/", "Scene3/";
 	
 	const unsigned char masksOffset = 200;
     
@@ -105,7 +109,10 @@ int main(int argc, const char* argv[])
     
     // Classification step
     
-	int numMixtures[] = {2,3,4,5,6}; // classification parameter (training step)
+	vector<int> nmixtures;
+    nmixtures += 3,4; // classification parameter (training step)
+    vector<int> nlikelicuts;
+    nlikelicuts += -20000;
     
     // Validation procedure
     
@@ -117,12 +124,12 @@ int main(int argc, const char* argv[])
     // Execution
     //
     
-    ModalityData dData;
-    ModalityData cData;
-    ModalityData tData;
-   
     ModalityReader reader(dataPath);
     reader.setMasksOffset(masksOffset);
+    
+//    ModalityData dData;
+//    ModalityData cData;
+//    ModalityData tData;
     
 //    ModalityWriter writer(dataPath);
     
@@ -173,7 +180,7 @@ int main(int argc, const char* argv[])
 //    GridMat cDescriptors;
 //
 //    ColorFeatureExtractor cFE(cParam);
-//	for (int s = 0; s < sizeof(sequences)/sizeof(sequences[0]); s++)
+//	for (int s = 0; s < sequences.size(); s++)
 //	{
 //        cout << "Reading color frames in scene " << s << ".." << endl;
 //		reader.read("Color", dataPath + sequences[s], "jpg", hp, wp, cGridData);
@@ -184,13 +191,17 @@ int main(int argc, const char* argv[])
 //    cDescriptors.saveFS("Color.yml");
 
     
+    //
+    // Feature extraction
+    //
+    
     // Motion description
     
 //    ModalityGridData mGridData;
 //    GridMat mDescriptors;
 //    
 //    MotionFeatureExtractor mFE(mParam);
-//    for (int s = 0; s < sizeof(sequences)/sizeof(sequences[0]); s++)
+//    for (int s = 0; s < sequences.size(); s++)
 //	{
 //        cout << "Computing motion (from read color) frames in scene " << s << ".." << endl;
 //		reader.read("Motion", dataPath + sequences[s], "jpg", hp, wp, mGridData);
@@ -207,7 +218,7 @@ int main(int argc, const char* argv[])
 //	GridMat dDescriptors;
 //    DepthFeatureExtractor dFE(dParam);
 //
-//	for (int s = 0; s < sizeof(sequences)/sizeof(sequences[0]); s++)
+//	for (int s = 0; s < sequences.size(); s++)
 //	{
 //		reader.read("Depth", dataPath + sequences[s], "png", hp, wp, dGridData);
 //
@@ -223,7 +234,7 @@ int main(int argc, const char* argv[])
 //    GridMat tDescriptors;
 //    
 //    ThermalFeatureExtractor tFE(tParam);
-//	for (int s = 0; s < sizeof(sequences)/sizeof(sequences[0]); s++)
+//	for (int s = 0; s < sequences.size(); s++)
 //	{
 //        cout << "Reading thermal frames in scene " << s << ".." << endl;
 //		reader.read("Thermal", dataPath + sequences[s], "jpg", hp, wp, tGridData);
@@ -233,18 +244,25 @@ int main(int argc, const char* argv[])
 //    
 //    tDescriptors.save("Thermal.yml");
 
+    
+    ModalityGridData tMockData;
+    reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData); // mockread :D
+    
     GridMat tDescriptors;
     tDescriptors.load("Thermal.yml");
-//    GridMat tLoglikelihoods;
     
-    //ModalityPrediction<cv::EM> tPrediction;
-//    tPredictor.setModelSelection(kModelSelec, expand(nmixtures, nlikelicuts));
-//    tPredictor.setModelSelection(kTest);
-//    
-//    tPredictor.setData(t)
-//    tPredictor.computeLoglikelihoods(tLoglikelihoods);
-    // ------>
+    GridMat tPredictions, tLoglikelihoods;
     
+    ModalityPrediction<cv::EM> tPrediction;
+    tPrediction.setData(tMockData, tDescriptors);
+
+    tPrediction.setNumOfMixtures(nmixtures);
+    tPrediction.setLoglikelihoodThresholds(nlikelicuts);
+
+    tPrediction.setModelValidation(kTest, seed);
+    tPrediction.setModelSelection(kModelSelec, true);
+    
+    tPrediction.predict(tPredictions, tLoglikelihoods);
 
     return 0;
 }

@@ -134,24 +134,37 @@ void ModalityReader::read(std::string modality, ModalityData& md)
 }
 
 
-void ModalityReader::read(std::string modality, std::string parentDir, const char* filetype, int hp, int wp, ModalityGridData& mgd)
+void ModalityReader::read(string modality, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd)
 {
-	mgd.clear();
+    read(modality, m_DataPath, sceneDirs, filetype, hp, wp, mgd);
+}
 
+void ModalityReader::read(string modality, string dataPath, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd)
+{
+    mgd.clear();
+    
+    for (int s = 0; s < sceneDirs.size(); s++)
+    {
+        read(modality, dataPath + sceneDirs[s], filetype, hp, wp, mgd);
+    }
+}
+
+void ModalityReader::read(string modality, string scenePath, const char* filetype, int hp, int wp, ModalityGridData& mgd)
+{
 	// auxiliary
-	vector<string> filenames; // Frames' filenames from <parentDir>/Frames/<modality>/
+	vector<string> filenames; // Frames' filenames from <dataDir>/Frames/<modality>/
 	vector<vector<cv::Rect> > rects; // Bounding rects at frame level (having several per frame)
 	vector<vector<int> > tags; // Tags corresponding to the bounding rects
     
     if (modality.compare("Motion") != 0)
     {
-        loadFilenames	 (parentDir + "/Frames/" + modality + "/", filenames);
-        loadBoundingRects(parentDir + "/Masks/" + modality + ".yml", rects, tags);
+        loadFilenames	 (scenePath + "/Frames/" + modality + "/", filetype, filenames);
+        loadBoundingRects(scenePath + "/Masks/" + modality + ".yml", rects, tags);
     }
     else
     {
-        loadFilenames	 (parentDir + "/Frames/Color/", filenames);
-        loadBoundingRects(parentDir + "/Masks/Color.yml", rects, tags);
+        loadFilenames	 (scenePath + "/Frames/Color/", filetype, filenames);
+        loadBoundingRects(scenePath + "/Masks/Color.yml", rects, tags);
     }
 
     // Load frame-wise (Mat), extract the roi represented by the bounding boxes,
@@ -167,13 +180,13 @@ void ModalityReader::read(std::string modality, std::string parentDir, const cha
         
         if (modality.compare("Motion") != 0)
         {
-            framePath = parentDir + "/Frames/" + modality + "/" + filenames[f] + "." + filetype;
-            maskPath = parentDir + "/Masks/" + modality + "/" + filenames[f] + ".png";
+            framePath = scenePath + "/Frames/" + modality + "/" + filenames[f] + "." + filetype;
+            maskPath = scenePath + "/Masks/" + modality + "/" + filenames[f] + ".png";
         }
         else
         {
-            framePath = parentDir + "/Frames/Color/" + filenames[f] + "." + filetype;
-            maskPath = parentDir + "/Masks/Color/" + filenames[f] + ".png";
+            framePath = scenePath + "/Frames/Color/" + filenames[f] + "." + filetype;
+            maskPath = scenePath + "/Masks/Color/" + filenames[f] + ".png";
         }
             
 		cv::Mat frame = cv::imread(framePath, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
@@ -189,7 +202,7 @@ void ModalityReader::read(std::string modality, std::string parentDir, const cha
             if (f == 0)
                 currFrame.copyTo(prevFrame);
             else
-                prevFrame = cv::imread(parentDir + "/Frames/Color/" + filenames[f-1] + "." + filetype,
+                prevFrame = cv::imread(scenePath + "/Frames/Color/" + filenames[f-1] + "." + filetype,
                                        CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
             
             MotionFeatureExtractor::computeOpticalFlow(pair<cv::Mat,cv::Mat>(prevFrame,currFrame), frame);
@@ -215,10 +228,95 @@ void ModalityReader::read(std::string modality, std::string parentDir, const cha
                 
 				// Frame id
 				mgd.addGridFrameID(f);
+                
+                // Frame resolution
+                mgd.addFrameFilename(filenames[f]);
 
-				// Bounding rect
+                // Frame resolution
+                mgd.addFrameResolution(frame.cols, frame.rows);
+
+                // Bounding rect
 				mgd.addGridBoundingRect(rects[f][r]);
+                
+				// Tag
+				mgd.addTag(tags[f][r]);
+			}
+		}
+	}
+}
 
+/*
+ * Read only the metadata (frames' filenames, bounding rects, tags, etc)
+ */
+void ModalityReader::mockread(string modality, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd)
+{
+    mockread(modality, m_DataPath, sceneDirs, filetype, hp, wp, mgd);
+}
+
+void ModalityReader::mockread(string modality, string dataPath, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd)
+{
+    mgd.clear();
+    
+    for (int s = 0; s < sceneDirs.size(); s++)
+    {
+        mockread(modality, dataPath + sceneDirs[s], filetype, hp, wp, mgd);
+    }
+}
+
+void ModalityReader::mockread(string modality, string scenePath, const char* filetype, int hp, int wp, ModalityGridData& mgd)
+{
+	// auxiliary
+	vector<string> filenames; // Frames' filenames from <dataDir>/Frames/<modality>/
+	vector<vector<cv::Rect> > rects; // Bounding rects at frame level (having several per frame)
+	vector<vector<int> > tags; // Tags corresponding to the bounding rects
+    
+    if (modality.compare("Motion") != 0)
+    {
+        loadFilenames	 (scenePath + "/Frames/" + modality + "/", filetype, filenames);
+        loadBoundingRects(scenePath + "/Masks/" + modality + ".yml", rects, tags);
+    }
+    else
+    {
+        loadFilenames	 (scenePath + "/Frames/Color/", filetype, filenames);
+        loadBoundingRects(scenePath + "/Masks/Color.yml", rects, tags);
+    }
+    
+    // Load frame-wise (Mat), extract the roi represented by the bounding boxes,
+    // grid the rois (GridMat), and store in GridModalityData object
+    
+	for (int f = 0; f < filenames.size(); f++)
+	{
+        if (rects[f].size() < 1)
+            continue;
+        
+        // Load the frame and its mask
+        string framePath;
+        
+        if (modality.compare("Motion") != 0)
+            framePath = scenePath + "/Frames/" + modality + "/" + filenames[f] + "." + filetype;
+        else
+            framePath = scenePath + "/Frames/Color/" + filenames[f] + "." + filetype;
+        
+		cv::Mat frame = cv::imread(framePath, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+        
+        // Look the bounding rects in it...
+		for (int r = 0; r < rects[f].size(); r++)
+		{
+            // Create the grid structures
+			if (rects[f][r].height >= hp && rects[f][r].width >= wp)
+			{                
+				// Frame id
+				mgd.addGridFrameID(f);
+                
+                // Frame resolution
+                mgd.addFrameFilename(filenames[f]);
+                
+                // Frame resolution
+                mgd.addFrameResolution(frame.cols, frame.rows);
+                
+                // Bounding rect
+				mgd.addGridBoundingRect(rects[f][r]);
+                
 				// Tag
 				mgd.addTag(tags[f][r]);
 			}
@@ -227,12 +325,13 @@ void ModalityReader::read(std::string modality, std::string parentDir, const cha
 }
 
 
+
 /**
  * Load data to opencv's cv::Mats
  *
  * This method uses OpenCV and Boost.
  */
-void ModalityReader::loadFilenames(string dir, vector<string>& filenames)
+void ModalityReader::loadFilenames(string dir, const char* filetype, vector<string>& filenames)
 {
 	filenames.clear();
 
@@ -244,8 +343,8 @@ void ModalityReader::loadFilenames(string dir, vector<string>& filenames)
 		directory_iterator iter(path);
 		for( ; iter != end ; ++iter )
 		{
-			if ( !is_directory( *iter ) && (iter->path().extension().string().compare(".png") == 0  ||
-                                            iter->path().extension().string().compare(".jpg") == 0))
+            string extension = "." + string(filetype);
+			if ( !is_directory( *iter ) && (iter->path().extension().string().compare(extension) == 0) )
 			{
 				string filename = iter->path().filename().string();
 				filenames.push_back(filename.substr(0,filename.size()-4));
@@ -259,7 +358,7 @@ void ModalityReader::loadFilenames(string dir, vector<string>& filenames)
  *
  * This method uses OpenCV and Boost.
  */
-void ModalityReader::loadDataToMats(string dir, const char* format, vector<cv::Mat> & frames)
+void ModalityReader::loadDataToMats(string dir, const char* filetype, vector<cv::Mat> & frames)
 {
     const char* path = dir.c_str();
 	if( exists( path ) )
@@ -285,7 +384,7 @@ void ModalityReader::loadDataToMats(string dir, const char* format, vector<cv::M
  *
  * This method uses OpenCV and Boost.
  */
-void ModalityReader::loadDataToMats(string dir, const char* format, vector<cv::Mat> & frames, vector<string>& indices)
+void ModalityReader::loadDataToMats(string dir, const char* filetype, vector<cv::Mat> & frames, vector<string>& indices)
 {
     const char* path = dir.c_str();
 	if( exists( path ) )

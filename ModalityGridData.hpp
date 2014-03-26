@@ -30,24 +30,18 @@ public:
     */
     ModalityGridData(ModalityGridData& other, cv::Mat indices)
     {
-        vector<GridMat> gframes;
-        vector<GridMat> gmasks;
-        vector<int> gframeids;
-        vector<int> tags;
-             
         for (int i = 0; i < other.getTags().size(); i++)
         {
             int index = (indices.rows > 1) ? indices.at<int>(i,0) : indices.at<int>(0,i);
 
-            gframes.push_back(other.getGridFrame(index));
-            gmasks.push_back(other.getGridMask(index));
-			tags.push_back(other.getTag(index));
+            addGridFrame(other.getGridFrame(index));
+            addGridMask(other.getGridMask(index));
+            addGridFrameID(other.getGridFrameID(index));
+            addFrameFilename(other.getFrameFilename(index));
+            addFrameResolution(other.getFrameResolution(index));
+            addGridBoundingRect(other.getGridBoundingRect(index));
+            addTag(other.getTag(index));
         }
-        
-        setGridsFrames(gframes);
-        setGridsMasks(gmasks);
-        setGridsFrameIDs(gframeids);
-        setTags(tags);
     }
 
 	void clear()
@@ -55,15 +49,20 @@ public:
 		m_GFrames.clear();
 		m_GMasks.clear();
 		m_GFrameIDs.clear();
+        m_FramesFilenames.clear();
 		m_FramesResolutions.clear();
 		m_GBoundingRects.clear();
 		m_Tags.clear();
 	}
     
-    void operator=(ModalityGridData& other)
+    void operator=(const ModalityGridData& other)
     {
         m_GFrames = other.m_GFrames;
         m_GMasks = other.m_GMasks;
+        m_GFrameIDs = other.m_GFrameIDs;
+        m_FramesFilenames = other.m_FramesFilenames;
+        m_FramesResolutions = other.m_FramesResolutions;
+        m_GBoundingRects = other.m_GBoundingRects;
         m_Tags = other.m_Tags;
     }
     
@@ -82,6 +81,11 @@ public:
     int getGridFrameID(int k)
     {
         return m_GFrameIDs[k];
+    }
+    
+    string getFrameFilename(int k)
+    {
+        return m_FramesFilenames[k];
     }
     
     cv::Point2d getFrameResolution(int k)
@@ -112,6 +116,11 @@ public:
     vector<int>& getGridsFrameIDs()
     {
         return m_GFrameIDs;
+    }
+    
+    vector<string>& getFramesFilenames()
+    {
+        return m_FramesFilenames;
     }
 
     vector<cv::Point2d>& getFramesResolutions()
@@ -149,9 +158,9 @@ public:
         return m_wp;
     }
     
-    bool isFilled()
+    bool isMock()
     {
-        return m_GFrames.size() > 0 && m_GMasks.size() > 0 && m_Tags.size() > 0;
+        return m_GFrames.size() == 0 && m_GMasks.size() == 0 && m_Tags.size() > 0;
     }
     
     // Setters
@@ -169,6 +178,11 @@ public:
     void setGridsFrameIDs(vector<int> gframeids)
     {
         m_GFrameIDs = gframeids;
+    }
+    
+    void setFramesFilenames(vector<string> filenames)
+    {
+        m_FramesFilenames = filenames;
     }
     
     void setFramesResolutions(vector<cv::Point2d> resolutions)
@@ -201,9 +215,19 @@ public:
         m_GFrameIDs.push_back(id);
     }
     
+    void addFrameFilename(string filename)
+    {
+        m_FramesFilenames.push_back(filename);
+    }
+    
     void addFrameResolution(int x, int y)
     {
         m_FramesResolutions.push_back(cv::Point2d(x,y));
+    }
+    
+    void addFrameResolution(cv::Point2d res)
+    {
+        m_FramesResolutions.push_back(res);
     }
     
     void addGridBoundingRect(cv::Rect gboundingrect)
@@ -222,6 +246,7 @@ private:
     vector<GridMat> m_GFrames;
     vector<GridMat> m_GMasks;
     vector<int> m_GFrameIDs;
+    vector<string> m_FramesFilenames;
     vector<cv::Point2d> m_FramesResolutions;
     vector<cv::Rect> m_GBoundingRects;
     vector<int> m_Tags;

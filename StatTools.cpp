@@ -92,18 +92,18 @@ void cvpartition(cv::Mat classes, int k, int seed, cv::Mat& partitions)
     
     // separate the indices in a different vector for each class
 
-    std::vector<std::vector<int> > classesIndices(minVal - maxVal + 1);
+    std::vector<std::vector<int> > classesIndices(maxVal - minVal + 1);
     int m = (classes.rows > 1) ? classes.rows : classes.cols;
     for (int i = 0; i < m; i++)
     {
-        int l = (classes.rows > 1) ? classes.at<int>(i,0) : classes.at<int>(0,1);
-        classesIndices[l].push_back(i);
+        int l = (classes.rows > 1) ? classes.at<int>(i,0) : classes.at<int>(0,i);
+        classesIndices[l - minVal].push_back(i);
     }
     
     // perform partitions separately in the classes' indices vectors
     // and then merge the separate partitions into one
     
-    std::vector<cv::Mat> classesPartitions(minVal - maxVal + 1);
+    std::vector<cv::Mat> classesPartitions(maxVal - minVal + 1);
     
     partitions.release();
     partitions.create(classes.rows, classes.cols, cv::DataType<int>::type);

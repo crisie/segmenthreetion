@@ -156,8 +156,6 @@ void ModalityPrediction<cv::EM>::predict(GridMat& predictions, GridMat& loglikel
     cv::Mat partitions;
     cvpartition(m_data.getTagsMat(), m_testK, m_seed, partitions);
     
-    GridMat predictionsTe;
-    GridMat loglikelihoodsTe;
     vector<GridPredictor<cv::EM> > predictors;
     
     for (int i = 0; i < m_testK; i++)
@@ -180,8 +178,8 @@ void ModalityPrediction<cv::EM>::predict(GridMat& predictions, GridMat& loglikel
         GridMat predictionsTeFold, loglikelihoodsTeFold;
         predictor.predict(descriptorsTeFold, predictionsTeFold, loglikelihoodsTeFold);
         
-        predictionsTe.vset(predictionsTeFold, partitions == i);
-        loglikelihoodsTe.vset(loglikelihoodsTeFold, partitions == i);
+        predictions.vset(predictionsTeFold, partitions == i);
+        loglikelihoods.vset(loglikelihoodsTeFold, partitions == i);
     }
 }
 
