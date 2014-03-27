@@ -167,8 +167,9 @@ void ModalityPrediction<cv::EM>::predict(GridMat& predictions, GridMat& loglikel
         ModalityGridData dataTeFold (m_data, partitions == k);
         cout << "db 0b" << endl;
         GridMat descriptorsTrFold (m_descriptors, partitions != k);
-        GridMat descriptorsTeFold (m_descriptors, partitions == k);
         cout << "db 0c" << endl;
+        GridMat descriptorsTeFold (m_descriptors, partitions == k);
+        cout << "db 0d" << endl;
         
         GridMat selectedParams;
         modelSelection(dataTrFold, descriptorsTrFold,
@@ -259,9 +260,6 @@ void ModalityPrediction<cv::EM>::modelSelection(ModalityGridData data, GridMat d
         // Get fold's data
         ModalityGridData dataTr (data, partitions != k);
         ModalityGridData dataVal (data, partitions == k);
-
-        cout << "db 1a" << endl;
-        cout << descriptors << endl;
         GridMat descriptorsTr (descriptors, partitions != k);
         GridMat descriptorsVal (descriptors, partitions == k);
         
@@ -282,7 +280,7 @@ void ModalityPrediction<cv::EM>::modelSelection(ModalityGridData data, GridMat d
             
             cout << "db 1c" << endl;
             
-            nmixtures.setTo(expandedParams.at<double>(m,0));
+            nmixtures.setTo(expandedParams.at<double>(m,0)); // TODO: fix
             loglikes.setTo(expandedParams.at<double>(m,1));
             
             cout << "db 1d" << endl;

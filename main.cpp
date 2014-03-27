@@ -214,18 +214,18 @@ int main(int argc, const char* argv[])
     
     // Depth description
     
-	ModalityGridData dGridData;
-	GridMat dDescriptors;
-    DepthFeatureExtractor dFE(dParam);
-
-	for (int s = 0; s < sequences.size(); s++)
-	{
-		reader.read("Depth", sequences[s], "png", hp, wp, dGridData);
-
-		dFE.describe(dGridData, dDescriptors);
-	}
-
-	dDescriptors.save("Depth.yml");
+//	ModalityGridData dGridData;
+//	GridMat dDescriptors;
+//    DepthFeatureExtractor dFE(dParam);
+//
+//	for (int s = 0; s < sequences.size(); s++)
+//	{
+//		reader.read("Depth", sequences[s], "png", hp, wp, dGridData);
+//
+//		dFE.describe(dGridData, dDescriptors);
+//	}
+//
+//	dDescriptors.save("Depth.yml");
 
     
     // Thermal description

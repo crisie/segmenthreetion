@@ -61,6 +61,9 @@ GridMat::GridMat(const GridMat& other)
 
 GridMat::GridMat(GridMat& other, cv::Mat indices, int dim, bool logical)
 {
+    m_crows = other.m_crows;
+    m_ccols = other.m_ccols;
+    
     m_grid.resize(other.crows() * other.ccols());
     
     setIndexedCellElements(other, indices, dim, logical);
@@ -124,6 +127,7 @@ void GridMat::setIndexedCellElementsLogically(GridMat& grid, cv::Mat logicals, i
     {
         for (int k = 0; k < nelems; k++)
         {
+            cout << i << " " << j << " " << k << endl;
             unsigned char included = (logicals.rows > 1) ? logicals.at<int>(k,0) : logicals.at<int>(0,k);
             if (included)
             {
@@ -295,7 +299,6 @@ cv::Mat GridMat::get(unsigned int i, unsigned int j) const
 
 void GridMat::set(cv::Mat cell, unsigned int i, unsigned int j)
 {
-    this->at(i,j).release();
     m_grid[i * m_ccols + j] = cell;
 }
 
