@@ -32,7 +32,6 @@ public:
         return m_Frames[k];
     }
     
-    
     cv::Mat getPredictedMask(int k)
     {
         return m_PredictedMasks[k];
@@ -43,16 +42,14 @@ public:
         return (m_PredictedMasks[k] == (m_MasksOffset + subjectId));
     }
     
-    /*
-    int getFrameID(int k)
-    {
-        return m_FrameIDs[k];
-    }
-     */
-        
     cv::Mat getGroundTruthMask(int k)
     {
         return m_GroundTruthMasks[k];
+    }
+    
+    cv::Mat getGroundTruthMask(int k, unsigned char subjectId)
+    {
+        return (m_GroundTruthMasks[k] == (m_MasksOffset + subjectId));
     }
     
     vector<cv::Mat> *getPredictedMasksInScene(int s)

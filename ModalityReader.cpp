@@ -176,6 +176,9 @@ void ModalityReader::readScene(string modality, string scenePath, const char* fi
 
     // Load frame-wise (Mat), extract the roi represented by the bounding boxes,
     // grid the rois (GridMat), and store in GridModalityData object
+
+    mgd.setHp(hp);
+    mgd.setWp(wp);
     
 	for (int f = 0; f < filenames.size(); f++)
 	{
@@ -247,6 +250,10 @@ void ModalityReader::readScene(string modality, string scenePath, const char* fi
                 
 				// Tag
 				mgd.addTag(tags[f][r]);
+                
+                // Cells' validness
+                cv::Mat validnesses = gmask.findNonZero<unsigned char>();
+                mgd.addValidnesses(validnesses);
 			}
 		}
 	}
@@ -299,20 +306,23 @@ void ModalityReader::mockreadScene(string modality, string scenePath, const char
     // Load frame-wise (Mat), extract the roi represented by the bounding boxes,
     // grid the rois (GridMat), and store in GridModalityData object
     
+    mgd.setHp(hp);
+    mgd.setWp(wp);
+    
 	for (int f = 0; f < filenames.size(); f++)
 	{
         if (rects[f].size() < 1)
             continue;
         
         // Load the frame and its mask
-        string framePath;
+        string maskPath;
         
         if (modality.compare("Motion") != 0)
-            framePath = scenePath + "/Frames/" + modality + "/" + filenames[f] + "." + filetype;
+            maskPath = scenePath + "/Masks/" + modality + "/" + filenames[f] + ".png";
         else
-            framePath = scenePath + "/Frames/Color/" + filenames[f] + "." + filetype;
+            maskPath = scenePath + "/Masks/Color/" + filenames[f] + ".png";
         
-		cv::Mat frame = cv::imread(framePath, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+		cv::Mat mask = cv::imread(maskPath, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
         
         // Look the bounding rects in it...
 		for (int r = 0; r < rects[f].size(); r++)
@@ -323,17 +333,23 @@ void ModalityReader::mockreadScene(string modality, string scenePath, const char
 				// Frame id
 				mgd.addGridFrameID(f);
                 
-                // Frame resolution
+                // Frame filename
                 mgd.addFrameFilename(filenames[f]);
                 
                 // Frame resolution
-                mgd.addFrameResolution(frame.cols, frame.rows);
+                mgd.addFrameResolution(mask.cols, mask.rows);
                 
                 // Bounding rect
 				mgd.addGridBoundingRect(rects[f][r]);
                 
 				// Tag
 				mgd.addTag(tags[f][r]);
+                
+                // Cells' validness
+				cv::Mat maskroi (mask, rects[f][r]);
+				GridMat gmask (maskroi, hp, wp);
+                cv::Mat validnesses = gmask.findNonZero<unsigned char>();
+                mgd.addValidnesses(validnesses);
 			}
 		}
 	}
@@ -383,8 +399,7 @@ void ModalityReader::loadDataToMats(string dir, const char* filetype, vector<cv:
 		directory_iterator iter(path);
 		for( ; iter != end ; ++iter )
 		{
-			if ( !is_directory( *iter ) && (iter->path().extension().string().compare(".png") == 0  ||
-                                            iter->path().extension().string().compare(".jpg") == 0))
+			if ( !is_directory( *iter ) && (iter->path().extension().string().compare(filetype) == 0) )
 			{
                 //cout << iter->path().string() << endl; //debug
 				cv::Mat img = cv::imread( iter->path().string(), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR );
@@ -409,8 +424,7 @@ void ModalityReader::loadDataToMats(string dir, const char* filetype, vector<cv:
 		directory_iterator iter(path);
 		for( ; iter != end ; ++iter )
 		{
-			if ( !is_directory( *iter ) && (iter->path().extension().string().compare(".png") == 0 ||
-                                            iter->path().extension().string().compare(".jpg") == 0))
+			if ( !is_directory( *iter ) && (iter->path().extension().string().compare(filetype) == 0) )
 			{
                 //cout << iter->path().string() << endl; //debug
 				cv::Mat img = cv::imread( iter->path().string(), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
@@ -466,4 +480,80 @@ void ModalityReader::loadCalibVarsDir(string dir, vector<string>& calibVarsDirs)
     
     calibVarsDirs.push_back(dir);
     
+}
+
+void ModalityReader::agreement(vector<ModalityGridData*> mgds)
+{
+    // at least one modality is passed
+    if (mgds.size() < 1)
+        cerr << "[ModalityReader::agree] needs at least one modality" << endl;
+    
+    // get the first modality's parameters
+    int hp0 = mgds[0]->getHp();
+    int wp0 = mgds[0]->getWp();
+    int ntags0 = mgds[0]->getTags().size();
+    // ...
+    
+    // check if the rest agree with the 0-th modality
+    for (int i = 1; i < mgds.size(); i++)
+    {
+        if (mgds[i]->getHp() != hp0 || mgds[i]->getWp() != wp0)
+        {
+            cerr << "[ModalityReader::agree] grid dimensions do not coincide" << endl;
+            return;
+        }
+        
+        if (mgds[i]->getTags().size() != ntags0)
+        {
+            cerr << "[ModalityReader::agree] number of tags do not coincide" << endl;
+            return;
+        }
+    }
+    
+    // perform the validnesses agreement
+    // (this can be used to have the same number of cell descriptors through all modalities)
+//    for (int i = 0; i < ntags0; i++)
+//    {
+//        cv::Mat validness = cv::Mat::ones(hp0, wp0, cv::DataType<unsigned char>::type);
+//        for (int m = 0; m < mgds.size(); m++)
+//        {
+//            cv::bitwise_and(validness, mgds[m]->getValidnesses(i), validness);
+//        }
+//        
+//        for (int m = 0; m < mgds.size(); m++)
+//        {
+//            mgds[m]->setValidnesses(i, validness);
+//        }
+//    }
+    for (int i = 0; i < hp0; i++) for (int j = 0; j < wp0; j++)
+    {
+        vector<int> counts(mgds.size(), 0);
+        
+        vector<cv::Mat> descriptors(mgds.size());
+        
+        for (int k = 0; k < ntags0; k++)
+        {
+            bool allValids = true;
+            for (int m = 0; m < mgds.size() && allValids; m++)
+                allValids = mgds[m]->getValidnesses(k).at<unsigned char>(i,j);
+            
+            if (allValids)
+            {
+                for (int m = 0; m < mgds.size(); m++)
+                    descriptors[m].push_back(mgds[m]->getDescriptor(i, j, counts[m]++));
+            }
+            else
+            {
+                for (int m = 0; m < mgds.size(); m++)
+                    if (mgds[m]->getValidnesses(k).at<unsigned char>(i,j))
+                    {
+                        mgds[m]->setValidness(false, i, j, k);
+                        counts[m]++;
+                    }
+            }
+        }
+        
+        for (int m = 0; m < mgds.size(); m++)
+            mgds[m]->setDescriptors(descriptors[m], i, j);
+    }
 }

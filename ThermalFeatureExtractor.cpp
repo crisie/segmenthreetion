@@ -36,39 +36,44 @@ void ThermalFeatureExtractor::setParam(ThermalParametrization thermalParam)
 }
 
 
-void ThermalFeatureExtractor::describe(ModalityGridData data, GridMat& descriptors)
+void ThermalFeatureExtractor::describe(ModalityGridData& data)
 {
     for (int k = 0; k < data.getGridsFrames().size(); k++)
     {
-        if (k % 100 == 0) cout << 100.0 * k / data.getGridsFrames().size() << "%" <<  endl;
+        if (k % 100 == 0) cout << 100.0 * k / data.getGridsFrames().size() << "%" <<  endl; // debug
         
         GridMat grid = data.getGridFrame(k);
         GridMat gmask = data.getGridMask(k);
-        
+        cv::Mat gvalidness = data.getValidnesses(k);
+
         for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
         {
-            cv::Mat & cell = grid.at(i,j);
-            cv::Mat & cellMask = gmask.at(i,j);
-            
-            // Intensities descriptor
-            cv::Mat tIntensitiesHist;
-            describeThermalIntesities(cell, cellMask, tIntensitiesHist);
-            
-            // Gradient orientation descriptor
-            cv::Mat tGradOrientsHist;
-            describeThermalGradOrients(cell, cellMask, tGradOrientsHist);
-            
-            // Join both descriptors in a row
-            cv::Mat tHist;
-            hconcat(tIntensitiesHist, tGradOrientsHist, tHist);
-            
-            descriptors.vconcat(tHist, i, j); // row in a matrix of descriptors
+            if (gvalidness.at<unsigned char>(i,j))
+            {
+                cv::Mat& cell = grid.at(i,j);
+                cv::Mat& cellMask = gmask.at(i,j);
+                
+                // Intensities descriptor
+                cv::Mat tIntensitiesHist;
+                describeThermalIntesities(cell, cellMask, tIntensitiesHist);
+                
+                // Gradient orientation descriptor
+                cv::Mat tGradOrientsHist, dX, dY, p;
+                describeThermalGradOrients(cell, cellMask, tGradOrientsHist);
+                
+                // Join both descriptors in a row
+                cv::Mat tHist;
+                hconcat(tIntensitiesHist, tGradOrientsHist, tHist);
+                
+                data.addDescriptor(tHist, i, j); // row in a matrix of descriptors
+                data.setValidness(cv::checkRange(tHist), i, j, k);
+            }
         }
     }
 }
 
 
-void ThermalFeatureExtractor::describeThermalIntesities(const cv::Mat cell, const cv::Mat cellMask, cv::Mat & tIntensitiesHist)
+void ThermalFeatureExtractor::describeThermalIntesities(cv::Mat cell, cv::Mat cellMask, cv::Mat & tIntensitiesHist)
 {
     int ibins = m_ThermalParam.ibins;
     
@@ -87,15 +92,16 @@ void ThermalFeatureExtractor::describeThermalIntesities(const cv::Mat cell, cons
 }
 
 
-void ThermalFeatureExtractor::describeThermalGradOrients(const cv::Mat cell, const cv::Mat cellMask, cv::Mat & tGradOrientsHist)
+void ThermalFeatureExtractor::describeThermalGradOrients(cv::Mat cell, cv::Mat cellMask, cv::Mat & tGradOrientsHist)
 {
-    cv::Mat cellSeg = cv::Mat::zeros(cell.rows, cell.cols, cell.depth());
-    cell.copyTo(cellSeg, cellMask);
+    //cv::Mat cellSeg = cv::Mat::zeros(cell.rows, cell.cols, cell.type());
+    //cell.copyTo(cellSeg, cellMask);
     
     // First derivatives
     cv::Mat cellDervX, cellDervY;
-    cv::Sobel(cellSeg, cellDervX, CV_32F, 1, 0);
-    cv::Sobel(cellSeg, cellDervY, CV_32F, 0, 1);
+    cv::Mat aux = cell.clone();
+    cv::Sobel(aux, cellDervX, CV_32F, 1, 0);
+    cv::Sobel(aux, cellDervY, CV_32F, 0, 1);
     
     cv::Mat cellGradOrients;
     cv::phase(cellDervX, cellDervY, cellGradOrients, true);
@@ -104,21 +110,18 @@ void ThermalFeatureExtractor::describeThermalGradOrients(const cv::Mat cell, con
     
     cv::Mat tmpHist = cv::Mat::zeros(1, oribins, cv::DataType<float>::type);
     
-    for (int i = 0; i < cellSeg.rows; i++) for (int j = 0; j < cellSeg.cols; j++)
+    for (int i = 0; i < cell.rows; i++) for (int j = 0; j < cell.cols; j++)
     {
-        float g_x = cellDervX.at<float>(i,j);//unsigned short>(i,j);
-        float g_y = cellDervY.at<float>(i,j);
-        
-        float orientation = cellGradOrients.at<float>(i,j);
-        float bin = static_cast<int>((orientation/360.0) * oribins) % oribins;
-        tmpHist.at<float>(0, bin) += sqrtf(g_x * g_x + g_y * g_y);
+        if (cellMask.at<unsigned char>(i,j))
+        {
+            float g_x = cellDervX.at<float>(i,j);//unsigned short>(i,j);
+            float g_y = cellDervY.at<float>(i,j);
+            
+            float orientation = cellGradOrients.at<float>(i,j);
+            int bin = ((int) floorf((orientation/360.0) * oribins));
+            tmpHist.at<float>(0, bin) += sqrtf(g_x * g_x + g_y * g_y);
+        }
     }
     
-    cellSeg.release();
-    cellDervX.release();
-    cellDervY.release();
-    cellGradOrients.release();
-    
     hypercubeNorm(tmpHist, tGradOrientsHist);
-    tmpHist.release();
 }

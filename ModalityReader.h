@@ -44,6 +44,8 @@ public:
 	void mockread(string modality, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd);
     void mockread(string modality, string dataPath, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd);
     
+    void agreement(vector<ModalityGridData*> mgds);
+    
 private:
     string m_DataPath;
     vector<string> m_ScenesPaths;

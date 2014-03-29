@@ -20,10 +20,10 @@ GridPredictorBase<PredictorT>::GridPredictorBase()
 }
 
 template<typename PredictorT>
-void GridPredictorBase<PredictorT>::setData(GridMat data, cv::Mat categories)
+void GridPredictorBase<PredictorT>::setData(GridMat data)
 {
     m_data = data;
-    m_categories = categories;
+    
     m_hp = data.crows();
     m_wp = data.ccols();
     m_predictors.resize(data.crows() * data.ccols());
@@ -48,9 +48,9 @@ GridPredictor<PredictorT>::GridPredictor()
 }
 
 template<typename PredictorT>
-void GridPredictor<PredictorT>::setData(GridMat data, cv::Mat categories)
+void GridPredictor<PredictorT>::setData(GridMat data)
 {
-    GridPredictorBase<PredictorT>::setData(data, categories);
+    GridPredictorBase<PredictorT>::setData(data);
 }
 
 template<typename PredictorT>
@@ -69,9 +69,9 @@ GridPredictor<cv::EM>::GridPredictor()
     
 }
 
-void GridPredictor<cv::EM>::setData(GridMat data, cv::Mat categories)
+void GridPredictor<cv::EM>::setData(GridMat data)
 {
-    GridPredictorBase<cv::EM>::setData(data, categories);
+    GridPredictorBase<cv::EM>::setData(data);
 }
 
 cv::EM& GridPredictor<cv::EM>::at(unsigned int i, unsigned int j)
@@ -85,8 +85,8 @@ void GridPredictor<cv::EM>::setParameters(GridMat parameters)
     m_logthreshold.create(m_hp, m_wp, cv::DataType<int>::type);
     for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
     {
-//        this->at(i,j).set("nclusters", parameters.at<int>(i,j,0,0));
-//        m_logthreshold.at<int>(i,j) = parameters.at<int>(i,j,0,1);
+        this->at(i,j).set("nclusters", parameters.at<int>(i,j,0,0));
+        m_logthreshold.at<int>(i,j) = parameters.at<int>(i,j,0,1);
     }
 }
 
@@ -112,7 +112,7 @@ void GridPredictor<cv::EM>::train()
 {
     for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
     {
-        this->at(i,j).train(m_data.get(i,j));
+        this->at(i,j).train(m_data.at(i,j));
     }
 }
 
@@ -122,15 +122,15 @@ void GridPredictor<cv::EM>::predict(GridMat data, GridMat& predictions, GridMat&
     {
         cv::Mat& cell = data.at(i,j);
         cv::Mat cellPredictions (cell.rows, 1, cv::DataType<int>::type);
-        cv::Mat cellLoglikelihoods (cell.rows, 1, cv::DataType<int>::type);
+        cv::Mat cellLoglikelihoods (cell.rows, 1, cv::DataType<double>::type);
         
         for (int d = 0; d < cell.rows; d++)
         {
             cv::Vec2d res;
             res = this->at(i,j).predict(cell.row(d));
-            
-            cellPredictions.at<int>(d,0) = res[0] > m_logthreshold.at<int>(i,j);
-            cellLoglikelihoods.at<int>(d,0) = res[0];
+
+            cellPredictions.at<int>(d,0) = res.val[0] > m_logthreshold.at<int>(i,j);
+            cellLoglikelihoods.at<double>(d,0) = res.val[0];
         }
 
         predictions.set(cellPredictions, i, j);

@@ -73,7 +73,7 @@ void GridPartitioner::gridFrames(ModalityData& md, vector<GridMat>& gframes, cv:
             {
                 cv::Mat subject (md.getFrame(f), rects[r]); // Get a roi in frame defined by the rectangle.
                 cv::Mat maskedSubject;
-                subject.copyTo(maskedSubject, md.getPredictedMask(f,r));
+                subject.copyTo(maskedSubject, md.getPredictedMask(f));
                 subject.release();
                 
                 GridMat g (maskedSubject, m_hp, m_wp);
@@ -103,7 +103,7 @@ void GridPartitioner::gridMasks(ModalityData& md, vector<GridMat>& gmasks)
             {
                 cv::Mat subject (md.getFrame(f), rects[r]); // Get a roi in frame defined by the rectangle.
                 cv::Mat maskedSubject;
-                subject.copyTo(maskedSubject, md.getPredictedMask(f,r));
+                subject.copyTo(maskedSubject, md.getPredictedMask(f));
                 subject.release();
                 
                 GridMat g (maskedSubject, m_hp, m_wp);
@@ -129,7 +129,7 @@ void GridPartitioner::gridMasks(ModalityData& md, vector<GridMat>& gmasks, vecto
             {
                 cv::Mat subject (md.getFrame(f), rects[r]); // Get a roi in frame defined by the rectangle.
                 cv::Mat maskedSubject;
-                subject.copyTo(maskedSubject, md.getPredictedMask(f,r));
+                subject.copyTo(maskedSubject, md.getPredictedMask(f));
                 subject.release();
                 
                 GridMat g (maskedSubject, m_hp, m_wp);

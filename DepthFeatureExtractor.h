@@ -23,7 +23,7 @@ public:
     
     void setParam(DepthParametrization dParam);
 
-    void describe(ModalityGridData data, GridMat& descriptors);
+    void describe(ModalityGridData& data);
     
 private:
     /*

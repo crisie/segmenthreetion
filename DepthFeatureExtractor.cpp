@@ -40,26 +40,31 @@ void DepthFeatureExtractor::setParam(DepthParametrization depthParam)
 }
 
 
-void DepthFeatureExtractor::describe(ModalityGridData data, GridMat& descriptors)
+void DepthFeatureExtractor::describe(ModalityGridData& data)
 {
     for (int k = 0; k < data.getGridsFrames().size(); k++)
     {
-        if (k % 100 == 0) cout << 100.0 * k / data.getGridsFrames().size() << "%" <<  endl;
+        if (k % 100 == 0) cout << 100.0 * k / data.getGridsFrames().size() << "%" <<  endl; // debug
         
         GridMat grid = data.getGridFrame(k);
         GridMat gmask = data.getGridMask(k);
+        cv::Mat gvalidness = data.getValidnesses(k);
         
         for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
         {
-            cv::Mat & cell = grid.at(i,j);
-            cv::Mat & cellMask = gmask.at(i,j);
-            
-            // Normals orientation descriptor
-            cv::Mat dNormalsOrientsHist(1, (m_DepthParam.thetaBins + m_DepthParam.phiBins), CV_32F);
-			dNormalsOrientsHist.setTo(std::numeric_limits<float>::quiet_NaN());
-            describeNormalsOrients(cell, cellMask, dNormalsOrientsHist);
-            
-            descriptors.vconcat(dNormalsOrientsHist, i, j); // row in a matrix of descriptors
+            if (gvalidness.at<unsigned char>(i,j))
+            {
+                cv::Mat & cell = grid.at(i,j);
+                cv::Mat & cellMask = gmask.at(i,j);
+                
+                // Normals orientation descriptor
+                cv::Mat dNormalsOrientsHist(1, (m_DepthParam.thetaBins + m_DepthParam.phiBins), CV_32F);
+                dNormalsOrientsHist.setTo(std::numeric_limits<float>::quiet_NaN());
+                describeNormalsOrients(cell, cellMask, dNormalsOrientsHist);
+
+                data.addDescriptor(dNormalsOrientsHist, i, j); // row in a matrix of descriptors
+                data.setValidness(cv::checkRange(dNormalsOrientsHist), i, j, k);
+            }
         }
     }
 }

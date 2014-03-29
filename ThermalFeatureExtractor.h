@@ -23,7 +23,7 @@ public:
     
     void setParam(ThermalParametrization tParam);
 
-    void describe(ModalityGridData data, GridMat& descriptors);
+    void describe(ModalityGridData& data);
     
 private:
     /*
@@ -36,8 +36,8 @@ private:
      * Private methods
      */
     
-    void describeThermalIntesities(const cv::Mat grid, const cv::Mat mask, cv::Mat & tIntensityHist);
-    void describeThermalGradOrients(const cv::Mat grid, const cv::Mat mask, cv::Mat & tGradOrientsHist);
+    void describeThermalIntesities(cv::Mat grid, cv::Mat mask, cv::Mat & tIntensityHist);
+    void describeThermalGradOrients(cv::Mat grid, cv::Mat mask, cv::Mat & tGradOrientsHist);
 };
 
 #endif /* defined(__Segmenthreetion__ThermalFeatureExtractor__) */

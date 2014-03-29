@@ -10,6 +10,12 @@
 
 #include <math.h>
 
+// Instantiation of template member functions
+// -----------------------------------------------------------------------------
+template void variate<int>(vector<vector<int > > list, vector<vector<int > >& variations);
+template void variate<double>(vector<vector<double > > list, vector<vector<double > >& variations);
+// -----------------------------------------------------------------------------
+
 
 /**
  * Builds an histogram of the values contained in a vector (or matrix)
@@ -79,6 +85,17 @@ void cvpartition(int n, int k, int seed, cv::Mat& partitions)
         }
         
         c += ifoldElems;
+    }
+}
+
+
+void cvpartition(GridMat gclasses, int k, int seed, GridMat& gpartitions)
+{
+    gpartitions.release();
+    gpartitions.create(gclasses.crows(), gclasses.ccols());
+    for (int i = 0; i < gclasses.crows(); i++) for (int j = 0; j < gclasses.ccols(); j++)
+    {
+        cvpartition(gclasses.at(i,j), k, seed, gpartitions.at(i,j));
     }
 }
 
@@ -183,4 +200,34 @@ void findUniqueValues(cv::Mat image, vector<int> & values) {
 void findUniqueValues(vector<int> v, vector<int> & values) {
     uniqueSortValues(v);
     values = v;
+}
+
+template<typename T>
+void variate(vector<vector<T > > list, vector<vector<T > >& variations)
+{
+    vector<T> v(list.size()); // empty
+    _variate(list, 0, v, variations);
+}
+
+template<typename T>
+void _variate(vector<vector<T > > list, int idx, vector<T> v, vector<vector<T > >& variations)
+{
+    if (idx == list.size())
+    {
+        return;
+    }
+    else
+    {
+        for (int i = 0; i < list[idx].size(); i++)
+        {
+            v[idx] = list[idx][i];
+            _variate(list, idx+1, v, variations);
+            if (idx == list.size() - 1)
+            {
+                variations.push_back(v);
+                //v.erase(v.begin()+idx);
+            }
+        }
+    }
+    
 }

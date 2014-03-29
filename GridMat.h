@@ -30,19 +30,23 @@ public:
     GridMat(cv::Mat mat, unsigned int hp = 2, unsigned int wp = 2);
     GridMat(const GridMat& other);
     GridMat(GridMat& other, cv::Mat indices, int dim = 0, bool logical = true);
+    GridMat(GridMat& other, GridMat indices, int k, bool inverse = false); // logical indexing
+    GridMat(GridMat& other, GridMat indices, bool logical = true); // positionally indexing
 
     void create(unsigned int hp = 2, unsigned int wp = 2);
     
-//    template<typename T>
-//    void create(unsigned int hp, unsigned int wp, unsigned int helems = 1, unsigned int welems = 1);
+    template<typename T>
+    void create(unsigned int hp, unsigned int wp, unsigned int helems = 1, unsigned int welems = 1);
     
     void copyTo(cv::Mat mat, unsigned int i, unsigned int j);
+    
+    bool isEmpty();
     
     // Get the grid cell matrix at (i,j)
     cv::Mat& at(unsigned int i, unsigned int j);
     
-//    template<typename T>
-//    T& at(unsigned int i, unsigned int j, unsigned int row, unsigned int col);
+    template<typename T>
+    T& at(unsigned int i, unsigned int j, unsigned int row, unsigned int col);
     
     cv::Mat get(unsigned int i, unsigned int j) const;
     void set(cv::Mat cell, unsigned int i, unsigned int j);
@@ -68,10 +72,12 @@ public:
     void min(GridMat& gmin, int dim = 0);
     void sum(GridMat& gsum, int dim = 0);
     
-//    template<typename T>
-//    void argmax(GridMat& gargmax);
-//    template<typename T>
-//    void argmin(GridMat& gargmax);
+    template<typename T> cv::Mat findNonZero();
+    
+    template<typename T>
+    void argmax(GridMat& gargmax);
+    template<typename T>
+    void argmin(GridMat& gargmax);
     
 	void save(const string & filename);
     void load(const string & filename);
@@ -90,8 +96,7 @@ private:
     unsigned int    m_cols;
     
     void init(GridMat& other);
-    bool isEmpty();
-    
+
     bool accessible(unsigned int i, unsigned int j) const;
     
     GridMat getIndexedCellElements(cv::Mat indices, int dim = 0, bool logical = true);
@@ -102,7 +107,10 @@ private:
     
     GridMat getIndexedCellElementsPositionally(cv::Mat indices, int dim = 0);
     void setIndexedCellElementsPositionally(GridMat& grid, cv::Mat indices, int dim = 0);
+    
+    void indexMatElements(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical = true);
+    void indexMatElementsLogically(cv::Mat src, cv::Mat& dst, cv::Mat indices);
+    void indexMatElementsPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indices);
 };
-
 
 #endif /* defined(__Segmenthreetion__GridMat__) */

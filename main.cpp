@@ -110,9 +110,9 @@ int main(int argc, const char* argv[])
     // Classification step
     
 	vector<int> nmixtures;
-    nmixtures += 3,4; // classification parameter (training step)
+    nmixtures += 4; // classification parameter (training step)
     vector<int> nlikelicuts;
-    nlikelicuts += -20000;
+    nlikelicuts += -40, -20, -10, 0, 10, 20, 40;
     
     // Validation procedure
     
@@ -177,7 +177,6 @@ int main(int argc, const char* argv[])
     // Color description
 
 //    ModalityGridData cGridData;
-//    GridMat cDescriptors;
 //
 //    ColorFeatureExtractor cFE(cParam);
 //	for (int s = 0; s < sequences.size(); s++)
@@ -185,10 +184,10 @@ int main(int argc, const char* argv[])
 //        cout << "Reading color frames in scene " << s << ".." << endl;
 //		reader.read("Color", sequences[s], "jpg", hp, wp, cGridData);
 //        cout << "Describing color..." << endl;
-//		cFE.describe(cGridData, cDescriptors);
+//		cFE.describe(cGridData);
 //	}
 //    
-//    cDescriptors.saveFS("Color.yml");
+//    cGridData.saveDescription("Color.yml");
 
     
     //
@@ -198,63 +197,66 @@ int main(int argc, const char* argv[])
     // Motion description
     
 //    ModalityGridData mGridData;
-//    GridMat mDescriptors;
-//    
+//
 //    MotionFeatureExtractor mFE(mParam);
 //    for (int s = 0; s < sequences.size(); s++)
 //	{
 //        cout << "Computing motion (from read color) frames in scene " << s << ".." << endl;
 //		reader.read("Motion", sequences[s], "jpg", hp, wp, mGridData);
 //        cout << "Describing motion..." << endl;
-//        mFE.describe(mGridData, mDescriptors);
+//        mFE.describe(mGridData);
 //	}
 //
-//	mDescriptors.saveFS("Motion.yml");
+//	mGridData.saveDescription("Motion.yml");
 
     
     // Depth description
     
 //	ModalityGridData dGridData;
-//	GridMat dDescriptors;
 //    DepthFeatureExtractor dFE(dParam);
 //
 //	for (int s = 0; s < sequences.size(); s++)
 //	{
 //		reader.read("Depth", sequences[s], "png", hp, wp, dGridData);
 //
-//		dFE.describe(dGridData, dDescriptors);
+//		dFE.describe(dGridData);
 //	}
 //
-//	dDescriptors.save("Depth.yml");
+//	dGridData.saveDescription("Depth.yml");
 
     
     // Thermal description
     
 //    ModalityGridData tGridData;
-//    GridMat tDescriptors;
-//    
+//
 //    ThermalFeatureExtractor tFE(tParam);
 //	for (int s = 0; s < sequences.size(); s++)
 //	{
 //        cout << "Reading thermal frames in scene " << s << ".." << endl;
 //		reader.read("Thermal", sequences[s], "jpg", hp, wp, tGridData);
 //        cout << "Describing thermal..." << endl;
-//		tFE.describe(tGridData, tDescriptors);
+//		tFE.describe(tGridData);
 //	}
 //    
-//    tDescriptors.save("Thermal.yml");
+//    tGridData.saveDescription("Thermal.yml");
 
-    
     ModalityGridData tMockData;
     reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData); // mockread :D
+    ModalityGridData cMockData; // TODO: try with Motion
+    reader.mockread("Color", sequences, "jpg", hp, wp, cMockData); // mockread :D
     
-    GridMat tDescriptors;
-    tDescriptors.load("Thermal.yml");
+    tMockData.loadDescription("Thermal.yml");
+    cMockData.loadDescription("Color.yml");
+    
+    // Important piece of code
+    vector<ModalityGridData*> mgds;
+    mgds += &tMockData, &cMockData;
+    reader.agreement(mgds);
     
     GridMat tPredictions, tLoglikelihoods;
     
     ModalityPrediction<cv::EM> tPrediction;
-    tPrediction.setData(tMockData, tDescriptors);
+    tPrediction.setData(tMockData);
 
     tPrediction.setNumOfMixtures(nmixtures);
     tPrediction.setLoglikelihoodThresholds(nlikelicuts);

@@ -61,9 +61,9 @@ void GridMapWriter<T>::write(ModalityGridData& mgd, int n, GridMat& values, std:
         
         cv::Mat frameIndices;
         cv::findNonZero(mgd.getGridsFrameIDsMat() == f, frameIndices);
-        for (int k = 0; k < frameIndices.rows; k++) // "g++", huhu :'D
+        for (int k = 0; k < frameIndices.rows; k++)
         {
-            for (int i = 0; i < mgd.hp(); i++) for (int j = 0; j < mgd.wp(); j++)
+            for (int i = 0; i < mgd.getHp(); i++) for (int j = 0; j < mgd.getWp(); j++)
             {
                 cv::Mat roiMask (map, mgd.getGridBoundingRect(k));
 //                map.setTo(values.at<T>(i, j, k, 0), roiMask);

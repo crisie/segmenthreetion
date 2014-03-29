@@ -30,6 +30,9 @@ public:
     */
     ModalityGridData(ModalityGridData& other, cv::Mat logicals)
     {
+        m_hp = other.m_hp;
+        m_wp = other.m_wp;
+        
         for (int i = 0; i < other.getTags().size(); i++)
         {
             unsigned char logical = (logicals.rows > 1) ? logicals.at<int>(i,0) : logicals.at<int>(0,i);
@@ -45,6 +48,8 @@ public:
                 addFrameResolution(other.getFrameResolution(i));
                 addGridBoundingRect(other.getGridBoundingRect(i));
                 addTag(other.getTag(i));
+                addValidnesses(other.getValidnesses(i));
+                // TODO: index descriptors
             }
         }
     }
@@ -58,10 +63,14 @@ public:
 		m_FramesResolutions.clear();
 		m_GBoundingRects.clear();
 		m_Tags.clear();
+        m_Validnesses.release();
+        m_Descriptors.release();
 	}
     
     void operator=(const ModalityGridData& other)
     {
+        m_hp = other.m_hp;
+        m_wp = other.m_wp;
         m_GFrames = other.m_GFrames;
         m_GMasks = other.m_GMasks;
         m_GFrameIDs = other.m_GFrameIDs;
@@ -69,6 +78,8 @@ public:
         m_FramesResolutions = other.m_FramesResolutions;
         m_GBoundingRects = other.m_GBoundingRects;
         m_Tags = other.m_Tags;
+        m_Validnesses = other.m_Validnesses;
+        m_Descriptors = other.m_Descriptors;
     }
     
     // Getters
@@ -108,6 +119,45 @@ public:
         return m_Tags[k];
     }
     
+    cv::Mat getValidnesses(int k)
+    {
+        cv::Mat validness (m_hp, m_wp, cv::DataType<unsigned char>::type);
+        
+        for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
+        {
+            validness.at<unsigned char>(i,j) = m_Validnesses.at<unsigned char>(i,j,k,0);
+        }
+        
+        return validness;
+    }
+    
+    GridMat getDescriptors(int k)
+    {
+        GridMat gDescriptors (m_hp, m_wp);
+        
+        for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
+        {
+            gDescriptors.set(m_Descriptors.at(i,j).row(k), i, j);
+        }
+        
+        return gDescriptors;
+    }
+    
+    cv::Mat& getDescriptors(unsigned int i, unsigned int j)
+    {
+        return m_Descriptors.at(i,j);
+    }
+    
+    cv::Mat getDescriptor(unsigned int i, unsigned int j, int k)
+    {
+        return m_Descriptors.at(i,j).row(k);
+    }
+    
+    GridMat getValidDescriptors()
+    {
+        return GridMat(m_Descriptors, m_Validnesses);
+    }
+
     vector<GridMat>& getGridsFrames()
     {
         return m_GFrames;
@@ -142,6 +192,21 @@ public:
     {
         return m_Tags;
     }
+    
+    GridMat& getValidnesses()
+    {
+        return m_Validnesses;
+    }
+    
+    cv::Mat& getValidnesses(unsigned int i, unsigned int j)
+    {
+        return m_Validnesses.at(i,j);
+    }
+    
+    GridMat& getDescriptors()
+    {
+        return m_Descriptors;
+    }
 
 	cv::Mat getGridsFrameIDsMat()
     {
@@ -153,12 +218,28 @@ public:
 		return cv::Mat(m_Tags.size(), 1, cv::DataType<int>::type, m_Tags.data());
     }
     
-    int hp()
+    GridMat getValidTags()
+    {
+        GridMat gValidTags (m_hp, m_wp);
+        
+        for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
+        {
+            for (int k = 0; k < getValidnesses(i,j).rows; k++)
+            {
+                if (m_Validnesses.at<unsigned char>(i,j,k,0))
+                    gValidTags.at(i,j).push_back(m_Tags[k]);
+            }
+        }
+        
+        return gValidTags;
+    }
+    
+    int getHp()
     {
         return m_hp;
     }
     
-    int wp()
+    int getWp()
     {
         return m_wp;
     }
@@ -168,7 +249,22 @@ public:
         return m_GFrames.size() == 0 && m_GMasks.size() == 0 && m_Tags.size() > 0;
     }
     
+    bool isDescribed()
+    {
+        return !m_Descriptors.isEmpty();
+    }
+    
     // Setters
+    
+    void setHp(int hp)
+    {
+        m_hp = hp;
+    }
+    
+    void setWp(int wp)
+    {
+        m_wp = wp;
+    }
     
     void setGridsFrames(vector<GridMat> gframes)
     {
@@ -203,6 +299,52 @@ public:
     void setTags(vector<int> tags)
     {
         m_Tags = tags;
+    }
+    
+    void setValidnesses(GridMat validnesses)
+    {
+        m_Validnesses = validnesses;
+    }
+    
+    void setDescriptors(GridMat descriptors)
+    {
+        for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
+        {
+            int c = 0;
+            for (int k = 0; k < m_Validnesses.at(i,j).rows; k++)
+            {
+                unsigned char bValidMask = m_Validnesses.at<unsigned char>(i,j,k,0);
+                if (bValidMask) // nonzero pixels in mask
+                {
+                    cv::Mat d = descriptors.at(i,j).row(c);
+                    
+                    bool bValidDescriptor = cv::checkRange(d);
+                    
+                    if (bValidDescriptor) m_Descriptors.at(i,j).push_back(d);
+                    else m_Validnesses.at<unsigned char>(i,j,k,0) = 0;
+                    
+                    c++; // there are so many descriptors to check as 1s in validness (valid masks)
+                }
+            }
+        }
+    }
+    
+    void setDescriptors(cv::Mat descriptors, unsigned int i, unsigned int j)
+    {
+        m_Descriptors.at(i,j) = descriptors;
+    }
+    
+    void setValidnesses(int k, cv::Mat validness)
+    {
+        for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
+        {
+            m_Validnesses.at<unsigned char>(i,j,k,0) = validness.at<unsigned char>(i,j);
+        }
+    }
+    
+    void setValidness(bool validness, unsigned int i, unsigned int j, unsigned int k)
+    {
+        m_Validnesses.at<unsigned char>(i,j,k,0) = validness ? 255 : 0;
     }
 
     void addGridFrame(GridMat gframe)
@@ -245,6 +387,30 @@ public:
         m_Tags.push_back(tag);
     }
     
+    void addValidnesses(cv::Mat validnesses)
+    {
+        GridMat g (validnesses, m_hp, m_wp);
+        m_Validnesses.vconcat(g);
+    }
+    
+    void addDescriptor(cv::Mat descriptor, unsigned int i, unsigned int j)
+    {
+        m_Descriptors.at(i,j).push_back(descriptor);
+    }
+    
+    void saveDescription(std::string path)
+    {
+        m_Descriptors.save(path.c_str());
+    }
+    
+    void loadDescription(std::string path)
+    {
+        GridMat descriptors;
+        descriptors.load(path);
+        
+        setDescriptors(descriptors);
+    }
+    
 private:
     int m_hp, m_wp;
     
@@ -255,6 +421,8 @@ private:
     vector<cv::Point2d> m_FramesResolutions;
     vector<cv::Rect> m_GBoundingRects;
     vector<int> m_Tags;
+    GridMat m_Validnesses; // whether cells in the grids are valid to be described
+    GridMat m_Descriptors;
 };
 
 

@@ -27,7 +27,7 @@ public:
     FeatureExtractor();
     
     // Describe grids at cell-level
-    virtual void describe(ModalityGridData data, GridMat & descriptions) = 0;
+    virtual void describe(ModalityGridData& data) = 0;
     
 protected:    
     // Normalize a descriptor (hypercube, i.e. f: (-inf, inf) --> [0, 1]

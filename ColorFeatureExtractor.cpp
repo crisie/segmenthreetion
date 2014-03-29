@@ -173,30 +173,35 @@ void ColorFeatureExtractor::describeColorHog(const cv::Mat cell, const cv::Mat c
 }
 
 
-void ColorFeatureExtractor::describe(ModalityGridData data, GridMat & descriptors)
+void ColorFeatureExtractor::describe(ModalityGridData& data)
 {
 	for (int k = 0; k < data.getGridsFrames().size(); k++)
 	{
-        if (k % 100 == 0) cout << 100.0 * k / data.getGridsFrames().size() << "%" <<  endl;
+        if (k % 100 == 0) cout << 100.0 * k / data.getGridsFrames().size() << "%" <<  endl; // debug
         
         GridMat grid = data.getGridFrame(k);
         GridMat gmask = data.getGridMask(k);
+        cv::Mat gvalidness = data.getValidnesses(k);
         
         for(int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
         {
-            cv::Mat & cell = grid.at(i,j);
-            cv::Mat & tmpCellMask = gmask.at(i,j);
-            cv::Mat cellMask = cv::Mat::zeros(tmpCellMask.rows, tmpCellMask.cols, CV_8UC1);
-            if (tmpCellMask.channels() == 3)
-                cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);
-            threshold(tmpCellMask,tmpCellMask,1,255,CV_THRESH_BINARY);
-            tmpCellMask.convertTo(cellMask, CV_8UC1);
-            
-            //HOG descriptor
-            cv::Mat cOrientedGradsHist;
-            describeColorHog(cell, cellMask, cOrientedGradsHist);
-            
-            descriptors.vconcat(cOrientedGradsHist, i, j);
+            if (gvalidness.at<unsigned char>(i,j))
+            {
+                cv::Mat & cell = grid.at(i,j);
+                cv::Mat & tmpCellMask = gmask.at(i,j);
+                cv::Mat cellMask = cv::Mat::zeros(tmpCellMask.rows, tmpCellMask.cols, CV_8UC1);
+                if (tmpCellMask.channels() == 3)
+                    cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);
+                threshold(tmpCellMask,tmpCellMask,1,255,CV_THRESH_BINARY);
+                tmpCellMask.convertTo(cellMask, CV_8UC1);
+                
+                //HOG descriptor
+                cv::Mat cOrientedGradsHist;
+                describeColorHog(cell, cellMask, cOrientedGradsHist);
+                
+                data.addDescriptor(cOrientedGradsHist, i, j); // row in a matrix of descriptors
+                data.setValidness(cv::checkRange(cOrientedGradsHist), i, j, k);
+            }
         }
 	}
 }
