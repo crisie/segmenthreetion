@@ -362,7 +362,7 @@ void ModalityPrediction<cv::EM>::predict(GridMat& predictions, GridMat& loglikel
         GridMat descriptorsTrFold (descriptors, partitions, k, true);
         GridMat descriptorsTeFold (descriptors, partitions, k);
         
-        GridMat descriptorsSubjTrFold (descriptorsSubjTrFold, tagsTrFold, 1);
+        GridMat descriptorsSubjTrFold (descriptorsTrFold, tagsTrFold, 1);
         
         GridPredictor<cv::EM> predictor;
         predictor.setData(descriptorsSubjTrFold);

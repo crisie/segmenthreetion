@@ -176,46 +176,46 @@ int main(int argc, const char* argv[])
     
     // Color description
 
-    ModalityGridData cGridData;
+ //   ModalityGridData cGridData;
 
-    ColorFeatureExtractor cFE(cParam);
-	for (int s = 0; s < sequences.size(); s++)
-	{
-        cout << "Reading color frames in scene " << s << ".." << endl;
-		reader.read("Color", sequences[s], "jpg", hp, wp, cGridData);
-        cout << "Describing color..." << endl;
-		cFE.describe(cGridData);
-        cGridData.saveDescription(dataPath, sequences[s], "Color.yml");
-    }
+ //   ColorFeatureExtractor cFE(cParam);
+	//for (int s = 0; s < sequences.size(); s++)
+	//{
+ //       cout << "Reading color frames in scene " << s << ".." << endl;
+	//	reader.read("Color", sequences[s], "jpg", hp, wp, cGridData);
+ //       cout << "Describing color..." << endl;
+	//	cFE.describe(cGridData);
+ //       cGridData.saveDescription(dataPath, sequences[s], "Color.yml");
+ //   }
 
     // Motion description
-    
-    ModalityGridData mGridData;
+ //   
+ //   ModalityGridData mGridData;
 
-    MotionFeatureExtractor mFE(mParam);
-    for (int s = 0; s < sequences.size(); s++)
-	{
-        cout << "Computing motion (from read color) frames in scene " << s << ".." << endl;
-		reader.read("Motion", sequences[s], "jpg", hp, wp, mGridData);
-        cout << "Describing motion..." << endl;
-        mFE.describe(mGridData);
-        mGridData.saveDescription(dataPath, sequences[s], "Motion.yml");
-	}
+ //   MotionFeatureExtractor mFE(mParam);
+ //   for (int s = 0; s < sequences.size(); s++)
+	//{
+ //       cout << "Computing motion (from read color) frames in scene " << s << ".." << endl;
+	//	reader.read("Motion", sequences[s], "jpg", hp, wp, mGridData);
+ //       cout << "Describing motion..." << endl;
+ //       mFE.describe(mGridData);
+ //       mGridData.saveDescription(dataPath, sequences[s], "Motion.yml");
+	//}
     
     // Depth description
     
-//    ModalityGridData dGridData;
-//    
-//    DepthFeatureExtractor dFE(dParam);
-//	for (int s = 0; s < sequences.size(); s++)
-//	{
-//        cout << "Reading depth frames in scene " << s << ".." << endl;
-//		reader.read("Depth", sequences[s], "png", hp, wp, dGridData);
-//        cout << "Describing depth..." << endl;
-//		dFE.describe(dGridData);
-//        dGridData.saveDescription(dataPath, sequences[s], "Depth.yml");
-//	}
+    ModalityGridData dGridData;
     
+    DepthFeatureExtractor dFE(dParam);
+	for (int s = 0; s < sequences.size(); s++)
+	{
+        cout << "Reading depth frames in scene " << s << ".." << endl;
+		reader.read("Depth", sequences[s], "png", hp, wp, dGridData);
+        cout << "Describing depth..." << endl;
+		dFE.describe(dGridData);
+        dGridData.saveDescription(dataPath, sequences[s], "Depth.yml");
+	}
+ /*   
     // Thermal description
     
     ModalityGridData tGridData;
@@ -251,10 +251,10 @@ int main(int argc, const char* argv[])
     
     // Important piece of code
     vector<ModalityGridData*> mgds;
-    mgds += &cMockData, &mMockData, /*&dMockData,*/ &tMockData;
+    mgds += &cMockData, &mMockData, &dMockData, &tMockData;
     reader.agreement(mgds);
     
-
+	*/
 //    ModalityPrediction<cv::EM> prediction;
 //
 //    prediction.setNumOfMixtures(nmixtures);
