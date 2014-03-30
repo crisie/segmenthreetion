@@ -365,6 +365,19 @@ void GridMat::set(cv::Mat cell, unsigned int i, unsigned int j)
     m_grid[i * m_ccols + j] = cell;
 }
 
+void GridMat::set(GridMat& other)
+{
+    this->release();
+    
+    m_crows = other.m_crows;
+    m_cols = other.m_ccols;
+    
+    for (int i = 0; i < m_crows; i++) for (int j = 0; j < m_ccols; j++)
+    {
+        m_grid[i * m_ccols + j] = other.at(i,j);
+    }
+}
+
 GridMat GridMat::vget(cv::Mat indices, bool logical)
 {
     return this->getIndexedCellElements(indices, 0, logical);

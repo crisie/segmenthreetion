@@ -50,6 +50,7 @@ public:
     
     cv::Mat get(unsigned int i, unsigned int j) const;
     void set(cv::Mat cell, unsigned int i, unsigned int j);
+    void set(GridMat& other);
     
     GridMat vget(cv::Mat indices, bool logical = true);
     GridMat hget(cv::Mat indices, bool logical = true);

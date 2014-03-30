@@ -314,9 +314,11 @@ public:
             for (int k = 0; k < m_Validnesses.at(i,j).rows; k++)
             {
                 unsigned char bValidMask = m_Validnesses.at<unsigned char>(i,j,k,0);
+                cout << i << " " << j << " " << k << " " << bValidMask << endl;
                 if (bValidMask) // nonzero pixels in mask
                 {
-                    cv::Mat d = descriptors.at(i,j).row(c);
+                    cv::Mat g = descriptors.at(i,j);
+                    cv::Mat d = g.row(c);
                     
                     bool bValidDescriptor = cv::checkRange(d);
                     
@@ -398,15 +400,35 @@ public:
         m_Descriptors.at(i,j).push_back(descriptor);
     }
     
-    void saveDescription(std::string path)
+    void saveDescription(string dataPath, string sequencePath, string filename)
     {
-        m_Descriptors.save(path.c_str());
+        m_Descriptors.save(dataPath + sequencePath + "Description/" + filename);
     }
     
-    void loadDescription(std::string path)
+    void saveDescription(string dataPath, vector<string> sequencesPaths, string filename)
+    {
+        for (int i = 0; i < sequencesPaths.size(); i++)
+            saveDescription(dataPath, sequencesPaths[i], filename);
+    }
+    
+    void loadDescription(string dataPath, string sequencePath, string filename)
     {
         GridMat descriptors;
-        descriptors.load(path);
+        descriptors.load(dataPath + sequencePath + "Description/" + filename);
+        
+        setDescriptors(descriptors);
+    }
+    
+    void loadDescription(string dataPath, vector<string> sequencesPaths, string filename)
+    {
+        GridMat descriptors;
+        
+        for (int i = 0; i < sequencesPaths.size(); i++)
+        {
+            GridMat aux;
+            aux.load(dataPath + sequencesPaths[i] + "Description/" + filename);
+            descriptors.vconcat(aux);
+        }
         
         setDescriptors(descriptors);
     }

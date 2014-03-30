@@ -112,7 +112,7 @@ int main(int argc, const char* argv[])
 	vector<int> nmixtures;
     nmixtures += 4; // classification parameter (training step)
     vector<int> nlikelicuts;
-    nlikelicuts += -40, -20, -10, 0, 10, 20, 40;
+    nlikelicuts += 0, 40;
     
     // Validation procedure
     
@@ -176,95 +176,108 @@ int main(int argc, const char* argv[])
     
     // Color description
 
-//    ModalityGridData cGridData;
-//
-//    ColorFeatureExtractor cFE(cParam);
-//	for (int s = 0; s < sequences.size(); s++)
-//	{
-//        cout << "Reading color frames in scene " << s << ".." << endl;
-//		reader.read("Color", sequences[s], "jpg", hp, wp, cGridData);
-//        cout << "Describing color..." << endl;
-//		cFE.describe(cGridData);
-//	}
-//    
-//    cGridData.saveDescription("Color.yml");
+    ModalityGridData cGridData;
 
-    
-    //
-    // Feature extraction
-    //
-    
+    ColorFeatureExtractor cFE(cParam);
+	for (int s = 0; s < sequences.size(); s++)
+	{
+        cout << "Reading color frames in scene " << s << ".." << endl;
+		reader.read("Color", sequences[s], "jpg", hp, wp, cGridData);
+        cout << "Describing color..." << endl;
+		cFE.describe(cGridData);
+        cGridData.saveDescription(dataPath, sequences[s], "Color.yml");
+    }
+
     // Motion description
     
-//    ModalityGridData mGridData;
-//
-//    MotionFeatureExtractor mFE(mParam);
-//    for (int s = 0; s < sequences.size(); s++)
-//	{
-//        cout << "Computing motion (from read color) frames in scene " << s << ".." << endl;
-//		reader.read("Motion", sequences[s], "jpg", hp, wp, mGridData);
-//        cout << "Describing motion..." << endl;
-//        mFE.describe(mGridData);
-//	}
-//
-//	mGridData.saveDescription("Motion.yml");
+    ModalityGridData mGridData;
 
+    MotionFeatureExtractor mFE(mParam);
+    for (int s = 0; s < sequences.size(); s++)
+	{
+        cout << "Computing motion (from read color) frames in scene " << s << ".." << endl;
+		reader.read("Motion", sequences[s], "jpg", hp, wp, mGridData);
+        cout << "Describing motion..." << endl;
+        mFE.describe(mGridData);
+        mGridData.saveDescription(dataPath, sequences[s], "Motion.yml");
+	}
     
     // Depth description
     
-//	ModalityGridData dGridData;
+//    ModalityGridData dGridData;
+//    
 //    DepthFeatureExtractor dFE(dParam);
-//
 //	for (int s = 0; s < sequences.size(); s++)
 //	{
+//        cout << "Reading depth frames in scene " << s << ".." << endl;
 //		reader.read("Depth", sequences[s], "png", hp, wp, dGridData);
-//
+//        cout << "Describing depth..." << endl;
 //		dFE.describe(dGridData);
+//        dGridData.saveDescription(dataPath, sequences[s], "Depth.yml");
 //	}
-//
-//	dGridData.saveDescription("Depth.yml");
-
     
     // Thermal description
     
-//    ModalityGridData tGridData;
-//
-//    ThermalFeatureExtractor tFE(tParam);
-//	for (int s = 0; s < sequences.size(); s++)
-//	{
-//        cout << "Reading thermal frames in scene " << s << ".." << endl;
-//		reader.read("Thermal", sequences[s], "jpg", hp, wp, tGridData);
-//        cout << "Describing thermal..." << endl;
-//		tFE.describe(tGridData);
-//	}
-//    
-//    tGridData.saveDescription("Thermal.yml");
+    ModalityGridData tGridData;
 
-    ModalityGridData tMockData;
-    reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData); // mockread :D
-    ModalityGridData cMockData; // TODO: try with Motion
-    reader.mockread("Color", sequences, "jpg", hp, wp, cMockData); // mockread :D
+    ThermalFeatureExtractor tFE(tParam);
+	for (int s = 0; s < sequences.size(); s++)
+	{
+        cout << "Reading thermal frames in scene " << s << ".." << endl;
+		reader.read("Thermal", sequences[s], "jpg", hp, wp, tGridData);
+        cout << "Describing thermal..." << endl;
+		tFE.describe(tGridData);
+        tGridData.saveDescription(dataPath, sequences[s], "Thermal.yml");
+	}
+
+    cGridData.clear();
+    mGridData.clear();
+//    dGridData.clear();
+    tGridData.clear();
     
-    tMockData.loadDescription("Thermal.yml");
-    cMockData.loadDescription("Color.yml");
+    ModalityGridData cMockData;
+    reader.mockread("Color", sequences, "jpg", hp, wp, cMockData);
+    ModalityGridData mMockData;
+    reader.mockread("Motion", sequences, "jpg", hp, wp, mMockData);
+//    ModalityGridData dMockData;
+//    reader.mockread("Depth", sequences, "png", hp, wp, dMockData);
+    ModalityGridData tMockData;
+    reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData);
+
+    cMockData.loadDescription(dataPath, sequences, "Color.yml");
+    mMockData.loadDescription(dataPath, sequences, "Motion.yml");
+//    dMockData.loadDescription(dataPath, sequences, "Depth.yml");
+    tMockData.loadDescription(dataPath, sequences, "Thermal.yml");
     
     // Important piece of code
     vector<ModalityGridData*> mgds;
-    mgds += &tMockData, &cMockData;
+    mgds += &cMockData, &mMockData, /*&dMockData,*/ &tMockData;
     reader.agreement(mgds);
     
-    GridMat tPredictions, tLoglikelihoods;
-    
-    ModalityPrediction<cv::EM> tPrediction;
-    tPrediction.setData(tMockData);
 
-    tPrediction.setNumOfMixtures(nmixtures);
-    tPrediction.setLoglikelihoodThresholds(nlikelicuts);
-
-    tPrediction.setModelValidation(kTest, seed);
-    tPrediction.setModelSelection(kModelSelec, true);
-    
-    tPrediction.predict(tPredictions, tLoglikelihoods);
+//    ModalityPrediction<cv::EM> prediction;
+//
+//    prediction.setNumOfMixtures(nmixtures);
+//    prediction.setLoglikelihoodThresholds(nlikelicuts);
+//
+//    prediction.setModelValidation(kTest, seed);
+//    prediction.setModelSelection(kModelSelec, true);
+//    
+//    prediction.setData(tMockData);
+//    
+//    GridMat tPredictions, tLoglikelihoods;
+//    prediction.predict(tPredictions, tLoglikelihoods);
+//    
+//    tPredictions.save("tPredictions.yml");
+//    tLoglikelihoods.save("tLoglikelihoods.yml");
+//    
+////    prediction.setData(cMockData);
+////    
+////    GridMat cPredictions, cLoglikelihoods;
+////    prediction.predict(cPredictions, cLoglikelihoods);
+////    
+////    cPredictions.save("cPredictions.yml");
+////    cLoglikelihoods.save("cLoglikelihoods.yml");
 
     return 0;
 }

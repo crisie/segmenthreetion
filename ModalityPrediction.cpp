@@ -1,4 +1,3 @@
-
 //
 //  ModalityPrediction.cpp
 //  segmenthreetion
@@ -11,58 +10,84 @@
 #include "GridPredictor.h"
 #include "StatTools.h"
 
+
+// Instantiation of template member functions
+// -----------------------------------------------------------------------------
+template void ModalityPrediction<cv::EM>::modelSelection<int>(GridMat descriptors, GridMat tags, vector<vector<int> > params, GridMat& goodnesses);
+template void ModalityPrediction<cv::EM>::modelSelection<double>(GridMat descriptors, GridMat tags, vector<vector<double> > params, GridMat& goodnesses);
+
+template void ModalityPredictionBase<cv::EM>::expandParameters(vector<vector<int> > params, vector<vector<int> >& expandedParams);
+template void ModalityPredictionBase<cv::EM>::expandParameters(vector<vector<double> > params, vector<vector<double> >& expandedParams);
+
+template void ModalityPredictionBase<cv::EM>::expandParameters(vector<vector<int> > params, int ncells, vector<vector<int> >& expandedParams);
+template void ModalityPredictionBase<cv::EM>::expandParameters(vector<vector<double> > params, int ncells, vector<vector<double> >& expandedParams);
+
+template void ModalityPredictionBase<cv::EM>::selectParameterCombination(vector<vector<int> > expandedParams, int hp, int wp, int nparams, int idx, vector<cv::Mat>& selectedParams);
+template void ModalityPredictionBase<cv::EM>::selectParameterCombination(vector<vector<double> > expandedParams, int hp, int wp, int nparams, int idx, vector<cv::Mat>& selectedParams);
+
+template void ModalityPredictionBase<cv::EM>::selectBestParameterCombination(vector<vector<int> > expandedParams, int hp, int wp, int nparams, GridMat goodnesses, vector<cv::Mat>& selectedParams);
+template void ModalityPredictionBase<cv::EM>::selectBestParameterCombination(vector<vector<double> > expandedParams, int hp, int wp, int nparams, GridMat goodnesses, vector<cv::Mat>& selectedParams);
+// -----------------------------------------------------------------------------
+
+
 //
 // ModalityPredictionBase
 //
 
-template<class PredictorT>
+template<typename PredictorT>
 ModalityPredictionBase<PredictorT>::ModalityPredictionBase()
 {
 
 }
 
-template<class PredictorT>
-void ModalityPredictionBase<PredictorT>::setData(ModalityGridData& data)
+template<typename PredictorT>
+void ModalityPredictionBase<PredictorT>::setData(ModalityGridData &data)
 {
     m_data = data;
+    m_hp = data.getHp();
+    m_wp = data.getWp();
 }
 
-template<class PredictorT>
+template<typename PredictorT>
 void ModalityPredictionBase<PredictorT>::setModelSelection(int k, bool best)
 {
     m_modelSelecK = k;
     m_selectBest = best;
 }
 
-template<class PredictorT>
+template<typename PredictorT>
 void ModalityPredictionBase<PredictorT>::setModelValidation(int k, int seed)
 {
     m_testK = k;
     m_seed = seed;
 }
 
-template<class PredictorT>
-void ModalityPredictionBase<PredictorT>::expandParameters(vector<vector<double> > params,
-                                                          vector<vector<double> >& expandedParams)
+template<typename PredictorT>
+template<typename T>
+void ModalityPredictionBase<PredictorT>::expandParameters(vector<vector<T> > params,
+                                                          vector<vector<T> >& expandedParams)
 {
     variate(params, expandedParams);
-    for (int i = 0; i < expandedParams.size(); i++)
-    {
-        cv::Mat m (expandedParams[i].size(), 1, cv::DataType<double>::type, expandedParams[i].data());
-        cout << m << endl;
-    }
+//    // debug
+//    for (int i = 0; i < expandedParams.size(); i++)
+//    {
+//        cv::Mat m (expandedParams[i].size(), 1, cv::DataType<double>::type, expandedParams[i].data());
+//        cout << m << endl;
+//    }
 }
 
-template<class PredictorT>
-void ModalityPredictionBase<PredictorT>::expandParameters(vector<vector<double> > params,
-                                                          int ncells, vector<vector<double> >& gridExpandedParams)
+template<typename PredictorT>
+template<typename T>
+void ModalityPredictionBase<PredictorT>::expandParameters(vector<vector<T> > params,
+                                                          int ncells, vector<vector<T> >& gridExpandedParams)
 {
-    vector<vector<double> > cellExpandedParams;
+    vector<vector<T> > cellExpandedParams;
     variate(params, cellExpandedParams);
+    
+    // Create and expand a list of indices, used to index the cellExpandedParams
     
     vector<int> indices(cellExpandedParams.size());
     
-    // Fill with 0,1,2,3,...,n
     for (int i = 0; i < cellExpandedParams.size(); i++)
         indices[i] = i;
         
@@ -81,6 +106,8 @@ void ModalityPredictionBase<PredictorT>::expandParameters(vector<vector<double> 
 //    }
 //    //
     
+    // Create the grid's combinations' list of parameters
+    
     gridExpandedParams.clear();
     gridExpandedParams.resize(expandedIndices.size());
     
@@ -88,42 +115,76 @@ void ModalityPredictionBase<PredictorT>::expandParameters(vector<vector<double> 
     {
         for (int j = 0; j < expandedIndices[i].size(); j++)
         {
-            vector<double> combination = cellExpandedParams[expandedIndices[i][j]];
+            vector<T> combination = cellExpandedParams[expandedIndices[i][j]];
             for (int k = 0; k < params.size(); k++)
             {
                 gridExpandedParams[i].push_back(combination[k]);
             }
         }
-        cv::Mat m (gridExpandedParams[i].size(), 1, cv::DataType<double>::type, gridExpandedParams[i].data());
-        cout << m << endl;
+//        // debug
+//        cv::Mat m (gridExpandedParams[i].size(), 1, cv::DataType<T>::type, gridExpandedParams[i].data());
+//        cout << m << endl;
     }
 }
 
-template<class PredictorT>
-void ModalityPredictionBase<PredictorT>::selectParameterCombination(vector<vector<double> > expandedParams, int hp, int wp, int nparams, int idx, vector<cv::Mat>& selectedParams)
+template<typename PredictorT>
+template<typename T>
+void ModalityPredictionBase<PredictorT>::selectParameterCombination(vector<vector<T> > expandedParams, int hp, int wp, int nparams, int idx, vector<cv::Mat>& selectedParams)
 {
     selectedParams.clear();
     
     for (int k = 0; k < nparams; k++)
-        selectedParams.push_back(cv::Mat(hp,wp,CV_64F));
+        selectedParams.push_back(cv::Mat(hp, wp, cv::DataType<T>::type));
     
-    vector<double> lineParams = expandedParams[idx];
+    vector<T> lineParams = expandedParams[idx];
     
     for (int i = 0; i < hp; i++) for (int j = 0; j < wp; j++)
     {
         int l = i * wp + j;
         for (int k = 0; k < nparams; k++)
         {
-            selectedParams[k].at<double>(i,j) = lineParams[l * nparams + k];
+            selectedParams[k].at<T>(i,j) = lineParams[l * nparams + k];
         }
     }
     
     // debug
-//    for (int k = 0; k < nparams; k++)
-//        cout << selectedParams[k] << endl;
+    //    for (int k = 0; k < nparams; k++)
+    //        cout << selectedParams[k] << endl;
 }
 
-template<class PredictorT>
+
+template<typename PredictorT>
+template<typename T>
+void ModalityPredictionBase<PredictorT>::selectBestParameterCombination(vector<vector<T> > expandedParams, int hp, int wp, int nparams, GridMat goodnesses, vector<cv::Mat>& selectedParams)
+{
+    selectedParams.clear();
+    
+    for (int k = 0; k < nparams; k++)
+        selectedParams.push_back(cv::Mat(hp, wp, cv::DataType<T>::type));
+    
+    GridMat gargmax;
+    goodnesses.argmax<T>(gargmax);
+    
+    for (int i = 0; i < hp; i++) for (int j = 0; j < wp; j++)
+    {
+        int rowIdx = gargmax.at<T>(i,j,0,0); // maxrow index
+        
+        vector<T> lineParams = expandedParams[rowIdx];
+        
+        int l = i * wp + j;
+        for (int k = 0; k < nparams; k++)
+        {
+            selectedParams[k].at<T>(i,j) = lineParams[l * nparams + k];
+        }
+    }
+    
+    // debug
+    //    for (int k = 0; k < nparams; k++)
+    //        cout << selectedParams[k] << endl;
+}
+
+
+template<typename PredictorT>
 void ModalityPredictionBase<PredictorT>::accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies)
 {
     accuracies.create(predictions.crows(), predictions.ccols(), cv::DataType<float>::type);
@@ -164,50 +225,44 @@ void ModalityPredictionBase<PredictorT>::accuracy(GridMat actuals, GridMat predi
 // ModalityPrediction<PredictorT>
 //
 
-template<class PredictorT>
+template<typename PredictorT>
 ModalityPrediction<PredictorT>::ModalityPrediction()
         : ModalityPredictionBase<PredictorT>()
 {
     
 }
 
-template<class PredictorT>
-void ModalityPrediction<PredictorT>::setData(ModalityGridData& data)
-{
-    ModalityPredictionBase<PredictorT>::setData(data);
-}
-
-template<class PredictorT>
+template<typename PredictorT>
 void ModalityPrediction<PredictorT>::setModelSelection(int k, bool best)
 {
     ModalityPredictionBase<PredictorT>::setModelSelection(k, best);
 }
 
-template<class PredictorT>
+template<typename PredictorT>
 void ModalityPrediction<PredictorT>::setModelValidation(int k, int seed)
 {
     ModalityPredictionBase<PredictorT>::setModelValidation(k, seed);
 }
 
-template<class PredictorT>
-void ModalityPrediction<PredictorT>::expandParameters(vector<vector<double> > params, vector<vector<double> >& expandedParams)
-{
-    return ModalityPredictionBase<PredictorT>::expandParameters(params, expandedParams);
-}
+//template<typename PredictorT>
+//void ModalityPrediction<PredictorT>::expandParameters(vector<vector<double> > params, vector<vector<double> >& expandedParams)
+//{
+//    return ModalityPredictionBase<PredictorT>::expandParameters(params, expandedParams);
+//}
+//
+//template<typename PredictorT>
+//void ModalityPrediction<PredictorT>::expandParameters(vector<vector<double> > params, int ncells, vector<vector<double> >& gridExpandedParams)
+//{
+//    return ModalityPredictionBase<PredictorT>::expandParameters(params, ncells, gridExpandedParams);
+//}
+//
+//template<typename PredictorT>
+//void ModalityPrediction<PredictorT>::selectParameterCombination(vector<vector<double> > expandedParams, int hp, int wp, int nparams, int idx, vector<cv::Mat>& selectedParams)
+//{
+//    return ModalityPredictionBase<PredictorT>::selectParameterCombination(expandedParams, hp, wp, nparams, idx, selectedParams);
+//}
 
-template<class PredictorT>
-void ModalityPrediction<PredictorT>::expandParameters(vector<vector<double> > params, int ncells, vector<vector<double> >& gridExpandedParams)
-{
-    return ModalityPredictionBase<PredictorT>::expandParameters(params, ncells, gridExpandedParams);
-}
-
-template<class PredictorT>
-void ModalityPrediction<PredictorT>::selectParameterCombination(vector<vector<double> > expandedParams, int hp, int wp, int nparams, int idx, vector<cv::Mat>& selectedParams)
-{
-    return ModalityPredictionBase<PredictorT>::selectParameterCombination(expandedParams, hp, wp, nparams, idx, selectedParams);
-}
-
-template<class PredictorT>
+template<typename PredictorT>
 void ModalityPrediction<PredictorT>::accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies)
 {
     return ModalityPredictionBase<PredictorT>::accuracy(actuals, predictions);
@@ -222,11 +277,6 @@ ModalityPrediction<cv::EM>::ModalityPrediction()
 : ModalityPredictionBase<cv::EM>()
 {
     
-}
-
-void ModalityPrediction<cv::EM>::setData(ModalityGridData& data)
-{
-    ModalityPredictionBase<cv::EM>::setData(data);
 }
 
 void ModalityPrediction<cv::EM>::setModelSelection(int k, bool best)
@@ -264,16 +314,27 @@ void ModalityPrediction<cv::EM>::setLoglikelihoodThresholds(vector<int> t)
 void ModalityPrediction<cv::EM>::predict(GridMat& predictions, GridMat& loglikelihoods)
 {
     GridMat descriptors = m_data.getDescriptors();
-    GridMat tags = m_data.getValidTags();
+    GridMat tags = m_data.getValidTags(); // as many as descriptors
     
     GridMat partitions;
     cvpartition(tags, m_testK, m_seed, partitions);
     
     vector<GridPredictor<cv::EM> > predictors;
     
+    vector<vector<int> > params, gridExpandedParameters;
+    
+    params.push_back(vector<int>(m_nmixtures.begin(), m_nmixtures.end()));
+    params.push_back(vector<int>(m_logthresholds.begin(), m_logthresholds.end()));
+    // create a list of parameters' variations
+    expandParameters(params, m_hp * m_wp, gridExpandedParameters);
+    
+    cout << "Model selection CVs [" << m_testK << "]: " << endl;
+    
+    vector<GridMat> goodnesses(m_testK); // for instance: accuracies
+    
     for (int k = 0; k < m_testK; k++)
     {
-        cout << "Out-of-sample CV. It: " << k << endl;
+        cout << k << " " << endl;
         
         GridMat tagsTrFold (tags, partitions, k, true);
         GridMat tagsTeFold (tags, partitions, k);
@@ -282,41 +343,64 @@ void ModalityPrediction<cv::EM>::predict(GridMat& predictions, GridMat& loglikel
         
         GridMat descriptorsSubjTr (descriptorsTrFold, tagsTrFold, 1);
         
-        GridMat selectedParams;
         modelSelection(descriptorsTrFold, tagsTrFold,
-                       m_nmixtures, m_logthresholds,
-                       selectedParams);
+                       params, goodnesses[k]);
+        
+        std::stringstream ss;
+        ss << "goodnesses_" << k << ".yml" << endl;
+        goodnesses[k].save(ss.str());
+    }
+    cout << endl;
+    
+    cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
+    for (int k = 0; k < m_testK; k++)
+    {
+        cout << k << " ";
+        
+        GridMat tagsTrFold (tags, partitions, k, true);
+        GridMat tagsTeFold (tags, partitions, k);
+        GridMat descriptorsTrFold (descriptors, partitions, k, true);
+        GridMat descriptorsTeFold (descriptors, partitions, k);
+        
+        GridMat descriptorsSubjTrFold (descriptorsSubjTrFold, tagsTrFold, 1);
         
         GridPredictor<cv::EM> predictor;
-        predictor.setData(descriptorsTrFold);
-        predictor.setParameters(selectedParams);
+        predictor.setData(descriptorsSubjTrFold);
+       
+//        GridMat goodnesses;
+//        std::stringstream ss;
+//        ss << "goodnesses_" << k << ".yml" << endl;
+//        goodnesses.load(ss.str());
+        
+        vector<cv::Mat> bestParams;
+        selectBestParameterCombination(gridExpandedParameters, m_hp, m_wp, params.size(), /*goodnesses*/ goodnesses[k], bestParams);
+
+        predictor.setNumOfMixtures(bestParams[0]);
+        predictor.setLoglikelihoodThreshold(bestParams[1]);
         predictor.train();
         
         GridMat predictionsTeFold, loglikelihoodsTeFold;
         predictor.predict(descriptorsTeFold, predictionsTeFold, loglikelihoodsTeFold);
         
-//        predictions.vset(predictionsTeFold, partitions == k);
-//        loglikelihoods.vset(loglikelihoodsTeFold, partitions == k);
+        GridMat predictionsAux (predictionsTeFold, partitions, k);
+        GridMat loglikelihoodsAux (loglikelihoodsTeFold, partitions, k);
+        
+        predictions = predictionsAux;
+        loglikelihoodsAux = loglikelihoodsAux;
     }
+    cout << endl;
 }
 
+template<typename T>
 void ModalityPrediction<cv::EM>::modelSelection(GridMat descriptors, GridMat tags,
-                                                vector<int> nmixtures, vector<int> loglikelihoods,
-                                                GridMat& selection)
+                                                vector<vector<T> > params,
+                                                GridMat& goodnesses)
 {
     // Prepare parameters' combinations
-    
-    vector<vector<double> > params;
-    params.push_back(vector<double>(nmixtures.begin(), nmixtures.end()));
-    params.push_back(vector<double>(loglikelihoods.begin(), loglikelihoods.end()));
-    
-    cout << "Expanding parameters.." << endl;
-    vector<vector<double> > expandedParams;
-    expandParameters(params, m_data.getHp() * m_data.getWp(), expandedParams);
-    //cout << expandedParams << endl;
+    vector<vector<T> > gridExpandedParameters;
+    expandParameters(params, m_hp * m_wp, gridExpandedParameters);
     
     // Partitionate the data in folds
-    
     GridMat partitions;
     cvpartition(tags, m_modelSelecK, m_seed, partitions);
     
@@ -325,9 +409,11 @@ void ModalityPrediction<cv::EM>::modelSelection(GridMat descriptors, GridMat tag
     GridMat accuracies;
     
     vector<GridPredictor<cv::EM> > predictors;
+    
+    cout << "(";
     for (int k = 0; k < m_modelSelecK; k++)
     {
-        cout << "Model selection CV. It: " << k << endl;
+        cout << k << " ";
         
         // Get fold's data
         GridMat tagsTr (tags, partitions, k, true);
@@ -342,25 +428,20 @@ void ModalityPrediction<cv::EM>::modelSelection(GridMat descriptors, GridMat tag
         
         GridMat foldAccs; // results
         
-        for (int m = 0; m < expandedParams.size(); m++)
+        for (int m = 0; m < gridExpandedParameters.size(); m++)
         {
-            cout << "param. comb.: " << m + 1 << "/" << expandedParams.size() << endl;
-            
             // Create predictor and its parametrization
             GridPredictor<cv::EM> predictor;
             predictor.setData(descriptorsSubjTr); // unsupevised method, thus no tags
             
-            cv::Mat nmixtures (m_data.getHp(), m_data.getWp(), cv::DataType<int>::type);
-            cv::Mat loglikes (m_data.getHp(), m_data.getWp(), cv::DataType<int>::type);
+            cv::Mat nmixtures (m_hp, m_wp, cv::DataType<T>::type);
+            cv::Mat loglikes (m_hp, m_wp, cv::DataType<T>::type);
             
             vector<cv::Mat> selectedParams;
-            selectParameterCombination(expandedParams, m_data.getHp(), m_data.getWp(), params.size(), m, selectedParams);
+            selectParameterCombination(gridExpandedParameters, m_hp, m_wp, params.size(), m, selectedParams);
             
-            nmixtures.setTo(selectedParams[0]); // TODO: fix
-            loglikes.setTo(selectedParams[1]);
-            
-            predictor.setNumOfMixtures(nmixtures);
-            predictor.setLoglikelihoodThreshold(loglikes);
+            predictor.setNumOfMixtures(selectedParams[0]);
+            predictor.setLoglikelihoodThreshold(selectedParams[1]);
 
             // Train
             predictor.train();
@@ -372,37 +453,39 @@ void ModalityPrediction<cv::EM>::modelSelection(GridMat descriptors, GridMat tag
             // Compute an accuracy measure
             cv::Mat accs; // (m_hp * m_wp) accuracies get by params combination in k-th fold
             accuracy(tagsSubjObjVal, predictionsVal, accs);
-            cout << accs << endl;
             
-            GridMat paramsAccs (accs, m_data.getHp(), m_data.getWp());
+            GridMat paramsAccs (accs, m_hp, m_wp);
             foldAccs.vconcat(paramsAccs);
         }
         
         accuracies.hconcat(foldAccs);
     }
+    cout << ") ";
     
-    GridMat foldsMeanAcc, foldsArgmaxAcc;
-    accuracies.mean(foldsMeanAcc, 1);
+    //GridMat foldsMeanAcc;
+    accuracies.mean(goodnesses, 1);
+
+//    GridMat foldsArgmaxAcc;
 //    foldsMeanAcc.argmax<float>(foldsArgmaxAcc);
 //    selectParameters(expandedParams, foldsArgmaxAcc, selection);
 }
 
 
-void ModalityPrediction<cv::EM>::expandParameters(vector<vector<double> > params, vector<vector<double> >& expandedParams)
-{
-    return ModalityPredictionBase<cv::EM>::expandParameters(params, expandedParams);
-}
-
-
-void ModalityPrediction<cv::EM>::expandParameters(vector<vector<double> > params, int ncells, vector<vector<double> >& gridExpandedParams)
-{
-    return ModalityPredictionBase<cv::EM>::expandParameters(params, ncells, gridExpandedParams);
-}
-
-void ModalityPrediction<cv::EM>::selectParameterCombination(vector<vector<double> > expandedParams, int hp, int wp, int nparams, int idx, vector<cv::Mat>& selectedParams)
-{
-    return ModalityPredictionBase<cv::EM>::selectParameterCombination(expandedParams, hp, wp, nparams, idx, selectedParams);
-}
+//void ModalityPrediction<cv::EM>::expandParameters(vector<vector<double> > params, vector<vector<double> >& expandedParams)
+//{
+//    return ModalityPredictionBase<cv::EM>::expandParameters(params, expandedParams);
+//}
+//
+//
+//void ModalityPrediction<cv::EM>::expandParameters(vector<vector<double> > params, int ncells, vector<vector<double> >& gridExpandedParams)
+//{
+//    return ModalityPredictionBase<cv::EM>::expandParameters(params, ncells, gridExpandedParams);
+//}
+//
+//void ModalityPrediction<cv::EM>::selectParameterCombination(vector<vector<double> > expandedParams, int hp, int wp, int nparams, int idx, vector<cv::Mat>& selectedParams)
+//{
+//    return ModalityPredictionBase<cv::EM>::selectParameterCombination(expandedParams, hp, wp, nparams, idx, selectedParams);
+//}
 
 void ModalityPrediction<cv::EM>::accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies)
 {

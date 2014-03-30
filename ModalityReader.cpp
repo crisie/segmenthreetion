@@ -233,6 +233,8 @@ void ModalityReader::readScene(string modality, string scenePath, const char* fi
 
 				// Mask
 				cv::Mat maskroi (mask, rects[f][r]);
+                cv::Mat indexedmaskroi;
+                maskroi.copyTo(indexedmaskroi, maskroi == (m_MasksOffset + r));
 				GridMat gmask (maskroi, hp, wp);
 				mgd.addGridMask( gmask );
                 

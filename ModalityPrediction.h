@@ -33,15 +33,24 @@ public:
     void setModelSelection(int k, bool best);
     void setModelValidation(int k, int seed);
     
-    void expandParameters(vector<vector<double> > params, vector<vector<double> >& expandedParams);
-    void expandParameters(vector<vector<double> > params, int ncells, vector<vector<double> >& expandedParams);
-    void selectParameterCombination(vector<vector<double> > expandedParams, int hp, int wp, int nparams, int idx
-, vector<cv::Mat>& selectedParams);
+    template<typename T>
+    void expandParameters(vector<vector<T> > params, vector<vector<T> >& expandedParams);
+    template<typename T>
+    void expandParameters(vector<vector<T> > params, int ncells, vector<vector<T> >& expandedParams);
+    
+    template<typename T>
+    void selectParameterCombination(vector<vector<T> > expandedParams, int hp, int wp, int nparams,
+                                    int idx, vector<cv::Mat>& selectedParams);
+    
+    template<typename T>
+    void selectBestParameterCombination(vector<vector<T> > expandedParams, int hp, int wp, int nparams,
+                                        GridMat goodnesses, vector<cv::Mat>& selectedParams);
     
     void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies);
     
 protected:
     ModalityGridData m_data;
+    int m_hp, m_wp;
     
     int m_modelSelecK; // number of folds in inner cross-validation to perform model selection
     bool m_selectBest; // in model selection
@@ -55,15 +64,9 @@ template<typename Prediction>
 class ModalityPrediction : public ModalityPredictionBase<Prediction>
 {
     ModalityPrediction();// : ModalityPredictionBase<Prediction>() {}
-    
-    void setData(ModalityGridData& data);
-    
+
     void setModelSelection(int k = 3, bool best = 0);
     void setModelValidation(int k = 10, int seed = 74);
-    
-    void expandParameters(vector<vector<double> > params, vector<vector<double> >& expandedParams);
-    void expandParameters(vector<vector<double> > params, int ncells, vector<vector<double> >& expandedParams);
-    void selectParameterCombination(vector<vector<double> > expandedParams, int hp, int wp, int nparams, int idx, vector<cv::Mat>& selectedParams);
     
     void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies);
 };
@@ -75,8 +78,6 @@ class ModalityPrediction<cv::EM> : public ModalityPredictionBase<cv::EM>
 public:
     ModalityPrediction(); // : ModalityPredictionBase<cv::EM>() {}
     
-    void setData(ModalityGridData& data);
-    
     void setModelSelection(int k = 3, bool best = 0);
     void setModelValidation(int k = 10, int seed = 74);
     
@@ -86,15 +87,13 @@ public:
     void setLoglikelihoodThresholds(int t);
     void setLoglikelihoodThresholds(vector<int> t);
     
+    template<typename T>
     void modelSelection(GridMat descriptors, GridMat tags,
-                        vector<int> nmixtures, vector<int> loglikelihoods,
-                        GridMat& selection);
+                        vector<vector<T> > params,
+                        GridMat& goodnesses);
+    
     void predict(GridMat& predictions, GridMat& loglikelihoods);
-    
-    void expandParameters(vector<vector<double> > params, vector<vector<double> >& expandedParams);
-    void expandParameters(vector<vector<double> > params, int ncells, vector<vector<double> >& expandedParams);
-    void selectParameterCombination(vector<vector<double> > expandedParams, int hp, int wp, int nparams, int idx, vector<cv::Mat>& selectedParams);
-    
+
     void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies);
     
 private:
