@@ -314,7 +314,6 @@ public:
             for (int k = 0; k < m_Validnesses.at(i,j).rows; k++)
             {
                 unsigned char bValidMask = m_Validnesses.at<unsigned char>(i,j,k,0);
-                cout << i << " " << j << " " << k << " " << bValidMask << endl;
                 if (bValidMask) // nonzero pixels in mask
                 {
                     cv::Mat g = descriptors.at(i,j);
