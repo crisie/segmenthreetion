@@ -460,7 +460,7 @@ void ModalityPrediction<cv::EM>::modelSelection(GridMat descriptors, GridMat tag
         
         accuracies.hconcat(foldAccs);
     }
-    cout << ") ";
+    cout << ") " << endl;
     
     //GridMat foldsMeanAcc;
     accuracies.mean(goodnesses, 1);
