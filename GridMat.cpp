@@ -52,7 +52,7 @@ GridMat::GridMat(unsigned int crows, unsigned int ccols, unsigned int helems, un
     for (unsigned int row = 0; row < m_crows; row++) for (unsigned int col = 0; col < m_ccols; col++)
     {
         cv::Mat mat (helems, welems, type);
-        this->set(mat, row, col);
+        this->assign(mat, row, col);
     }
 }
 
@@ -78,7 +78,7 @@ GridMat::GridMat(cv::Mat mat, unsigned int crows, unsigned int ccols)
         //cv::namedWindow("grid");
         //cv::imshow("grid", roi);
         //cv::waitKey();
-        this->set(roi,i,j);
+        this->assign(roi,i,j);
     }
 }
 
@@ -271,7 +271,7 @@ void GridMat::setIndexedCellElementsPositionally(GridMat& grid, cv::Mat indices,
 //    this->m_grid.resize( m_crows * m_ccols );
 //    for (int i = 0; i < m_crows; i++) for (int j = 0; j < m_ccols; j++)
 //    {
-//        this->set(other.at(i,j), i, j);
+//        this->assign(other.at(i,j), i, j);
 //    }
 //}
 
@@ -293,7 +293,7 @@ void GridMat::create(unsigned int crows, unsigned int ccols, unsigned int helems
     for (int i = 0; i < m_crows; i++) for (int j = 0; j < m_ccols; j++)
     {
         cv::Mat_<T> mat (helems, welems);
-        this->set(mat, i, j);
+        this->assign(mat, i, j);
     }
 }
 
@@ -306,7 +306,7 @@ void GridMat::init(GridMat & other)
     this->m_grid.resize( m_crows * m_ccols );
     for (int i = 0; i < m_crows; i++) for (int j = 0; j < m_ccols; j++)
     {
-        this->set(other.at(i,j), i, j);
+        this->assign(other.at(i,j), i, j);
     }
 }
 
@@ -449,7 +449,7 @@ void GridMat::hconcat(GridMat& other)
         {
             if (this->at(i,j).empty())
             {
-                this->set(other.at(i,j), i, j);
+                this->assign(other.at(i,j), i, j);
             }
             else
             {
@@ -476,7 +476,7 @@ void GridMat::vconcat(GridMat& other)
         {
             if (this->at(i,j).empty())
             {
-                this->set(other.at(i,j), i, j);
+                this->assign(other.at(i,j), i, j);
             }
             else
             {
@@ -490,7 +490,7 @@ void GridMat::vconcat(GridMat& other)
 void GridMat::hconcat(cv::Mat& mat, unsigned int i, unsigned int j)
 {
     if (this->at(i,j).rows == 0 && this->at(i,j).cols == 0)
-        this->set(mat,i,j);
+        this->assign(mat,i,j);
     else
     {
         cv::hconcat(this->at(i,j), mat, this->at(i,j));
@@ -501,7 +501,7 @@ void GridMat::hconcat(cv::Mat& mat, unsigned int i, unsigned int j)
 void GridMat::vconcat(cv::Mat& mat, unsigned int i, unsigned int j)
 {
     if (this->at(i,j).rows == 0 && this->at(i,j).cols == 0)
-        this->set(mat,i,j);
+        this->assign(mat,i,j);
     else
     {
         cv::vconcat(this->at(i,j), mat, this->at(i,j));
@@ -680,7 +680,7 @@ void GridMat::load(const std::string & filename)
 			ss << "d" << row << col;
             cv::Mat aux;
             fs[ss.str().c_str()] >> aux;
-			this->set(aux, row, col);
+			this->assign(aux, row, col);
 		}
 	}
     
