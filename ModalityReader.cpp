@@ -235,7 +235,7 @@ void ModalityReader::readScene(string modality, string scenePath, const char* fi
 				cv::Mat maskroi (mask, rects[f][r]);
                 cv::Mat indexedmaskroi;
                 maskroi.copyTo(indexedmaskroi, maskroi == (m_MasksOffset + r));
-				GridMat gmask (maskroi, hp, wp);
+				GridMat gmask (indexedmaskroi, hp, wp);
 				mgd.addGridMask( gmask );
                 
 				// Frame id
@@ -349,7 +349,9 @@ void ModalityReader::mockreadScene(string modality, string scenePath, const char
                 
                 // Cells' validness
 				cv::Mat maskroi (mask, rects[f][r]);
-				GridMat gmask (maskroi, hp, wp);
+                cv::Mat indexedmaskroi;
+                maskroi.copyTo(indexedmaskroi, maskroi == (m_MasksOffset + r));
+				GridMat gmask (indexedmaskroi, hp, wp);
                 cv::Mat validnesses = gmask.findNonZero<unsigned char>();
                 mgd.addValidnesses(validnesses);
 			}
