@@ -137,7 +137,7 @@ public:
         
         for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
         {
-            gDescriptors.set(m_Descriptors.at(i,j).row(k), i, j);
+            gDescriptors.assign(m_Descriptors.at(i,j).row(k), i, j);
         }
         
         return gDescriptors;

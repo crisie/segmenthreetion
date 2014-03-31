@@ -177,7 +177,7 @@ GridMat GridMat::getIndexedCellElementsLogically(cv::Mat logicals, int dim)
             }
         }
         
-        indexed.set(cellPartition, i, j);
+        indexed.assign(cellPartition, i, j);
     }
 
 	return indexed;
@@ -233,7 +233,7 @@ GridMat GridMat::getIndexedCellElementsPositionally(cv::Mat indices, int dim)
                 this->at(i,j).col(idx).copyTo(cellPartition.col(k));
         }
         
-        indexed.set(cellPartition, i, j);
+        indexed.assign(cellPartition, i, j);
     }
     
     return indexed;
@@ -360,7 +360,7 @@ cv::Mat GridMat::get(unsigned int i, unsigned int j) const
     return m_grid[i * m_ccols + j];
 }
 
-void GridMat::set(cv::Mat cell, unsigned int i, unsigned int j)
+void GridMat::assign(cv::Mat cell, unsigned int i, unsigned int j)
 {
     m_grid[i * m_ccols + j] = cell;
 }
@@ -375,6 +375,34 @@ void GridMat::set(GridMat& other)
     for (int i = 0; i < m_crows; i++) for (int j = 0; j < m_ccols; j++)
     {
         m_grid[i * m_ccols + j] = other.at(i,j);
+    }
+}
+
+void GridMat::set(GridMat src, GridMat indices, int k)
+{
+    if (isEmpty())
+    {
+        m_crows = src.crows();
+        m_ccols = src.ccols();
+        m_grid.resize(m_crows * m_cols);
+    }
+        
+    for (int i = 0; i < indices.crows(); i++) for (int j = 0; j < indices.ccols(); j++)
+    {
+        this->setMatElements(src.at(i,j), this->at(i,j), indices.at(i,j) == k);
+    }
+}
+
+void GridMat::copyTo(GridMat& grid, GridMat indices, int k)
+{
+    if (grid.isEmpty())
+    {
+        grid.create(m_crows, m_ccols);
+    }
+    
+    for (int i = 0; i < indices.crows(); i++) for (int j = 0; j < indices.ccols(); j++)
+    {
+        this->setMatElements(this->at(i,j), grid.at(i,j), indices.at(i,j) == k);
     }
 }
 
@@ -488,7 +516,7 @@ void GridMat::mean(GridMat& gmean, int dim)
     {
         cv::Mat meanCol;
         cv::reduce(this->at(i,j), meanCol, dim, CV_REDUCE_AVG); // dim: 0 row-wise, 1 column-wise
-        gmean.set(meanCol, i, j);
+        gmean.assign(meanCol, i, j);
     }
 }
 
@@ -500,7 +528,7 @@ void GridMat::max(GridMat& gmax, int dim)
     {
         cv::Mat col;
         cv::reduce(this->at(i,j), col, dim, CV_REDUCE_MAX); // dim: 0 row-wise, 1 column-wise
-        gmax.set(col, i, j);
+        gmax.assign(col, i, j);
     }
 }
 
@@ -511,7 +539,7 @@ void GridMat::min(GridMat& gmin, int dim)
     {
         cv::Mat col;
         cv::reduce(this->at(i,j), col, dim, CV_REDUCE_MIN); // dim: 0 row-wise, 1 column-wise
-        gmin.set(col, i, j);
+        gmin.assign(col, i, j);
     }
 }
 
@@ -525,7 +553,7 @@ void GridMat::sum(GridMat& gsum, int dim)
         
         cv::Mat col;
         cv::reduce(mat, col, dim, CV_REDUCE_SUM); // dim: 0 row-wise, 1 column-wise
-        gsum.set(col, i, j);
+        gsum.assign(col, i, j);
     }
 }
 
@@ -714,6 +742,43 @@ std::ostream& operator<<(std::ostream& os, const GridMat& gm)
     return os;
 }
 
+void GridMat::setMatElements(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical)
+{
+    if (logical)
+        setMatElementsLogically(src, dst, indices);
+    else
+        setMatElementsPositionally(src, dst, indices);
+}
+
+void GridMat::setMatElementsLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals)
+{
+    if (dst.empty())
+        dst.create(src.rows, src.cols, src.type());
+    
+    bool rowwise = logicals.rows > 1;
+    
+    for (int i = 0; i < rowwise ? logicals.rows : logicals.cols; i++)
+    {
+        unsigned char indexed = rowwise ?
+                logicals.at<unsigned char>(i,0) : logicals.at<unsigned char>(i,0);
+        if (indexed)
+            rowwise ? src.row(i).copyTo(dst.row(i)) : src.col(i).copyTo(dst.col(i));
+    }
+}
+
+void GridMat::setMatElementsPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indexes)
+{
+    if (dst.empty())
+        dst.create(src.rows, src.cols, src.type());
+    
+    bool rowwise = indexes.rows > 1;
+    
+    for (int i = 0; i < rowwise ? indexes.rows : indexes.cols; i++)
+    {
+        int idx = rowwise ? indexes.at<int>(i,0) : indexes.at<int>(i,0);
+        rowwise ? src.row(idx).copyTo(dst.row(idx)) : src.col(idx).copyTo(dst.col(idx));
+    }
+}
 
 void GridMat::indexMatElements(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical)
 {

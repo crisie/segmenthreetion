@@ -49,9 +49,13 @@ public:
     T& at(unsigned int i, unsigned int j, unsigned int row, unsigned int col);
     
     cv::Mat get(unsigned int i, unsigned int j) const;
-    void set(cv::Mat cell, unsigned int i, unsigned int j);
-    void set(GridMat& other);
     
+    void assign(cv::Mat cell, unsigned int i, unsigned int j);
+    void set(GridMat& other);
+    void set(GridMat src, GridMat indices, int k);
+    
+    void copyTo(GridMat& dst, GridMat indices, int k);
+
     GridMat vget(cv::Mat indices, bool logical = true);
     GridMat hget(cv::Mat indices, bool logical = true);
     
@@ -109,8 +113,12 @@ private:
     GridMat getIndexedCellElementsPositionally(cv::Mat indices, int dim = 0);
     void setIndexedCellElementsPositionally(GridMat& grid, cv::Mat indices, int dim = 0);
     
+    void setMatElements(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical = true);
+    void setMatElementsLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals);
+    void setMatElementsPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indices);
+    
     void indexMatElements(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical = true);
-    void indexMatElementsLogically(cv::Mat src, cv::Mat& dst, cv::Mat indices);
+    void indexMatElementsLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals);
     void indexMatElementsPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indices);
 };
 

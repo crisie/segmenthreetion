@@ -328,29 +328,29 @@ void ModalityPrediction<cv::EM>::predict(GridMat& predictions, GridMat& loglikel
     // create a list of parameters' variations
     expandParameters(params, m_hp * m_wp, gridExpandedParameters);
     
-    cout << "Model selection CVs [" << m_testK << "]: " << endl;
-    
-    vector<GridMat> goodnesses(m_testK); // for instance: accuracies
-    
-    for (int k = 0; k < m_testK; k++)
-    {
-        cout << k << " " << endl;
-        
-        GridMat tagsTrFold (tags, partitions, k, true);
-        GridMat tagsTeFold (tags, partitions, k);
-        GridMat descriptorsTrFold (descriptors, partitions, k, true);
-        GridMat descriptorsTeFold (descriptors, partitions, k);
-        
-        GridMat descriptorsSubjTr (descriptorsTrFold, tagsTrFold, 1);
-        
-        modelSelection(descriptorsTrFold, tagsTrFold,
-                       params, goodnesses[k]);
-        
-        std::stringstream ss;
-        ss << "goodnesses_" << k << ".yml" << endl;
-        goodnesses[k].save(ss.str());
-    }
-    cout << endl;
+//    cout << "Model selection CVs [" << m_testK << "]: " << endl;
+//    
+//    vector<GridMat> goodnesses(m_testK); // for instance: accuracies
+//    
+//    for (int k = 0; k < m_testK; k++)
+//    {
+//        cout << k << " " << endl;
+//        
+//        GridMat tagsTrFold (tags, partitions, k, true);
+//        GridMat tagsTeFold (tags, partitions, k);
+//        GridMat descriptorsTrFold (descriptors, partitions, k, true);
+//        GridMat descriptorsTeFold (descriptors, partitions, k);
+//        
+//        GridMat descriptorsSubjTr (descriptorsTrFold, tagsTrFold, 1);
+//        
+//        modelSelection(descriptorsTrFold, tagsTrFold,
+//                       params, goodnesses[k]);
+//        
+//        std::stringstream ss;
+//        ss << "goodnesses_" << k << ".yml" << endl;
+//        goodnesses[k].save(ss.str());
+//    }
+//    cout << endl;
     
     cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
     for (int k = 0; k < m_testK; k++)
@@ -367,13 +367,13 @@ void ModalityPrediction<cv::EM>::predict(GridMat& predictions, GridMat& loglikel
         GridPredictor<cv::EM> predictor;
         predictor.setData(descriptorsSubjTrFold);
        
-//        GridMat goodnesses;
-//        std::stringstream ss;
-//        ss << "goodnesses_" << k << ".yml" << endl;
-//        goodnesses.load(ss.str());
+        GridMat goodnesses;
+        std::stringstream ss;
+        ss << "goodnesses_" << k << ".yml" << endl;
+        goodnesses.load(ss.str());
         
         vector<cv::Mat> bestParams;
-        selectBestParameterCombination(gridExpandedParameters, m_hp, m_wp, params.size(), /*goodnesses*/ goodnesses[k], bestParams);
+        selectBestParameterCombination(gridExpandedParameters, m_hp, m_wp, params.size(), goodnesses, bestParams);
 
         predictor.setNumOfMixtures(bestParams[0]);
         predictor.setLoglikelihoodThreshold(bestParams[1]);
@@ -381,12 +381,9 @@ void ModalityPrediction<cv::EM>::predict(GridMat& predictions, GridMat& loglikel
         
         GridMat predictionsTeFold, loglikelihoodsTeFold;
         predictor.predict(descriptorsTeFold, predictionsTeFold, loglikelihoodsTeFold);
-        
-        GridMat predictionsAux (predictionsTeFold, partitions, k);
-        GridMat loglikelihoodsAux (loglikelihoodsTeFold, partitions, k);
-        
-        predictions = predictionsAux;
-        loglikelihoodsAux = loglikelihoodsAux;
+
+        predictions.set(predictionsTeFold, partitions, k);
+        loglikelihoods.set(loglikelihoodsTeFold, partitions, k);
     }
     cout << endl;
 }
