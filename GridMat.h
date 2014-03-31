@@ -50,10 +50,25 @@ public:
     
     cv::Mat get(unsigned int i, unsigned int j) const;
     
+    cv::Rect getCellCoordinates(unsigned int i, unsigned int j);
+    
     void assign(cv::Mat cell, unsigned int i, unsigned int j);
     void set(GridMat& other);
-    void set(GridMat src, GridMat indices, int k);
     
+    template<typename T>
+    void setTo(T value, unsigned int i, unsigned int j);
+    template<typename T>
+    void setTo(T value, unsigned int i, unsigned int j, cv::Mat mask);
+    
+    template<typename T>
+    void convertToMat(cv::Mat& mat);
+    template<typename T>
+    cv::Mat convertToMat();
+    
+    void normalize(GridMat& g); // at cell level
+    GridMat normalize(); // at cell level
+    
+    void set(GridMat src, GridMat indices, int k);
     void copyTo(GridMat& dst, GridMat indices, int k);
 
     GridMat vget(cv::Mat indices, bool logical = true);
@@ -116,6 +131,10 @@ private:
     void setMatElements(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical = true);
     void setMatElementsLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals);
     void setMatElementsPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indices);
+    
+    void copyMatElements(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical = true);
+    void copyMatElementsLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals);
+    void copyMatElementsPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indices);
     
     void indexMatElements(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical = true);
     void indexMatElementsLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals);

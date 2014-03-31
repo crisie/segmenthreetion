@@ -26,7 +26,7 @@ public:
     ModalityGridData() {}
     
     /*ModalityGridData(vector<GridMat> gframes, vector<GridMat> gmasks, cv::Mat gframeids, cv::Mat gpositions, cv::Mat tags)
-            : m_GFrames(gframes), m_GMasks(gmasks), m_GFrameIDs(gframeids), m_GPositions(gpositions), m_Tags(tags) {}
+            : m_GFrames(gframes), m_GMasks(gmasks), m_FrameIDs(gframeids), m_GPositions(gpositions), m_Tags(tags) {}
     */
     ModalityGridData(ModalityGridData& other, cv::Mat logicals)
     {
@@ -44,6 +44,7 @@ public:
                     addGridMask(other.getGridMask(i));
                 }
                 addGridFrameID(other.getGridFrameID(i));
+                addFramePath(other.getFramePath(i));
                 addFrameFilename(other.getFrameFilename(i));
                 addFrameResolution(other.getFrameResolution(i));
                 addGridBoundingRect(other.getGridBoundingRect(i));
@@ -58,7 +59,9 @@ public:
 	{
 		m_GFrames.clear();
 		m_GMasks.clear();
-		m_GFrameIDs.clear();
+        m_MasksOffsets.clear();
+		m_FrameIDs.clear();
+        m_FramesPaths.clear();
         m_FramesFilenames.clear();
 		m_FramesResolutions.clear();
 		m_GBoundingRects.clear();
@@ -73,7 +76,9 @@ public:
         m_wp = other.m_wp;
         m_GFrames = other.m_GFrames;
         m_GMasks = other.m_GMasks;
-        m_GFrameIDs = other.m_GFrameIDs;
+        m_MasksOffsets = other.m_MasksOffsets;
+        m_FrameIDs = other.m_FrameIDs;
+        m_FramesPaths = other.m_FramesPaths;
         m_FramesFilenames = other.m_FramesFilenames;
         m_FramesResolutions = other.m_FramesResolutions;
         m_GBoundingRects = other.m_GBoundingRects;
@@ -94,9 +99,19 @@ public:
         return m_GMasks[k];
     }
     
+    unsigned char getMaskOffset(int k)
+    {
+        return m_MasksOffsets[k];
+    }
+    
     int getGridFrameID(int k)
     {
-        return m_GFrameIDs[k];
+        return m_FrameIDs[k];
+    }
+    
+    string getFramePath(int k)
+    {
+        return m_FramesPaths[k];
     }
     
     string getFrameFilename(int k)
@@ -158,6 +173,11 @@ public:
         return GridMat(m_Descriptors, m_Validnesses);
     }
 
+    int getNumOfScenes()
+    {
+        return m_ScenesPaths.size();
+    }
+    
     vector<GridMat>& getGridsFrames()
     {
         return m_GFrames;
@@ -168,9 +188,19 @@ public:
         return m_GMasks;
     }
     
-    vector<int>& getGridsFrameIDs()
+    vector<int>& getSceneIDs()
     {
-        return m_GFrameIDs;
+        return m_SceneIDs;
+    }
+    
+    vector<int>& getFrameIDs()
+    {
+        return m_FrameIDs;
+    }
+    
+    vector<string>& getFramesPaths()
+    {
+        return m_FramesPaths;
     }
     
     vector<string>& getFramesFilenames()
@@ -208,9 +238,14 @@ public:
         return m_Descriptors;
     }
 
-	cv::Mat getGridsFrameIDsMat()
+    cv::Mat getSceneIDsMat()
     {
-		return cv::Mat(m_GFrameIDs.size(), 1, cv::DataType<int>::type, m_GFrameIDs.data());
+		return cv::Mat(m_SceneIDs.size(), 1, cv::DataType<int>::type, m_SceneIDs.data());
+    }
+    
+	cv::Mat getFrameIDsMat()
+    {
+		return cv::Mat(m_FrameIDs.size(), 1, cv::DataType<int>::type, m_FrameIDs.data());
     }
     
 	cv::Mat getTagsMat()
@@ -266,6 +301,16 @@ public:
         m_wp = wp;
     }
     
+    void setModality(string name)
+    {
+        m_ModalityName = name;
+    }
+    
+    string getModality()
+    {
+        return m_ModalityName;
+    }
+    
     void setGridsFrames(vector<GridMat> gframes)
     {
         m_GFrames = gframes;
@@ -276,9 +321,19 @@ public:
         m_GMasks = gmasks;
     }
     
+    void setMasksOffsets(vector<unsigned char> gmasksoffsets)
+    {
+        m_MasksOffsets = gmasksoffsets;
+    }
+    
     void setGridsFrameIDs(vector<int> gframeids)
     {
-        m_GFrameIDs = gframeids;
+        m_FrameIDs = gframeids;
+    }
+    
+    void setFramesPaths(vector<string> paths)
+    {
+        m_FramesPaths = paths;
     }
     
     void setFramesFilenames(vector<string> filenames)
@@ -358,9 +413,29 @@ public:
 		m_GMasks.push_back(gmask);
     }
     
+    void addGridMaskOffset(unsigned char offset)
+    {
+        m_MasksOffsets.push_back(offset);
+    }
+    
+    void addSceneID(int id)
+    {
+        m_SceneIDs.push_back(id);
+    }
+    
+    void addScenePath(string scenePath)
+    {
+        m_ScenesPaths.push_back(scenePath);
+    }
+    
     void addGridFrameID(int id)
     {
-        m_GFrameIDs.push_back(id);
+        m_FrameIDs.push_back(id);
+    }
+    
+    void addFramePath(string path)
+    {
+        m_FramesPaths.push_back(path);
     }
     
     void addFrameFilename(string filename)
@@ -434,14 +509,20 @@ public:
     
 private:
     int m_hp, m_wp;
+    string m_ModalityName;
     
     vector<GridMat> m_GFrames;
     vector<GridMat> m_GMasks;
-    vector<int> m_GFrameIDs;
+    vector<unsigned char> m_MasksOffsets;
+    vector<int> m_FrameIDs;
+    vector<int> m_SceneIDs;
+    vector<string> m_ScenesPaths;
+    vector<string> m_FramesPaths;
     vector<string> m_FramesFilenames;
     vector<cv::Point2d> m_FramesResolutions;
     vector<cv::Rect> m_GBoundingRects;
     vector<int> m_Tags;
+    
     GridMat m_Validnesses; // whether cells in the grids are valid to be described
     GridMat m_Descriptors;
 };

@@ -27,6 +27,11 @@ public:
     
     // Getters
     
+    string getModality()
+    {
+        return m_ModalityName;
+    }
+    
     cv::Mat getFrame(int k)
     {
         return m_Frames[k];
@@ -240,6 +245,11 @@ public:
     
     // Setters
     
+    void setModality(string name)
+    {
+        m_ModalityName = name;
+    }
+    
     void setFrames(vector<cv::Mat> frames)
     {
         m_Frames = frames;
@@ -310,6 +320,7 @@ public:
     
     
 private:
+    string m_ModalityName;
     // Load data from disk: frames, masks, and rectangular bounding boxes
     vector<cv::Mat> m_Frames;
     vector<cv::Mat> m_RegFrames;

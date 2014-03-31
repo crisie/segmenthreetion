@@ -14,24 +14,26 @@
 #include "GridMat.h"
 #include "ModalityGridData.hpp"
 
-template<typename T>
 class GridMapWriter
 {
 public:
     GridMapWriter();
-    GridMapWriter(ModalityGridData mgd, int n, GridMat values);
+    GridMapWriter(ModalityGridData& mgd, GridMat& values);
     
-    void setModalityGridData(ModalityGridData mgd);
-    void setGridCellValues(GridMat values);
-    void setNumberOfMaps(int n);
+    void setModalityGridData(ModalityGridData& mgd);
+    void setGridCellValues(GridMat& values);
     
-    void write(std::string path);
-    void write(ModalityGridData& mgd, int n, GridMat& values, std::string path);
+    template<typename T>
+    void write(std::string dir);
+    template<typename T>
+    void write(ModalityGridData& mgd, GridMat& values, std::string dir);
     
 private:
     ModalityGridData m_mgd;
     GridMat m_values;
-    int m_n;
+      
+    void loadFilenames(string dir, const char* filetype, vector<string>& filenames);
+
 };
 
 #endif /* defined(__segmenthreetion__GridMapWriter__) */

@@ -129,12 +129,12 @@ void GridPredictor<cv::EM>::predict(GridMat data, GridMat& predictions, GridMat&
             cv::Vec2d res;
             res = this->at(i,j).predict(cell.row(d));
 
-            cellPredictions.at<int>(d,0) = res.val[0] > m_logthreshold.at<int>(i,j);
+            cellPredictions.at<unsigned char>(d,0) = res.val[0] > m_logthreshold.at<int>(i,j) ? 255 : 0;
             cellLoglikelihoods.at<double>(d,0) = res.val[0];
         }
 
-        predictions.set(cellPredictions, i, j);
-        loglikelihoods.set(cellLoglikelihoods, i, j);
+        predictions.assign(cellPredictions, i, j);
+        loglikelihoods.assign(cellLoglikelihoods, i, j);
     }
 }
 

@@ -30,6 +30,8 @@
 
 #include "ModalityPrediction.h"
 
+#include "GridMapWriter.h"
+
 #include "StatTools.h"
 
 #include <opencv2/opencv.hpp>
@@ -110,14 +112,14 @@ int main(int argc, const char* argv[])
     // Classification step
     
 	vector<int> nmixtures;
-    nmixtures += 4; // classification parameter (training step)
+    nmixtures += 3, 6; // classification parameter (training step)
     vector<int> nlikelicuts;
     nlikelicuts += 0, 40;
     
     // Validation procedure
     
-    int kTest = 10; // number of folds in the outer cross-validation
-    int kModelSelec = 3;
+    int kTest = 3; // number of folds in the outer cross-validation
+    int kModelSelec = 2;
     int seed = 74;
     
     //
@@ -235,6 +237,10 @@ int main(int argc, const char* argv[])
 ////    dGridData.clear();
 //    tGridData.clear();
     
+    //
+    // Prediction
+    //
+    
     ModalityGridData cMockData;
     reader.mockread("Color", sequences, "jpg", hp, wp, cMockData);
     ModalityGridData mMockData;
@@ -254,29 +260,43 @@ int main(int argc, const char* argv[])
     mgds += &cMockData, &mMockData, /*&dMockData,*/ &tMockData;
     reader.agreement(mgds);
     
-    ModalityPrediction<cv::EM> prediction;
+//    ModalityPrediction<cv::EM> prediction;
+//
+//    prediction.setNumOfMixtures(nmixtures);
+//    prediction.setLoglikelihoodThresholds(nlikelicuts);
+//
+//    prediction.setModelValidation(kTest, seed);
+//    prediction.setModelSelection(kModelSelec, true);
+//    
+//    prediction.setData(tMockData);
 
-    prediction.setNumOfMixtures(nmixtures);
-    prediction.setLoglikelihoodThresholds(nlikelicuts);
-
-    prediction.setModelValidation(kTest, seed);
-    prediction.setModelSelection(kModelSelec, true);
-    
-    prediction.setData(tMockData);
-    
     GridMat tPredictions, tLoglikelihoods;
-    prediction.predict(tPredictions, tLoglikelihoods);
-    
-    tPredictions.save("tPredictions.yml");
-    tLoglikelihoods.save("tLoglikelihoods.yml");
+//    prediction.predict(tPredictions, tLoglikelihoods);
+//    
+//    tPredictions.save("tPredictions.yml");
+//    tLoglikelihoods.save("tLoglikelihoods.yml");
     
 //    prediction.setData(cMockData);
-//    
+//
 //    GridMat cPredictions, cLoglikelihoods;
 //    prediction.predict(cPredictions, cLoglikelihoods);
-//    
+//
 //    cPredictions.save("cPredictions.yml");
 //    cLoglikelihoods.save("cLoglikelihoods.yml");
+    
+    //
+    // Map writing
+    //
+    
+    tPredictions.load("tPredictions.yml");
+    
+    GridMapWriter mapWriter;
+    
+    mapWriter.write<unsigned char>(tMockData, tPredictions, "Predictions/");
+    
+//    GridMat tNormLoglikelihoods;
+//    tLoglikelihoods.normalize(tNormLoglikelihoods);
+//    mapWriter.write<float>(tMockData, tNormLoglikelihoods, "Thermal/Loglikelihoods/"); // normalized values are float
 
     return 0;
 }

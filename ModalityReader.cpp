@@ -46,7 +46,7 @@ void ModalityReader::setDataPath(string dataPath)
 		directory_iterator iter(path);
 		for( ; iter != end ; ++iter )
 		{
-			if ( is_directory( *iter ) && iter->path().string().find("Scene") != std::string::npos)
+			if ( is_directory( *iter ) && iter->path().string().find("Scene") != string::npos)
 			{
                 string scenePath = iter->path().string();
 				m_ScenesPaths.push_back(scenePath);
@@ -64,11 +64,11 @@ void ModalityReader::setDataPath(string dataPath)
 
 void ModalityReader::setMasksOffset(unsigned char offset)
 {
-    
+    m_MasksOffset = offset;
 }
 
 
-void ModalityReader::read(std::string modality, ModalityData& md)
+void ModalityReader::read(string modality, ModalityData& md)
 {
     vector<cv::Mat> frames;
     vector<cv::Mat> masks;
@@ -100,6 +100,7 @@ void ModalityReader::read(std::string modality, ModalityData& md)
         nFrames = frames.size();
     }
     
+    md.setModality(modality);
     md.setFrames(frames); // inner copy
     md.setSceneLimits(framesPerScene);
     frames.clear(); // and clear
@@ -149,6 +150,9 @@ void ModalityReader::read(string modality, vector<string> sceneDirs, const char*
 void ModalityReader::read(string modality, string dataPath, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd)
 {
     mgd.clear();
+    mgd.setModality(modality);
+    mgd.setHp(hp);
+    mgd.setWp(wp);
     
     for (int s = 0; s < sceneDirs.size(); s++)
     {
@@ -176,9 +180,6 @@ void ModalityReader::readScene(string modality, string scenePath, const char* fi
 
     // Load frame-wise (Mat), extract the roi represented by the bounding boxes,
     // grid the rois (GridMat), and store in GridModalityData object
-
-    mgd.setHp(hp);
-    mgd.setWp(wp);
     
 	for (int f = 0; f < filenames.size(); f++)
 	{
@@ -238,8 +239,17 @@ void ModalityReader::readScene(string modality, string scenePath, const char* fi
 				GridMat gmask (indexedmaskroi, hp, wp);
 				mgd.addGridMask( gmask );
                 
+                // Mask offset
+                mgd.addGridMaskOffset(m_MasksOffset + r);
+                
+                // Scene id
+                mgd.addSceneID(mgd.getNumOfScenes());
+                
 				// Frame id
 				mgd.addGridFrameID(f);
+                
+                // Frame path
+                mgd.addFramePath(scenePath);
                 
                 // Frame resolution
                 mgd.addFrameFilename(filenames[f]);
@@ -259,6 +269,8 @@ void ModalityReader::readScene(string modality, string scenePath, const char* fi
 			}
 		}
 	}
+    
+    mgd.addScenePath(scenePath);
 }
 
 /*
@@ -280,6 +292,9 @@ void ModalityReader::mockread(string modality, vector<string> sceneDirs, const c
 void ModalityReader::mockread(string modality, string dataPath, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd)
 {
     mgd.clear();
+    mgd.setModality(modality);
+    mgd.setHp(hp);
+    mgd.setWp(wp);
     
     for (int s = 0; s < sceneDirs.size(); s++)
     {
@@ -332,8 +347,17 @@ void ModalityReader::mockreadScene(string modality, string scenePath, const char
             // Create the grid structures
 			if (rects[f][r].height >= hp && rects[f][r].width >= wp)
 			{                
+                // Scene id
+                mgd.addSceneID(mgd.getNumOfScenes());
+                
 				// Frame id
 				mgd.addGridFrameID(f);
+                
+                // Mask offset
+                mgd.addGridMaskOffset(m_MasksOffset + r);
+                
+                // Frame path
+                mgd.addFramePath(scenePath);
                 
                 // Frame filename
                 mgd.addFrameFilename(filenames[f]);
@@ -357,6 +381,8 @@ void ModalityReader::mockreadScene(string modality, string scenePath, const char
 			}
 		}
 	}
+    
+    mgd.addScenePath(scenePath);
 }
 
 
