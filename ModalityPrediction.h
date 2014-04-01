@@ -65,10 +65,10 @@ class ModalityPrediction : public ModalityPredictionBase<Prediction>
 {
     ModalityPrediction();// : ModalityPredictionBase<Prediction>() {}
 
-    void setModelSelection(int k = 3, bool best = 0);
-    void setModelValidation(int k = 10, int seed = 74);
-    
-    void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies);
+//    void setModelSelection(int k = 3, bool best = 0);
+//    void setModelValidation(int k = 10, int seed = 74);
+//    
+//    void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies);
 };
 
 
@@ -78,8 +78,8 @@ class ModalityPrediction<cv::EM> : public ModalityPredictionBase<cv::EM>
 public:
     ModalityPrediction(); // : ModalityPredictionBase<cv::EM>() {}
     
-    void setModelSelection(int k = 3, bool best = 0);
-    void setModelValidation(int k = 10, int seed = 74);
+//    void setModelSelection(int k = 3, bool best = 0);
+//    void setModelValidation(int k = 10, int seed = 74);
     
     void setNumOfMixtures(int m);
     void setNumOfMixtures(vector<int> m);
@@ -94,7 +94,7 @@ public:
     
     void predict(GridMat& predictions, GridMat& loglikelihoods);
     
-    void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies);
+//    void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies);
     
 private:
     vector<int> m_nmixtures;
@@ -108,8 +108,8 @@ class ModalityPrediction<CvSVM> : public ModalityPredictionBase<CvSVM>
 public:
     ModalityPrediction(); // : ModalityPredictionBase<cv::EM>() {}
     
-    void setModelSelection(int k = 3, bool best = 0);
-    void setModelValidation(int k = 10, int seed = 74);
+//    void setModelSelection(int k = 3, bool best = 0);
+//    void setModelValidation(int k = 10, int seed = 74);
     
     void setSvmType(int type);
     void setKernelType(int type);
@@ -127,7 +127,7 @@ public:
     
     void predict(GridMat& predictions);
     
-    void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies);
+//    void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies);
     
 private:
     vector<float> m_cs;

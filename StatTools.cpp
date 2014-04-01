@@ -13,6 +13,7 @@
 // Instantiation of template member functions
 // -----------------------------------------------------------------------------
 template void variate<int>(vector<vector<int > > list, vector<vector<int > >& variations);
+template void variate<float>(vector<vector<float > > list, vector<vector<float > >& variations);
 template void variate<double>(vector<vector<double > > list, vector<vector<double > >& variations);
 // -----------------------------------------------------------------------------
 

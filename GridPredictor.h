@@ -31,7 +31,7 @@ public:
     void setData(GridMat data);
     void setParameters(GridMat parameters);
     
-    PredictorT& at(unsigned int i, unsigned int j);
+    PredictorT* at(unsigned int i, unsigned int j);
 
 protected:
     GridMat m_data;
@@ -39,19 +39,19 @@ protected:
     
     unsigned int m_hp, m_wp;
     
-    vector<PredictorT> m_predictors;
+    vector<PredictorT*> m_predictors;
 };
 
 
 template<typename PredictorT>
 class GridPredictor : public GridPredictorBase<PredictorT>
 {
-    GridPredictor();
-    
-    void setData(GridMat data);
-    void setParameters(GridMat parameters);
-    
-    PredictorT& at(unsigned int i, unsigned int j);
+//    GridPredictor();
+//    
+//    void setData(GridMat data);
+//    void setParameters(GridMat parameters);
+//    
+//    PredictorT& at(unsigned int i, unsigned int j);
 };
 
 
@@ -61,12 +61,12 @@ class GridPredictor<cv::EM> : public GridPredictorBase<cv::EM>
 public:
     GridPredictor();
     
-    void setData(GridMat data);
+//    void setData(GridMat data);
     void setParameters(GridMat parameters);
     void setNumOfMixtures(cv::Mat nmixtures);
     void setLoglikelihoodThreshold(cv::Mat loglikes);
     
-    cv::EM& at(unsigned int i, unsigned int j);
+//    cv::EM& at(unsigned int i, unsigned int j);
     
     void train();
     void predict(GridMat data, GridMat& predictions, GridMat& loglikelihoods);
@@ -82,7 +82,7 @@ class GridPredictor<CvSVM> : public GridPredictorBase<CvSVM>
 public:
     GridPredictor();
     
-    void setData(GridMat data);
+//    void setData(GridMat data);
     void setDataResponses(GridMat responses);
     
     void setType(int type);
@@ -91,7 +91,7 @@ public:
     void setParameters(cv::Mat cs);
     void setParameters(cv::Mat cs, cv::Mat gammas); // RBF's kernel type
     
-    CvSVM& at(unsigned int i, unsigned int j);
+//    CvSVM& at(unsigned int i, unsigned int j);
     
     void train();
     void predict(GridMat data, GridMat& predictions);
