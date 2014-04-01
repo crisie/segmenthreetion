@@ -25,9 +25,6 @@ class ModalityGridData
 public:
     ModalityGridData() {}
     
-    /*ModalityGridData(vector<GridMat> gframes, vector<GridMat> gmasks, cv::Mat gframeids, cv::Mat gpositions, cv::Mat tags)
-            : m_GFrames(gframes), m_GMasks(gmasks), m_FrameIDs(gframeids), m_GPositions(gpositions), m_Tags(tags) {}
-    */
     ModalityGridData(ModalityGridData& other, cv::Mat logicals)
     {
         m_hp = other.m_hp;

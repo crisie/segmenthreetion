@@ -72,9 +72,30 @@ public:
     void predict(GridMat data, GridMat& predictions, GridMat& loglikelihoods);
     
 private:
+    cv::Mat m_nmixtures;
     cv::Mat m_logthreshold;
 };
 
+template<>
+class GridPredictor<cv::SVM> : public GridPredictorBase<cv::SVM>
+{
+public:
+    GridPredictor();
+    
+    void setData(GridMat data);
+    void setParameters(GridMat parameters);
+    void setC(cv::Mat c);
+    void setLambda(cv::Mat lambdas);
+    
+    cv::SVM& at(unsigned int i, unsigned int j);
+    
+    void train();
+    void predict(GridMat data, GridMat& predictions);
+    
+private:
+    cv::Mat m_c;
+    cv::Mat m_lambdas;
+};
 
 
 #endif /* defined(__segmenthreetion__GridPredictor__) */

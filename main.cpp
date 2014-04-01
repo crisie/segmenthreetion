@@ -63,7 +63,9 @@ int main(int argc, const char* argv[])
 	
 	const unsigned char masksOffset = 200;
     
+    //
 	//Background subtraction
+    //
     
     ForegroundParametrization fParam;
     
@@ -176,69 +178,70 @@ int main(int argc, const char* argv[])
 //    writer.write("Thermal", tData);
 
     
-//    // Color description
-//
-//    ModalityGridData cGridData;
-//
-//    ColorFeatureExtractor cFE(cParam);
-//	for (int s = 0; s < sequences.size(); s++)
-//	{
-//        cout << "Reading color frames in scene " << s << ".." << endl;
-//		reader.read("Color", sequences[s], "jpg", hp, wp, cGridData);
-//        cout << "Describing color..." << endl;
-//		cFE.describe(cGridData);
-//        cGridData.saveDescription(dataPath, sequences[s], "Color.yml");
-//    }
-//
-//    // Motion description
-//    
-//    ModalityGridData mGridData;
-//
-//    MotionFeatureExtractor mFE(mParam);
-//    for (int s = 0; s < sequences.size(); s++)
-//	{
-//        cout << "Computing motion (from read color) frames in scene " << s << ".." << endl;
-//		reader.read("Motion", sequences[s], "jpg", hp, wp, mGridData);
-//        cout << "Describing motion..." << endl;
-//        mFE.describe(mGridData);
-//        mGridData.saveDescription(dataPath, sequences[s], "Motion.yml");
-//	}
-//    
-//    // Depth description
-//    
-////    ModalityGridData dGridData;
-////    
-////    DepthFeatureExtractor dFE(dParam);
-////	for (int s = 0; s < sequences.size(); s++)
-////	{
-////        cout << "Reading depth frames in scene " << s << ".." << endl;
-////		reader.read("Depth", sequences[s], "png", hp, wp, dGridData);
-////        cout << "Describing depth..." << endl;
-////		dFE.describe(dGridData);
-////        dGridData.saveDescription(dataPath, sequences[s], "Depth.yml");
-////	}
-//    
-//    // Thermal description
-//    
-//    ModalityGridData tGridData;
-//
-//    ThermalFeatureExtractor tFE(tParam);
-//	for (int s = 0; s < sequences.size(); s++)
-//	{
-//        cout << "Reading thermal frames in scene " << s << ".." << endl;
-//		reader.read("Thermal", sequences[s], "jpg", hp, wp, tGridData);
-//        cout << "Describing thermal..." << endl;
-//		tFE.describe(tGridData);
-//        tGridData.saveDescription(dataPath, sequences[s], "Thermal.yml");
-//	}
-//
-//    cGridData.clear();
-//    mGridData.clear();
-////    dGridData.clear();
-//    tGridData.clear();
+    // Color description
+
+    ModalityGridData cGridData;
+
+    ColorFeatureExtractor cFE(cParam);
+	for (int s = 0; s < sequences.size(); s++)
+	{
+        cout << "Reading color frames in scene " << s << ".." << endl;
+		reader.read("Color", sequences[s], "jpg", hp, wp, cGridData);
+        cout << "Describing color..." << endl;
+		cFE.describe(cGridData);
+        cGridData.saveDescription(dataPath, sequences[s], "Color.yml");
+    }
+
+    // Motion description
+    
+    ModalityGridData mGridData;
+
+    MotionFeatureExtractor mFE(mParam);
+    for (int s = 0; s < sequences.size(); s++)
+	{
+        cout << "Computing motion (from read color) frames in scene " << s << ".." << endl;
+		reader.read("Motion", sequences[s], "jpg", hp, wp, mGridData);
+        cout << "Describing motion..." << endl;
+        mFE.describe(mGridData);
+        mGridData.saveDescription(dataPath, sequences[s], "Motion.yml");
+	}
+    
+    // Depth description
+    
+    ModalityGridData dGridData;
+    
+    DepthFeatureExtractor dFE(dParam);
+	for (int s = 0; s < sequences.size(); s++)
+	{
+        cout << "Reading depth frames in scene " << s << ".." << endl;
+		reader.read("Depth", sequences[s], "png", hp, wp, dGridData);
+        cout << "Describing depth..." << endl;
+		dFE.describe(dGridData);
+        dGridData.saveDescription(dataPath, sequences[s], "Depth.yml");
+	}
+    
+    // Thermal description
+    
+    ModalityGridData tGridData;
+
+    ThermalFeatureExtractor tFE(tParam);
+	for (int s = 0; s < sequences.size(); s++)
+	{
+        cout << "Reading thermal frames in scene " << s << ".." << endl;
+		reader.read("Thermal", sequences[s], "jpg", hp, wp, tGridData);
+        cout << "Describing thermal..." << endl;
+		tFE.describe(tGridData);
+        tGridData.saveDescription(dataPath, sequences[s], "Thermal.yml");
+	}
+
+    cGridData.clear();
+    mGridData.clear();
+//    dGridData.clear();
+    tGridData.clear();
+    
     
     //
-    // Prediction
+    // Data re-loading
     //
     
     ModalityGridData cMockData;
@@ -260,29 +263,37 @@ int main(int argc, const char* argv[])
     mgds += &cMockData, &mMockData, /*&dMockData,*/ &tMockData;
     reader.agreement(mgds);
     
-//    ModalityPrediction<cv::EM> prediction;
-//
-//    prediction.setNumOfMixtures(nmixtures);
-//    prediction.setLoglikelihoodThresholds(nlikelicuts);
-//
-//    prediction.setModelValidation(kTest, seed);
-//    prediction.setModelSelection(kModelSelec, true);
-//    
-//    prediction.setData(tMockData);
+    
+    //
+    // Prediction
+    //
+    
+    ModalityPrediction<cv::EM> prediction;
+
+    prediction.setNumOfMixtures(nmixtures);
+    prediction.setLoglikelihoodThresholds(nlikelicuts);
+
+    prediction.setModelValidation(kTest, seed);
+    prediction.setModelSelection(kModelSelec, true);
+    
+    // Thermal
+    prediction.setData(tMockData);
 
     GridMat tPredictions, tLoglikelihoods;
-//    prediction.predict(tPredictions, tLoglikelihoods);
-//    
-//    tPredictions.save("tPredictions.yml");
-//    tLoglikelihoods.save("tLoglikelihoods.yml");
+    prediction.predict(tPredictions, tLoglikelihoods);
     
-//    prediction.setData(cMockData);
-//
-//    GridMat cPredictions, cLoglikelihoods;
-//    prediction.predict(cPredictions, cLoglikelihoods);
-//
-//    cPredictions.save("cPredictions.yml");
-//    cLoglikelihoods.save("cLoglikelihoods.yml");
+    tPredictions.save("tPredictions.yml");
+    tLoglikelihoods.save("tLoglikelihoods.yml");
+
+    // Color
+    prediction.setData(cMockData);
+
+    GridMat cPredictions, cLoglikelihoods;
+    prediction.predict(cPredictions, cLoglikelihoods);
+
+    cPredictions.save("cPredictions.yml");
+    cLoglikelihoods.save("cLoglikelihoods.yml");
+    
     
     //
     // Map writing

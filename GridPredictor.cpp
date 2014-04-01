@@ -81,19 +81,28 @@ cv::EM& GridPredictor<cv::EM>::at(unsigned int i, unsigned int j)
 
 void GridPredictor<cv::EM>::setParameters(GridMat parameters)
 {
+    m_nmixtures.release();
     m_logthreshold.release();
+    
+    m_nmixtures.create(m_hp, m_wp, cv::DataType<int>::type);
     m_logthreshold.create(m_hp, m_wp, cv::DataType<int>::type);
+    
     for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
     {
+        m_nmixtures.at<int>(i,j) = parameters.at<int>(i,j,0,0);
         this->at(i,j).set("nclusters", parameters.at<int>(i,j,0,0));
+        
         m_logthreshold.at<int>(i,j) = parameters.at<int>(i,j,0,1);
     }
 }
 
 void GridPredictor<cv::EM>::setNumOfMixtures(cv::Mat nmixtures)
 {
+    m_nmixtures.release();
+    m_nmixtures.create(m_hp, m_wp, cv::DataType<int>::type);
     for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
     {
+        m_nmixtures.at<int>(i,j) = m_nmixtures.at<int>(i,j);
         this->at(i,j).set("nclusters", nmixtures.at<int>(i,j));
     }
 }
