@@ -77,24 +77,35 @@ private:
 };
 
 template<>
-class GridPredictor<cv::SVM> : public GridPredictorBase<cv::SVM>
+class GridPredictor<CvSVM> : public GridPredictorBase<CvSVM>
 {
 public:
     GridPredictor();
     
     void setData(GridMat data);
-    void setParameters(GridMat parameters);
-    void setC(cv::Mat c);
-    void setLambda(cv::Mat lambdas);
+    void setDataResponses(GridMat responses);
     
-    cv::SVM& at(unsigned int i, unsigned int j);
+    void setType(int type);
+    void setKernelType(int kernelType);
+    
+    void setParameters(cv::Mat cs);
+    void setParameters(cv::Mat cs, cv::Mat gammas); // RBF's kernel type
+    
+    CvSVM& at(unsigned int i, unsigned int j);
     
     void train();
     void predict(GridMat data, GridMat& predictions);
     
 private:
-    cv::Mat m_c;
-    cv::Mat m_lambdas;
+    int m_SvmType;
+    int m_KernelType; // CvSVM::LINEAR or CvSVM::RBF
+    
+    cv::Mat m_cs; // Cs
+    cv::Mat m_gammas; // RBF's kernel parameter
+    
+    vector<CvSVMParams> m_cvsvmparams;
+    
+    GridMat m_responses;
 };
 
 

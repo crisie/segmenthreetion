@@ -298,7 +298,7 @@ int main(int argc, const char* argv[])
     //
     // Map writing
     //
-    
+       
     tPredictions.load("tPredictions.yml");
     
     GridMapWriter mapWriter;
