@@ -100,7 +100,8 @@ void ModalityPrediction<cv::EM>::setLoglikelihoodThresholds(vector<int> t)
 
 void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikelihoods, bool normalizedLooglikelihoods)
 {
-    GridMat tags (m_data.getTagsMat());
+    GridMat tags;
+    tags.setTo(m_data.getTagsMat());
     GridMat descriptors = m_data.getDescriptors();
     GridMat validnesses = m_data.getValidnesses();
     

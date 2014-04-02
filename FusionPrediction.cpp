@@ -30,7 +30,7 @@ void SimpleFusionPrediction<cv::EM>::setData(vector<GridMat> loglikelihoods, vec
     m_predictions = predictions;
 }
 
-void SimpleFusionPrediction<cv::EM>::predict(GridMat& predictions)
+void SimpleFusionPrediction<cv::EM>::compute(GridMat& gpredictions)
 {
     // TODO: all the stuff
     // ...
@@ -116,7 +116,7 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::setGammas(vector<float> gammas)
     m_gammas = gammas;
 }
 
-void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(cv::Mat& predictions)
+void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(GridMat& gpredictions)
 {
     formatData();
     
@@ -155,6 +155,8 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(cv::Mat& predictions)
     
     cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
     
+    cv::Mat predictions;
+    
     for (int k = 0; k < m_testK; k++)
     {
         cout << k << " ";
@@ -189,6 +191,9 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(cv::Mat& predictions)
         
         cvx::copyMat(tePredictions, predictions, partitions == k);
     }
+    
+    
+    gpredictions.setTo(predictions);
 }
 
 template<typename T>

@@ -109,15 +109,15 @@ GridMat::GridMat(const GridMat& other)
     m_grid = other.m_grid;
 }
 
-GridMat::GridMat(GridMat& other, cv::Mat indices, int dim, bool logical)
-{
-    m_crows = other.m_crows;
-    m_ccols = other.m_ccols;
-    
-    m_grid.resize(other.crows() * other.ccols());
-    
-    setIndexedCellElements(other, indices, dim, logical);
-}
+//GridMat::GridMat(GridMat& other, cv::Mat indices, int dim, bool logical)
+//{
+//    m_crows = other.m_crows;
+//    m_ccols = other.m_ccols;
+//    
+//    m_grid.resize(other.crows() * other.ccols());
+//    
+//    setIndexedCellElements(other, indices, dim, logical);
+//}
 
 GridMat::GridMat(GridMat& other, GridMat indices, int k, bool inverse)
 {
@@ -152,146 +152,129 @@ GridMat::GridMat(GridMat& other, GridMat indices, bool logical)
     }
 }
 
-GridMat GridMat::getIndexedCellElements(cv::Mat indices, int dim, bool logical)
-{
-    if (logical)
-        return getIndexedCellElementsLogically(indices, dim);
-    else
-        return getIndexedCellElementsPositionally(indices, dim);
-}
-
-void GridMat::setIndexedCellElements(GridMat& grid, cv::Mat indices, int dim, bool logical)
-{
-    if (logical)
-        setIndexedCellElementsLogically(grid, indices, dim);
-    else
-        setIndexedCellElementsPositionally(grid, indices, dim);
-}
-
-GridMat GridMat::getIndexedCellElementsLogically(cv::Mat logicals, int dim)
-{
-    GridMat indexed (crows(), ccols());
-    int nelems = cv::sum(logicals).val[0];
-    
-    for (int i = 0; i < crows(); i++) for (int j = 0; j < crows(); j++)
-    {
-        cv::Mat cellPartition (dim == 0 ? nelems : this->at(i,j).rows,
-                               dim == 0 ? this->at(i,j).cols : nelems,
-                               this->at(i,j).type());
-        
-        unsigned int n = 0;
-        if (dim == 0)
-        {
-            for (int r = 0; r < this->at(i,j).rows; r++)
-            {
-                unsigned char included = (logicals.rows > 1) ? logicals.at<int>(r,0) : logicals.at<int>(0,r);
-                if (included) this->at(i,j).row(r).copyTo(cellPartition.row(n++));
-            }
-        }
-        else
-        {
-            for (int c = 0; c < this->at(i,j).cols; c++)
-            {
-                unsigned char included = (logicals.rows > 1) ? logicals.at<int>(c,0) : logicals.at<int>(0,c);
-                if (included) this->at(i,j).col(c).copyTo(cellPartition.col(n++));
-            }
-        }
-        
-        indexed.assign(cellPartition, i, j);
-    }
-
-	return indexed;
-}
-
-void GridMat::setIndexedCellElementsLogically(GridMat& grid, cv::Mat logicals, int dim)
-{
-    int nelems = (logicals.rows > 1) ? logicals.rows : logicals.cols;
-    for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.crows(); j++)
-    {
-        for (int k = 0; k < nelems; k++)
-        {
-            unsigned char included = (logicals.rows > 1) ? logicals.at<int>(k,0) : logicals.at<int>(0,k);
-            if (included)
-            {
-                if (dim == 0)
-                {
-                    cv::Mat row = grid.at(i,j).row(k);
-                    this->vconcat(row, i, j);
-                }
-                else
-                {
-                    cv::Mat col = grid.at(i,j).col(k);
-                    this->vconcat(col, i, j);
-                }
-//                if (dim == 0)
-//                    grid.at(i,j).row(n++).copyTo(this->at(i,j).row(k));
-//                else
-//                    grid.at(i,j).col(n++).copyTo(this->at(i,j).col(k));
-            }
-        }
-    }
-}
-
-GridMat GridMat::getIndexedCellElementsPositionally(cv::Mat indices, int dim)
-{
-    GridMat indexed (crows(), ccols());
-    
-    int nelems = (indices.rows > 1) ? indices.rows : indices.cols;
-    
-    for (int i = 0; i < crows(); i++) for (int j = 0; j < crows(); j++)
-    {
-        cv::Mat cellPartition (dim == 0 ? nelems : this->at(i,j).rows,
-                               dim == 0 ? this->at(i,j).cols : nelems,
-                               this->at(i,j).type());
-        
-        for (int k = 0; k < nelems; k++)
-        {
-            unsigned int idx = (indices.rows > 1) ? indices.at<int>(k,0) : indices.at<int>(0,k);
-            if (dim == 0) // row indexing
-                this->at(i,j).row(idx).copyTo(cellPartition.row(k));
-            else // column indexing
-                this->at(i,j).col(idx).copyTo(cellPartition.col(k));
-        }
-        
-        indexed.assign(cellPartition, i, j);
-    }
-    
-    return indexed;
-}
-
-void GridMat::setIndexedCellElementsPositionally(GridMat& grid, cv::Mat indices, int dim)
-{
-    GridMat indexed (crows(), ccols());
-    
-    int nelems = (indices.rows > 1) ? indices.rows : indices.cols;
-    
-    for (int i = 0; i < crows(); i++) for (int j = 0; j < crows(); j++)
-    {
-        for (int k = 0; k < nelems; k++)
-        {
-            unsigned int idx = (indices.rows > 1) ? indices.at<int>(k,0) : indices.at<int>(0,k);
-            if (dim == 0) // row indexing
-                grid.at(i,j).row(k).copyTo(this->at(i,j).row(idx));
-            else // column indexing
-                grid.at(i,j).col(k).copyTo(this->at(i,j).col(idx));
-        }
-    }
-}
-
-/*
- * TODO: Implement this alternative instead of the nasty init method
- */
-//GridMat::GridMat(GridMat & other)
+//GridMat GridMat::getIndexedCellElements(cv::Mat indices, int dim, bool logical)
 //{
-//    this->m_crows = other.crows();
-//    this->m_ccols = other.ccols();
-//    this->m_rows = other.m_rows;
-//    this->m_cols = other.m_cols;
+//    if (logical)
+//        return getIndexedCellElementsLogically(indices, dim);
+//    else
+//        return getIndexedCellElementsPositionally(indices, dim);
+//}
+//
+//void GridMat::setIndexedCellElements(GridMat& grid, cv::Mat indices, int dim, bool logical)
+//{
+//    if (logical)
+//        setIndexedCellElementsLogically(grid, indices, dim);
+//    else
+//        setIndexedCellElementsPositionally(grid, indices, dim);
+//}
+//
+//GridMat GridMat::getIndexedCellElementsLogically(cv::Mat logicals, int dim)
+//{
+//    GridMat indexed (crows(), ccols());
+//    int nelems = cv::sum(logicals).val[0];
 //    
-//    this->m_grid.resize( m_crows * m_ccols );
-//    for (int i = 0; i < m_crows; i++) for (int j = 0; j < m_ccols; j++)
+//    for (int i = 0; i < crows(); i++) for (int j = 0; j < crows(); j++)
 //    {
-//        this->assign(other.at(i,j), i, j);
+//        cv::Mat cellPartition (dim == 0 ? nelems : this->at(i,j).rows,
+//                               dim == 0 ? this->at(i,j).cols : nelems,
+//                               this->at(i,j).type());
+//        
+//        unsigned int n = 0;
+//        if (dim == 0)
+//        {
+//            for (int r = 0; r < this->at(i,j).rows; r++)
+//            {
+//                unsigned char included = (logicals.rows > 1) ? logicals.at<int>(r,0) : logicals.at<int>(0,r);
+//                if (included) this->at(i,j).row(r).copyTo(cellPartition.row(n++));
+//            }
+//        }
+//        else
+//        {
+//            for (int c = 0; c < this->at(i,j).cols; c++)
+//            {
+//                unsigned char included = (logicals.rows > 1) ? logicals.at<int>(c,0) : logicals.at<int>(0,c);
+//                if (included) this->at(i,j).col(c).copyTo(cellPartition.col(n++));
+//            }
+//        }
+//        
+//        indexed.assign(cellPartition, i, j);
+//    }
+//
+//	return indexed;
+//}
+//
+//void GridMat::setIndexedCellElementsLogically(GridMat& grid, cv::Mat logicals, int dim)
+//{
+//    int nelems = (logicals.rows > 1) ? logicals.rows : logicals.cols;
+//    for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.crows(); j++)
+//    {
+//        for (int k = 0; k < nelems; k++)
+//        {
+//            unsigned char included = (logicals.rows > 1) ? logicals.at<int>(k,0) : logicals.at<int>(0,k);
+//            if (included)
+//            {
+//                if (dim == 0)
+//                {
+//                    cv::Mat row = grid.at(i,j).row(k);
+//                    this->vconcat(row, i, j);
+//                }
+//                else
+//                {
+//                    cv::Mat col = grid.at(i,j).col(k);
+//                    this->vconcat(col, i, j);
+//                }
+////                if (dim == 0)
+////                    grid.at(i,j).row(n++).copyTo(this->at(i,j).row(k));
+////                else
+////                    grid.at(i,j).col(n++).copyTo(this->at(i,j).col(k));
+//            }
+//        }
+//    }
+//}
+//
+//GridMat GridMat::getIndexedCellElementsPositionally(cv::Mat indices, int dim)
+//{
+//    GridMat indexed (crows(), ccols());
+//    
+//    int nelems = (indices.rows > 1) ? indices.rows : indices.cols;
+//    
+//    for (int i = 0; i < crows(); i++) for (int j = 0; j < crows(); j++)
+//    {
+//        cv::Mat cellPartition (dim == 0 ? nelems : this->at(i,j).rows,
+//                               dim == 0 ? this->at(i,j).cols : nelems,
+//                               this->at(i,j).type());
+//        
+//        for (int k = 0; k < nelems; k++)
+//        {
+//            unsigned int idx = (indices.rows > 1) ? indices.at<int>(k,0) : indices.at<int>(0,k);
+//            if (dim == 0) // row indexing
+//                this->at(i,j).row(idx).copyTo(cellPartition.row(k));
+//            else // column indexing
+//                this->at(i,j).col(idx).copyTo(cellPartition.col(k));
+//        }
+//        
+//        indexed.assign(cellPartition, i, j);
+//    }
+//    
+//    return indexed;
+//}
+//
+//void GridMat::setIndexedCellElementsPositionally(GridMat& grid, cv::Mat indices, int dim)
+//{
+//    GridMat indexed (crows(), ccols());
+//    
+//    int nelems = (indices.rows > 1) ? indices.rows : indices.cols;
+//    
+//    for (int i = 0; i < crows(); i++) for (int j = 0; j < crows(); j++)
+//    {
+//        for (int k = 0; k < nelems; k++)
+//        {
+//            unsigned int idx = (indices.rows > 1) ? indices.at<int>(k,0) : indices.at<int>(0,k);
+//            if (dim == 0) // row indexing
+//                grid.at(i,j).row(k).copyTo(this->at(i,j).row(idx));
+//            else // column indexing
+//                grid.at(i,j).col(k).copyTo(this->at(i,j).col(idx));
+//        }
 //    }
 //}
 
@@ -603,25 +586,25 @@ GridMat GridMat::normalize()
     return g;
 }
 
-GridMat GridMat::vget(cv::Mat indices, bool logical)
-{
-    return this->getIndexedCellElements(indices, 0, logical);
-}
-
-GridMat GridMat::hget(cv::Mat indices, bool logical)
-{
-    return this->getIndexedCellElements(indices, 1, logical);
-}
-
-void GridMat::vset(GridMat grid, cv::Mat indices, bool logical)
-{
-    this->setIndexedCellElements(grid, indices, 0, logical);
-}
-
-void GridMat::hset(GridMat grid, cv::Mat indices, bool logical)
-{
-    this->setIndexedCellElements(grid, indices, 1, logical);
-}
+//GridMat GridMat::vget(cv::Mat indices, bool logical)
+//{
+//    return this->getIndexedCellElements(indices, 0, logical);
+//}
+//
+//GridMat GridMat::hget(cv::Mat indices, bool logical)
+//{
+//    return this->getIndexedCellElements(indices, 1, logical);
+//}
+//
+//void GridMat::vset(GridMat grid, cv::Mat indices, bool logical)
+//{
+//    this->setIndexedCellElements(grid, indices, 0, logical);
+//}
+//
+//void GridMat::hset(GridMat grid, cv::Mat indices, bool logical)
+//{
+//    this->setIndexedCellElements(grid, indices, 1, logical);
+//}
 
 
 bool GridMat::isEmpty()

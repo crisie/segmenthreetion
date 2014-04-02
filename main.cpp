@@ -303,18 +303,16 @@ int main(int argc, const char* argv[])
     
     SimpleFusionPrediction<cv::EM> simpleFusion;
     
-    simpleFusion.setModalitiesPredictions(predictions);
-    simpleFusion.setModalitiesLoglikelihoods(loglikelihoods);
+    simpleFusion.setData(loglikelihoods, predictions);
     
-    simpleFusion.predict(simpleFusionPredictions);
+    simpleFusion.compute(simpleFusionPredictions);
     
     // SVM
     GridMat svmFusionPredictions;
     
     ClassifierFusionPrediction<cv::EM,CvSVM> svmFusion;
     
-    svmFusion.setModalitiesPredictions(predictions);
-    svmFusion.setModalitiesLoglikelihoods(loglikelihoods);
+    svmFusion.setData(loglikelihoods, predictions);
     
     vector<float> cs, gammas;
     cs += 1, 10, 100, 1000; // example
@@ -322,7 +320,7 @@ int main(int argc, const char* argv[])
     svmFusion.setCs(cs);
     svmFusion.setGammas(gammas);
     
-    svmFusion.predict(svmFusionPredictions);
+    svmFusion.compute(svmFusionPredictions);
     
 //    //
 //    // Map writing

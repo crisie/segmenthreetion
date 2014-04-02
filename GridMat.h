@@ -31,7 +31,7 @@ public:
     GridMat(unsigned int hp, unsigned int wp, unsigned int helems, unsigned int welems, int type = CV_32FC1);
     GridMat(cv::Mat mat, unsigned int hp = 2, unsigned int wp = 2);
     GridMat(const GridMat& other);
-    GridMat(GridMat& other, cv::Mat indices, int dim = 0, bool logical = true);
+//    GridMat(GridMat& other, cv::Mat indices, int dim = 0, bool logical = true);
     GridMat(GridMat& other, GridMat indices, int k, bool inverse = false); // logical indexing
     GridMat(GridMat& other, GridMat indices, bool logical = true); // positionally indexing
 
@@ -79,11 +79,11 @@ public:
     void set(GridMat src, GridMat indices, int k);
     void copyTo(GridMat& dst, GridMat indices, int k);
 
-    GridMat vget(cv::Mat indices, bool logical = true);
-    GridMat hget(cv::Mat indices, bool logical = true);
-    
-    void vset(GridMat grid, cv::Mat indices, bool logical = true);
-    void hset(GridMat grid, cv::Mat indices, bool logical = true);
+//    GridMat vget(cv::Mat indices, bool logical = true);
+//    GridMat hget(cv::Mat indices, bool logical = true);
+//    
+//    void vset(GridMat grid, cv::Mat indices, bool logical = true);
+//    void hset(GridMat grid, cv::Mat indices, bool logical = true);
     
     unsigned int ccols() const;
     unsigned int crows() const;
@@ -130,14 +130,14 @@ private:
 
     bool accessible(unsigned int i, unsigned int j) const;
     
-    GridMat getIndexedCellElements(cv::Mat indices, int dim = 0, bool logical = true);
-    void setIndexedCellElements(GridMat& grid, cv::Mat indices, int dim = 0, bool logical = true);
-    
-    GridMat getIndexedCellElementsLogically(cv::Mat logicals, int dim = 0);
-    void setIndexedCellElementsLogically(GridMat& grid, cv::Mat logicals, int dim = 0);
-    
-    GridMat getIndexedCellElementsPositionally(cv::Mat indices, int dim = 0);
-    void setIndexedCellElementsPositionally(GridMat& grid, cv::Mat indices, int dim = 0);
+//    GridMat getIndexedCellElements(cv::Mat indices, int dim = 0, bool logical = true);
+//    void setIndexedCellElements(GridMat& grid, cv::Mat indices, int dim = 0, bool logical = true);
+//    
+//    GridMat getIndexedCellElementsLogically(cv::Mat logicals, int dim = 0);
+//    void setIndexedCellElementsLogically(GridMat& grid, cv::Mat logicals, int dim = 0);
+//    
+//    GridMat getIndexedCellElementsPositionally(cv::Mat indices, int dim = 0);
+//    void setIndexedCellElementsPositionally(GridMat& grid, cv::Mat indices, int dim = 0);
 };
 
 #endif /* defined(__Segmenthreetion__GridMat__) */

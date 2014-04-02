@@ -38,7 +38,7 @@ public:
     void setData(vector<GridMat> loglikelihoods, vector<GridMat> predictions);
     // TODO: set the loglikelihoods' thresholds
     
-    void predict(GridMat& predictions);
+    void compute(GridMat& gpredictions);
     
 private:
     
@@ -117,7 +117,7 @@ public:
     template<typename T>
     void modelSelection(cv::Mat data, cv::Mat responses, vector<vector<T> > params, cv::Mat& goodnesses);
     
-    void compute(cv::Mat& predictions);
+    void compute(GridMat& gpredictions);
 
 private:
     
