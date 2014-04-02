@@ -53,8 +53,6 @@ void MotionFeatureExtractor::describe(ModalityGridData& data)
                 tmpCellMask.convertTo(cellMask, CV_8UC1);
                 
                 describeMotionOrientedFlow(cell, cellMask, mOrientedFlowHist);
-    
-                data.setValidness(cv::checkRange(mOrientedFlowHist), i, j, k);
             }
             
             data.addDescriptor(mOrientedFlowHist, i, j); // row in a matrix of descriptors

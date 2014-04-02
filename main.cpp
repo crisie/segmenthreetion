@@ -259,12 +259,6 @@ int main(int argc, const char* argv[])
 ////    dMockData.loadDescription(dataPath, sequences, "Depth.yml");
 //    tMockData.loadDescription(dataPath, sequences, "Thermal.yml");
 //    
-//    // Important piece of code
-//    vector<ModalityGridData*> mgds;
-//    mgds += &cMockData, &mMockData, /*&dMockData,*/ &tMockData;
-//    reader.agreement(mgds);
-//    
-//    
 //    //
 //    // Prediction
 //    //

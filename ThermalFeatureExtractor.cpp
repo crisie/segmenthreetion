@@ -66,8 +66,6 @@ void ThermalFeatureExtractor::describe(ModalityGridData& data)
                 
                 // Join both descriptors in a row
                 hconcat(tIntensitiesHist, tGradOrientsHist, tHist);
-
-                data.setValidness(cv::checkRange(tHist), i, j, k);
             }
             
             data.addDescriptor(tHist, i, j); // row in a matrix of descriptors

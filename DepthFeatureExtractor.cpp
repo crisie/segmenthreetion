@@ -63,8 +63,6 @@ void DepthFeatureExtractor::describe(ModalityGridData& data)
                 // Normals orientation descriptor
                 
                 describeNormalsOrients(cell, cellMask, dNormalsOrientsHist);
-                
-                data.setValidness(cv::checkRange(dNormalsOrientsHist), i, j, k);
             }
             
             data.addDescriptor(dNormalsOrientsHist, i, j); // row in a matrix of descriptors

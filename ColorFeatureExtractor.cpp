@@ -200,8 +200,6 @@ void ColorFeatureExtractor::describe(ModalityGridData& data)
                 
                 //HOG descriptor
                 describeColorHog(cell, cellMask, cOrientedGradsHist);
-                
-                data.setValidness(cv::checkRange(cOrientedGradsHist), i, j, k);
             }
             
             data.addDescriptor(cOrientedGradsHist, i, j); // row in a matrix of descriptors
