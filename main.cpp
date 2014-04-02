@@ -316,8 +316,8 @@ int main(int argc, const char* argv[])
     svmFusion.setResponses(cv::Mat()/* TODO: get groundturth values */);
     
     vector<float> cs, gammas;
-    cs += 1, 10, 100, 1000; // example
-    gammas += 0.0001, 0.001, 0.01, 0.1, 1, 10;
+    cs += 1, 10, 100; // example
+    gammas += 0.0001, 0.01, 1;
     svmFusion.setCs(cs);
     svmFusion.setGammas(gammas);
     

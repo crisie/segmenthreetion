@@ -31,9 +31,8 @@ public:
     GridMat(unsigned int hp, unsigned int wp, unsigned int helems, unsigned int welems, int type = CV_32FC1);
     GridMat(cv::Mat mat, unsigned int hp = 2, unsigned int wp = 2);
     GridMat(const GridMat& other);
-//    GridMat(GridMat& other, cv::Mat indices, int dim = 0, bool logical = true);
-    GridMat(GridMat& other, GridMat indices, int k, bool inverse = false); // logical indexing
-    GridMat(GridMat& other, GridMat indices, bool logical = true); // positionally indexing
+    GridMat(GridMat& other, GridMat indices, int k, bool inverse = false);
+    GridMat(GridMat& other, GridMat indices, bool logical = true);
 
     void create(unsigned int hp = 2, unsigned int wp = 2);
     
@@ -58,6 +57,8 @@ public:
     void set(GridMat& other);
     
     template<typename T>
+    void setTo(T value);
+    template<typename T>
     void setTo(T value, unsigned int i, unsigned int j);
     template<typename T>
     void setTo(T value, unsigned int i, unsigned int j, cv::Mat mask);
@@ -75,9 +76,45 @@ public:
     
     void normalize(GridMat& g); // at cell level
     GridMat normalize(); // at cell level
+    void standardize(GridMat& g);
+    GridMat standardize();
     
-    void set(GridMat src, GridMat indices, int k);
-    void copyTo(GridMat& dst, GridMat indices, int k);
+    void set(GridMat src, GridMat indices, int k); // size(src) < size(dst)
+    void index(GridMat& dst, GridMat indices, int k); // size(src) > size(dst)
+    void copyTo(GridMat& dst, GridMat indices); // size(src) == src(dst)
+    void copyTo(GridMat& dst, GridMat indices, int k); // size(src) == size(dst)
+    
+    GridMat operator<(GridMat& other);
+    GridMat operator<=(GridMat& other);
+    GridMat operator>(GridMat& other);
+    GridMat operator>=(GridMat& other);
+    GridMat operator==(GridMat& other);
+    GridMat operator!=(GridMat& other);
+    GridMat operator+(GridMat& other);
+    GridMat operator-(GridMat& other);
+    GridMat operator*(GridMat& other);
+    GridMat operator/(GridMat& other);
+    
+    template<typename T>
+    GridMat operator<(T value);
+    template<typename T>
+    GridMat operator<=(T value);
+    template<typename T>
+    GridMat operator>(T value);
+    template<typename T>
+    GridMat operator>=(T value);
+    template<typename T>
+    GridMat operator==(T value);
+    template<typename T>
+    GridMat operator!=(T value);
+    template<typename T>
+    GridMat operator+(T value);
+    template<typename T>
+    GridMat operator-(T value);
+    template<typename T>
+    GridMat operator*(T value);
+    template<typename T>
+    GridMat operator/(T value);
 
 //    GridMat vget(cv::Mat indices, bool logical = true);
 //    GridMat hget(cv::Mat indices, bool logical = true);
@@ -98,10 +135,19 @@ public:
     void hserial(cv::Mat& serial);
     void vserial(cv::Mat& serial);
     
+    // Cells' collapse functions. Each cell into a row or a column.
     void mean(GridMat& gmean, int dim = 0);
     void max(GridMat& gmax, int dim = 0);
     void min(GridMat& gmin, int dim = 0);
     void sum(GridMat& gsum, int dim = 0);
+    
+    // Grid's collapse functions. The grid is turnet into a single-grid (Mat)
+    cv::Mat accumulate();
+    void accumulate(cv::Mat& accumulation);
+    cv::Mat average();
+    void average(cv::Mat& average);
+    void biaccumulate(GridMat g, int threshold, cv::Mat& acc1, cv::Mat& acc2);
+    void biaverage(GridMat g, int threshold, cv::Mat& acc1, cv::Mat& acc2);
     
     template<typename T> cv::Mat findNonZero();
     

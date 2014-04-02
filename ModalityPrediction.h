@@ -69,40 +69,16 @@ public:
                         vector<vector<T> > params,
                         GridMat& goodnesses);
     
-    void compute(GridMat& predictions, GridMat& loglikelihoods, bool normalizedLoglikelihoods = true);
+    void compute(GridMat& predictions, GridMat& loglikelihoods, GridMat& distsToMargin);
     
 private:
+    
+    void computeGridPredictionsConsensus(GridMat individualPredictions, GridMat distsToMargin, GridMat& consensusPredictions);
+    
+    // Attributes
+    
     vector<int> m_nmixtures;
     vector<int> m_logthresholds;
 };
-
-
-template<>
-class ModalityPrediction<CvSVM> : public ModalityPredictionBase<CvSVM>
-{
-public:
-    ModalityPrediction();
-    
-    void setSvmType(int type);
-    void setKernelType(int type);
-    
-    void setC(float c);
-    void setCs(vector<float> c);
-    
-    void setGamma(float gamma);
-    void setGammas(vector<float> gammas);
-    
-    template<typename T>
-    void modelSelection(GridMat descriptors, GridMat tags,
-                        vector<vector<T> > params,
-                        GridMat& goodnesses);
-    
-    void compute(GridMat& predictions);
-        
-private:
-    vector<float> m_cs;
-    vector<float> m_gammas;
-};
-
 
 #endif /* defined(__segmenthreetion__ModalityPrediction__) */

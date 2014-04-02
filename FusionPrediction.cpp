@@ -11,7 +11,7 @@
 
 // Instantiation of template member functions
 // -----------------------------------------------------------------------------
-template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setData(vector<GridMat> loglikelihoods, vector<GridMat> predictions);
+template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setData(vector<ModalityGridData>&, vector<GridMat> predictions, vector<GridMat> loglikelihoods, vector<GridMat> distsToMargin);
 
 template void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection<int>(cv::Mat data, cv::Mat responses, vector<vector<int> > params, cv::Mat& goodnesses);
 template void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection<float>(cv::Mat data, cv::Mat responses, vector<vector<float> > params, cv::Mat& goodnesses);
@@ -28,15 +28,27 @@ SimpleFusionPrediction<cv::EM>::SimpleFusionPrediction()
     
 }
 
-void SimpleFusionPrediction<cv::EM>::setData(vector<GridMat> loglikelihoods, vector<GridMat> predictions)
+void SimpleFusionPrediction<cv::EM>::setData(vector<ModalityGridData>& mgds, vector<GridMat> predictions, vector<GridMat> loglikelihoods, vector<GridMat> distsToMargin)
 {
-    m_loglikelihoods = loglikelihoods;
+    m_mgds = mgds;
     m_predictions = predictions;
+    m_loglikelihoods = loglikelihoods;
+    m_distsToMargin = distsToMargin;
 }
 
 void SimpleFusionPrediction<cv::EM>::compute(GridMat& gpredictions)
 {
-    // TODO: all the stuff
+    // Concatenate along the horizontal direction all the modalities' predictions in a GridMat,
+    // and the same for the distsToMargin
+    
+    GridMat allPredictions, allDistsToMargin;
+    
+    for (int i = 0; i < m_mgds.size(); i++)
+    {
+        allPredictions.hconcat(m_predictions[i]);
+        allDistsToMargin.hconcat(m_distsToMargin[i]);
+    }
+    
     // ...
 }
 
@@ -52,10 +64,12 @@ ClassifierFusionPredictionBase<cv::EM, ClassifierT>::ClassifierFusionPredictionB
 }
 
 template<typename ClassifierT>
-void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setData(vector<GridMat> loglikelihoods, vector<GridMat> predictions)
+void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setData(vector<ModalityGridData>& mgds, vector<GridMat> predictions, vector<GridMat> loglikelihoods, vector<GridMat> distsToMargin)
 {
-    m_loglikelihoods = loglikelihoods;
+    m_mgds = mgds;
     m_predictions = predictions;
+    m_loglikelihoods = loglikelihoods;
+    m_distsToMargin = distsToMargin;
 }
 
 template<typename ClassifierT>
@@ -170,6 +184,9 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(GridMat& gpredictions)
         cv::Mat trResponses = cvx::indexMat(m_responses, partitions != k);
         cv::Mat teResponses = cvx::indexMat(m_responses, partitions == k);
         
+        cv::Mat validTrData = cvx::indexMat(trData, trResponses >= 0); // -1 labels not used in training
+        cv::Mat validTrResponses = cvx::indexMat(trResponses, trResponses >= 0);
+        
         cv::Mat goodnesses;
         std::stringstream ss;
         ss << "svm_goodnesses_" << k << ".yml" << endl;
@@ -187,16 +204,16 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(GridMat& gpredictions)
         
         CvSVMParams params (CvSVM::C_SVC, m_kernelType, 0, bestGamma, 0, bestC, 0, 0, 0,
                             cvTermCriteria( CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 1000, FLT_EPSILON ));
-        m_pClassifier->train(trData, trResponses, cv::Mat(), cv::Mat(), params);
+        m_pClassifier->train(validTrData, validTrResponses, cv::Mat(), cv::Mat(), params);
         
         // Prediction phase
         cv::Mat tePredictions;
         m_pClassifier->predict(teData, tePredictions);
         
-        cvx::copyMat(tePredictions, predictions, partitions == k);
+        cvx::setMat(tePredictions, predictions, partitions == k);
     }
     
-    
+    // Mat to GridMat
     gpredictions.setTo(predictions);
 }
 

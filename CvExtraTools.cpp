@@ -52,7 +52,7 @@ void cvx::setMatPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indexes)
     }
 }
 
-void cvx::copyMat(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical)
+void cvx::indexMat(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical)
 {
     if (logical)
         setMatLogically(src, dst, indices);
@@ -60,7 +60,7 @@ void cvx::copyMat(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical)
         setMatPositionally(src, dst, indices);
 }
 
-void cvx::copyMatLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals)
+void cvx::indexMatLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals)
 {
     if (dst.empty())
         dst.create(src.rows, src.cols, src.type());
@@ -77,7 +77,7 @@ void cvx::copyMatLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals)
     }
 }
 
-void cvx::copyMatPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indexes)
+void cvx::indexMatPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indexes)
 {
     if (dst.empty())
         dst.create(src.rows, src.cols, src.type());
@@ -95,7 +95,7 @@ cv::Mat cvx::indexMat(cv::Mat src, cv::Mat indices, bool logical)
 {
     cv::Mat mat;
     
-    cvx::copyMat(src, mat, indices, logical);
+    cvx::indexMat(src, mat, indices, logical);
 
     return mat;
 }

@@ -25,9 +25,9 @@ namespace cvx {
     void setMatPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indices);
     
     // src > dst, indices index src
-    void copyMat(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical = true);
-    void copyMatLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals);
-    void copyMatPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indices);
+    void indexMat(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical = true);
+    void indexMatLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals);
+    void indexMatPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indices);
     cv::Mat indexMat(cv::Mat src, cv::Mat indices, bool logical = true);
     //    cv::Mat indexMat(cv::Mat src, cv::Mat indices, bool logical = true); // alternative implementation to copyMat
     //    void indexMat(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical = true);

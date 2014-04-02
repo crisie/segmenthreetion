@@ -35,8 +35,7 @@ public:
     
     SimpleFusionPrediction();
     
-    void setData(vector<GridMat> loglikelihoods, vector<GridMat> predictions);
-    // TODO: set the loglikelihoods' thresholds
+    void setData(vector<ModalityGridData>&, vector<GridMat> predictions, vector<GridMat> loglikelihoods, vector<GridMat> distsToMargin);
     
     void compute(GridMat& gpredictions);
     
@@ -44,8 +43,10 @@ private:
     
     // Attributes
     
-    vector<GridMat> m_loglikelihoods;
+    vector<ModalityGridData> m_mgds;
     vector<GridMat> m_predictions;
+    vector<GridMat> m_loglikelihoods;
+    vector<GridMat> m_distsToMargin;
 };
 
 
@@ -68,7 +69,7 @@ public:
     
     ClassifierFusionPredictionBase();
     
-    void setData(vector<GridMat> loglikelihoods, vector<GridMat> predictions);
+    void setData(vector<ModalityGridData>&, vector<GridMat> predictions, vector<GridMat> loglikelihoods, vector<GridMat> distsToMargin);
     void setResponses(cv::Mat responses);
     
     void setModelSelection(int k, bool best);
@@ -80,8 +81,10 @@ protected:
 
     // Attributes
     
-    vector<GridMat> m_loglikelihoods;
+    vector<ModalityGridData> m_mgds;
     vector<GridMat> m_predictions;
+    vector<GridMat> m_loglikelihoods;
+    vector<GridMat> m_distsToMargin;
     
     cv::Mat m_data; // input data
     cv::Mat m_responses; // output labels

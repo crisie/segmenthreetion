@@ -59,7 +59,7 @@ public:
     void setLoglikelihoodThreshold(cv::Mat loglikes);
     
     void train(GridMat data);
-    void predict(GridMat data, GridMat& predictions, GridMat& loglikelihoods);
+    void predict(GridMat data, GridMat& predictions, GridMat& loglikelihoods, GridMat& distsToMargin);
     
 private:
     cv::Mat m_nmixtures;

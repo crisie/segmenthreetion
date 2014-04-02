@@ -87,7 +87,10 @@ void GridPredictor<cv::EM>::train(GridMat data)
     }
 }
 
-void GridPredictor<cv::EM>::predict(GridMat data, GridMat& predictions, GridMat& loglikelihoods)
+/*
+ * Returns predictions of the cells, the normalized loglikelihoods [0,1]
+ */
+void GridPredictor<cv::EM>::predict(GridMat data, GridMat& predictions, GridMat& loglikelihoods, GridMat& distsToMargin)
 {
     for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
     {
@@ -108,7 +111,17 @@ void GridPredictor<cv::EM>::predict(GridMat data, GridMat& predictions, GridMat&
         cv::Mat cellPredictions;
         cv::threshold(normCellLoglikelihoods, cellPredictions, m_logthreshold.at<float>(i,j), 1, CV_THRESH_BINARY);
 
-        loglikelihoods.assign(normCellLoglikelihoods, i, j);
+        // Center the values around the loglikelihood threshold, so as to have
+        // subjects' margin > 0 and objects' margin < 0. And scale to take into
+        // accound the variance of the dists' sample
+        cv::Mat diffs = normCellLoglikelihoods - m_logthreshold.at<float>(i,j); // center
+        cv::Mat powers;
+        cv::pow(diffs, 2, powers);
+        float scale = sqrt(cv::sum(powers).val[0] / normCellLoglikelihoods.rows);
+        cv::Mat cellsDistsToMargin = diffs / scale; // scale
+        
         predictions.assign(cellPredictions, i, j);
+        loglikelihoods.assign(normCellLoglikelihoods, i, j);
+        distsToMargin.assign(cellsDistsToMargin, i, j);
     }
 }

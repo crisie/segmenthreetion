@@ -98,15 +98,22 @@ void ModalityPrediction<cv::EM>::setLoglikelihoodThresholds(vector<int> t)
     m_logthresholds = t;
 }
 
-void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikelihoods, bool normalizedLooglikelihoods)
+void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikelihoods, GridMat& distsToMargin)
 {
-    GridMat tags;
-    tags.setTo(m_data.getTagsMat());
-    GridMat descriptors = m_data.getDescriptors();
-    GridMat validnesses = m_data.getValidnesses();
+    cv::Mat tags = m_data.getTagsMat();
     
-    GridMat partitions;
-    cvpartition(tags, m_testK, m_seed, partitions);
+    cv::Mat zeros = cv::Mat::zeros(tags.rows, tags.cols, tags.type());
+    cv::Mat ones = cv::Mat::ones(tags.rows, tags.cols, tags.type());
+    cv::Mat infinities (tags.rows, tags.cols, cv::DataType<float>::type);
+    infinities.setTo(std::numeric_limits<float>::max());
+    
+    GridMat gtags;
+    gtags.setTo(tags);
+    GridMat gdescriptors = m_data.getDescriptors();
+    GridMat gvalidnesses = m_data.getValidnesses();
+    
+    GridMat gpartitions;
+    cvpartition(gtags, m_testK, m_seed, gpartitions);
     
     vector<GridPredictor<cv::EM> > predictors;
     
@@ -126,9 +133,9 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
         cout << k << " ";
         
         // Index the k-th training
-        GridMat validnessesTrFold (validnesses, partitions, k, true);
-        GridMat descriptorsTrFold (descriptors, partitions, k, true);
-        GridMat tagsTrFold (tags, partitions, k, true);
+        GridMat validnessesTrFold (gvalidnesses, gpartitions, k, true);
+        GridMat descriptorsTrFold (gdescriptors, gpartitions, k, true);
+        GridMat tagsTrFold (gtags, gpartitions, k, true);
         
         // Within the k-th training partition,
         // remove the nonvalid descriptors (validness == 0) and associated tags
@@ -147,17 +154,23 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
     
     cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
     
+    GridMat individualPredictions;
+    individualPredictions.setTo(zeros);
+    
+    loglikelihoods.setTo(zeros);
+    distsToMargin.setTo(infinities);
+    
     for (int k = 0; k < m_testK; k++)
     {
         cout << k << " ";
         
         // Index the k-th training and test partitions
-        GridMat descriptorsTrFold (descriptors, partitions, k, true);
-        GridMat descriptorsTeFold (descriptors, partitions, k);
-        GridMat validnessesTrFold (validnesses, partitions, k, true);
-        GridMat validnessesTeFold (validnesses, partitions, k);
-        GridMat tagsTrFold (tags, partitions, k, true);
-        GridMat tagsTeFold (tags, partitions, k);
+        GridMat descriptorsTrFold (gdescriptors, gpartitions, k, true);
+        GridMat descriptorsTeFold (gdescriptors, gpartitions, k);
+        GridMat validnessesTrFold (gvalidnesses, gpartitions, k, true);
+        GridMat validnessesTeFold (gvalidnesses, gpartitions, k);
+        GridMat tagsTrFold (gtags, gpartitions, k, true);
+        GridMat tagsTeFold (gtags, gpartitions, k);
         
         // Within the k-th training partition,
         // remove the nonvalid descriptors (validness == 0) and associated tags
@@ -195,16 +208,17 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
         // remove the nonvalid descriptors (validness == 0) and associated tags
         GridMat validDescriptorsTeFold = descriptorsTeFold.convertToDense(validnessesTeFold);
         
-        GridMat validPredictionsTeFold, validLoglikelihoodsTeFold;
-        predictor.predict(validDescriptorsTeFold, validPredictionsTeFold, validLoglikelihoodsTeFold);
+        GridMat validPredictionsTeFold, validLoglikelihoodsTeFold, validDistsToMargin;
+        predictor.predict(validDescriptorsTeFold, validPredictionsTeFold, validLoglikelihoodsTeFold, validDistsToMargin);
 
-        predictions.set(validPredictionsTeFold.convertToSparse(validnessesTeFold), partitions, k);
-        loglikelihoods.set(validLoglikelihoodsTeFold.convertToSparse(validnessesTeFold), partitions, k);
+        individualPredictions.set(validPredictionsTeFold.convertToSparse(validnessesTeFold), gpartitions, k);
+        loglikelihoods.set(validLoglikelihoodsTeFold.convertToSparse(validnessesTeFold), gpartitions, k);
+        distsToMargin.set(validDistsToMargin.convertToSparse(validnessesTeFold), gpartitions, k);
     }
     cout << endl;
     
-    if (normalizedLooglikelihoods)
-        loglikelihoods.normalize(loglikelihoods);
+    // Grid cells' consensus
+    computeGridPredictionsConsensus(individualPredictions, distsToMargin, predictions); // predictions are consensued
 }
 
 template<typename T>
@@ -262,8 +276,8 @@ void ModalityPrediction<cv::EM>::modelSelection(GridMat descriptors, GridMat tag
             predictor.train(descriptorsSubjTr);
             
             // Test
-            GridMat predictionsVal, loglikelihoodsVal;
-            predictor.predict(descriptorsSubjObjVal, predictionsVal, loglikelihoodsVal);
+            GridMat predictionsVal, loglikelihoodsVal, distsToMargin;
+            predictor.predict(descriptorsSubjObjVal, predictionsVal, loglikelihoodsVal, distsToMargin);
             
             // Compute an accuracy measure
             cv::Mat accs; // (m_hp * m_wp) accuracies get by params combination in k-th fold
@@ -278,4 +292,43 @@ void ModalityPrediction<cv::EM>::modelSelection(GridMat descriptors, GridMat tag
     cout << ") " << endl;
     
     accuracies.mean(goodnesses, 1);
+}
+
+void ModalityPrediction<cv::EM>::computeGridPredictionsConsensus(GridMat individualPredictions,
+                                                                 GridMat distsToMargin,
+                                                                 GridMat& consensusPredictions)
+{
+    GridMat posDistsToMargin, negDistsToMargin;
+    posDistsToMargin.setTo(0);
+    negDistsToMargin.setTo(0);
+    
+    GridMat negPredictions (individualPredictions == 0);
+    GridMat posPredictions (individualPredictions == 1);
+    
+    distsToMargin.copyTo(negDistsToMargin, negPredictions);
+    distsToMargin.copyTo(posDistsToMargin, posPredictions);
+    
+    cv::Mat avgNegDistsToMargin, avgPosDistsToMargin;
+    
+    cv::divide(negDistsToMargin.accumulate(), negPredictions.accumulate(), avgNegDistsToMargin);
+    cv::divide(posDistsToMargin.accumulate(), posPredictions.accumulate(), avgPosDistsToMargin);
+    
+    consensusPredictions.setTo(avgPosDistsToMargin > cv::abs(avgNegDistsToMargin));
+    
+    
+//    cv::Mat consensus;
+//    consensus.setTo(0);
+//    
+//    cv::Mat votes; // the consensus for a grid takes into account the positive and negative cells' votes
+//    individualPredictions.accumulate(votes); // 0 is object, 1 is subject. The accumulation expresses how many cells vote for subject
+//    
+//    cv::Mat positives = (votes > (m_hp * m_wp) / 2); // if the absolute majority of cells vote for subject, it is subject
+//    ones.copyTo(consensus, positives);
+//    
+//    cv::Mat draws = (votes == (m_hp * m_wp) / 2); // draws must be undrawed by comparing the average dist to margin of the negative cells' votes and the positive cells' votes
+//    cv::Mat negAvgDistToMargin, posAvgDistToMargin;
+//    distsToMargin.standardize().biaverage(predictions, 0, negAvgDistToMargin, posAvgDistToMargin); // two averages, the one of the negative cells' predictions (==0) and the positive cells' predictions (>0);
+//    ones.copyTo(consensusPredictions, posAvgDistToMargin < cv::abs(negAvgDistToMargin));
+//    
+//    predictions.setTo(consensusPredictions)
 }
