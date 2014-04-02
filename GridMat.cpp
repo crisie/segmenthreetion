@@ -130,11 +130,11 @@ GridMat::GridMat(GridMat& other, GridMat indices, int k, bool inverse)
     {
         if (!inverse)
         {
-            cvx::indexMat(other.at(i,j), at(i,j), indices.at(i,j) == k);
+            at(i,j) = cvx::indexMat(other.at(i,j), indices.at(i,j) == k);
         }
         else // inverse indexing: all but k-th index
         {
-            cvx::indexMat(other.at(i,j), at(i,j), indices.at(i,j) != k);
+            at(i,j) = cvx::indexMat(other.at(i,j), indices.at(i,j) != k);
         }
     }
 }
@@ -148,7 +148,7 @@ GridMat::GridMat(GridMat& other, GridMat indices, bool logical)
     
     for (int i = 0; i < m_crows; i++) for (int j = 0; j < m_ccols; j++)
     {
-        cvx::indexMat(other.at(i,j), at(i,j), indices.at(i,j), logical);
+        at(i,j) = cvx::indexMat(other.at(i,j), indices.at(i,j), logical);
     }
 }
 

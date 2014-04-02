@@ -67,12 +67,13 @@ void cvx::copyMatLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals)
     
     bool rowwise = logicals.rows > 1;
     
+    int c = 0;
     for (int i = 0; i < rowwise ? logicals.rows : logicals.cols; i++)
     {
         unsigned char indexed = rowwise ?
         logicals.at<unsigned char>(i,0) : logicals.at<unsigned char>(0,i);
         if (indexed)
-            rowwise ? src.row(i).copyTo(dst.row(i)) : src.col(i).copyTo(dst.col(i));
+            rowwise ? src.row(i).copyTo(dst.row(c++)) : src.col(i).copyTo(dst.col(c++));
     }
 }
 
@@ -86,7 +87,7 @@ void cvx::copyMatPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indexes)
     for (int i = 0; i < rowwise ? indexes.rows : indexes.cols; i++)
     {
         int idx = rowwise ? indexes.at<int>(i,0) : indexes.at<int>(i,0);
-        rowwise ? src.row(idx).copyTo(dst.row(idx)) : src.col(idx).copyTo(dst.col(idx));
+        rowwise ? src.row(idx).copyTo(dst.row(i)) : src.col(idx).copyTo(dst.col(i));
     }
 }
 
@@ -94,65 +95,62 @@ cv::Mat cvx::indexMat(cv::Mat src, cv::Mat indices, bool logical)
 {
     cv::Mat mat;
     
-    if (logical)
-        indexMatLogically(src, mat, indices);
-    else
-        indexMatPositionally(src, mat, indices);
-    
+    cvx::copyMat(src, indices, logical);
+
     return mat;
 }
 
-void cvx::indexMat(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical)
-{
-    if (logical)
-        indexMatLogically(src, dst, indices);
-    else
-        indexMatPositionally(src, dst, indices);
-}
-
-void cvx::indexMatLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals)
-{
-    if (logicals.rows > 1) // row-wise
-        dst.create(0, src.cols, src.type());
-    else // col-wise
-        dst.create(src.rows, 0, src.type());
-    
-    for (int i = 0; i < (logicals.rows > 1 ? logicals.rows : logicals.cols); i++)
-    {
-        if (logicals.rows > 1)
-        {
-            if (logicals.at<unsigned char>(i,0))
-            {
-                dst.push_back(src.row(i));
-            }
-        }
-        else
-        {
-            if (logicals.at<unsigned char>(0,i))
-                dst.push_back(src.col(i));
-        }
-    }
-}
-
-void cvx::indexMatPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indices)
-{
-    dst.release();
-    
-    if (indices.rows > 1) // row-wise
-        dst.create(indices.rows, src.cols, src.type());
-    else // col-wise
-        dst.create(src.rows, indices.cols, src.type());
-    
-    for (int i = 0; i < (indices.rows > 1 ? indices.rows : indices.cols); i++)
-    {
-        int idx = indices.rows > 1 ? indices.at<int>(i,0) : indices.at<int>(0,i);
-        
-        if (indices.rows > 1)
-            src.row(idx).copyTo(dst.row(i));
-        else
-            src.col(idx).copyTo(dst.col(i));
-    }
-}
+//void cvx::indexMat(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical)
+//{
+//    if (logical)
+//        indexMatLogically(src, dst, indices);
+//    else
+//        indexMatPositionally(src, dst, indices);
+//}
+//
+//void cvx::indexMatLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals)
+//{
+//    if (logicals.rows > 1) // row-wise
+//        dst.create(0, src.cols, src.type());
+//    else // col-wise
+//        dst.create(src.rows, 0, src.type());
+//
+//    for (int i = 0; i < (logicals.rows > 1 ? logicals.rows : logicals.cols); i++)
+//    {
+//        if (logicals.rows > 1)
+//        {
+//            if (logicals.at<unsigned char>(i,0))
+//            {
+//                dst.push_back(src.row(i));
+//            }
+//        }
+//        else
+//        {
+//            if (logicals.at<unsigned char>(0,i))
+//                dst.push_back(src.col(i));
+//        }
+//    }
+//}
+//
+//void cvx::indexMatPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indices)
+//{
+//    dst.release();
+//
+//    if (indices.rows > 1) // row-wise
+//        dst.create(indices.rows, src.cols, src.type());
+//    else // col-wise
+//        dst.create(src.rows, indices.cols, src.type());
+//
+//    for (int i = 0; i < (indices.rows > 1 ? indices.rows : indices.cols); i++)
+//    {
+//        int idx = indices.rows > 1 ? indices.at<int>(i,0) : indices.at<int>(0,i);
+//
+//        if (indices.rows > 1)
+//            src.row(idx).copyTo(dst.row(i));
+//        else
+//            src.col(idx).copyTo(dst.col(i));
+//    }
+//}
 
 void cvx::hmean(cv::Mat src, cv::Mat& mean)
 {
