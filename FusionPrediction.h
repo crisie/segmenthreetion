@@ -114,7 +114,7 @@ public:
     void setCs(vector<float> cs);
     void setGammas(vector<float> gammas);
     
-    void predict(GridMat& predictions);
+    void compute(GridMat& predictions);
 
 private:
     

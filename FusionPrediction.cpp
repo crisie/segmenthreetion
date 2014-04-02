@@ -120,14 +120,15 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::setGammas(vector<float> gammas)
     m_gammas = gammas;
 }
 
-void ClassifierFusionPrediction<cv::EM,CvSVM>::predict(GridMat &predictions)
+void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(GridMat &predictions)
 {
     formatData();
     
     // Prepare parameters' combinations
     vector<vector<float> > params, expandedParameters;
     params.push_back(m_cs);
-    params.push_back(m_gammas);
+    if (m_kernelType == CvSVM::RBF)
+        params.push_back(m_gammas);
     
     // create a list of parameters' variations
     expandParameters(params, expandedParameters);
