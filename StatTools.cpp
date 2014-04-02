@@ -15,6 +15,23 @@
 template void variate<int>(vector<vector<int > > list, vector<vector<int > >& variations);
 template void variate<float>(vector<vector<float > > list, vector<vector<float > >& variations);
 template void variate<double>(vector<vector<double > > list, vector<vector<double > >& variations);
+
+template void expandParameters<int>(vector<vector<int> > params, vector<vector<int> >& expandedParams);
+template void expandParameters<float>(vector<vector<float> > params, vector<vector<float> >& expandedParams);
+template void expandParameters<double>(vector<vector<double> > params, vector<vector<double> >& expandedParams);
+
+template void expandParameters<int>(vector<vector<int> > params, int ncells, vector<vector<int> >& expandedParams);
+template void expandParameters<float>(vector<vector<float> > params, int ncells, vector<vector<float> >& expandedParams);
+template void expandParameters<double>(vector<vector<double> > params, int ncells, vector<vector<double> >& expandedParams);
+
+template void selectParameterCombination<int>(vector<vector<int> > expandedParams, int hp, int wp, int nparams, int idx, vector<cv::Mat>& selectedParams);
+template void selectParameterCombination<float>(vector<vector<float> > expandedParams, int hp, int wp, int nparams, int idx, vector<cv::Mat>& selectedParams);
+template void selectParameterCombination<double>(vector<vector<double> > expandedParams, int hp, int wp, int nparams, int idx, vector<cv::Mat>& selectedParams);
+
+template void selectBestParameterCombination<int>(vector<vector<int> > expandedParams, int hp, int wp, int nparams, GridMat goodnesses, vector<cv::Mat>& selectedParams);
+template void selectBestParameterCombination<float>(vector<vector<float> > expandedParams, int hp, int wp, int nparams, GridMat goodnesses, vector<cv::Mat>& selectedParams);
+template void selectBestParameterCombination<double>(vector<vector<double> > expandedParams, int hp, int wp, int nparams, GridMat goodnesses, vector<cv::Mat>& selectedParams);
+
 // -----------------------------------------------------------------------------
 
 
@@ -231,4 +248,153 @@ void _variate(vector<vector<T > > list, int idx, vector<T> v, vector<vector<T > 
         }
     }
     
+}
+
+
+template<typename T>
+void expandParameters(vector<vector<T> > params, vector<vector<T> >& expandedParams)
+{
+    variate(params, expandedParams);
+}
+
+
+template<typename T>
+void expandParameters(vector<vector<T> > params, int ncells, vector<vector<T> >& gridExpandedParams)
+{
+    vector<vector<T> > cellExpandedParams;
+    variate(params, cellExpandedParams);
+    
+    // Create and expand a list of indices, used to index the cellExpandedParams
+    
+    vector<int> indices(cellExpandedParams.size());
+    
+    for (int i = 0; i < cellExpandedParams.size(); i++)
+        indices[i] = i;
+    
+    vector<vector<int> > listsOfIndices(ncells);
+    for (int i = 0; i < ncells; i++)
+        listsOfIndices[i] = indices;
+    
+    vector<vector<int> > expandedIndices;
+    variate(listsOfIndices, expandedIndices);
+    
+    //    // debug
+    //    for (int i = 0; i < expandedIndices.size(); i++)
+    //    {
+    //        cv::Mat m (expandedIndices[i].size(), 1, cv::DataType<int>::type, expandedIndices[i].data());
+    //        cout << m << endl;
+    //    }
+    //    //
+    
+    // Create the grid's combinations' list of parameters
+    
+    gridExpandedParams.clear();
+    gridExpandedParams.resize(expandedIndices.size());
+    
+    for (int i = 0; i < expandedIndices.size(); i++)
+    {
+        for (int j = 0; j < expandedIndices[i].size(); j++)
+        {
+            vector<T> combination = cellExpandedParams[expandedIndices[i][j]];
+            for (int k = 0; k < params.size(); k++)
+            {
+                gridExpandedParams[i].push_back(combination[k]);
+            }
+        }
+        //        // debug
+        //        cv::Mat m (gridExpandedParams[i].size(), 1, cv::DataType<T>::type, gridExpandedParams[i].data());
+        //        cout << m << endl;
+    }
+}
+
+
+template<typename T>
+void selectParameterCombination(vector<vector<T> > expandedParams, int hp, int wp,
+                                int nparams, int idx, vector<cv::Mat>& selectedParams)
+{
+    selectedParams.clear();
+    
+    for (int k = 0; k < nparams; k++)
+        selectedParams.push_back(cv::Mat(hp, wp, cv::DataType<T>::type));
+    
+    vector<T> lineParams = expandedParams[idx];
+    
+    for (int i = 0; i < hp; i++) for (int j = 0; j < wp; j++)
+    {
+        int l = i * wp + j;
+        for (int k = 0; k < nparams; k++)
+        {
+            selectedParams[k].at<T>(i,j) = lineParams[l * nparams + k];
+        }
+    }
+    
+    // debug
+    //    for (int k = 0; k < nparams; k++)
+    //        cout << selectedParams[k] << endl;
+}
+
+
+template<typename T>
+void selectBestParameterCombination(vector<vector<T> > expandedParams, int hp, int wp, int nparams, GridMat goodnesses, vector<cv::Mat>& selectedParams)
+{
+    selectedParams.clear();
+    
+    for (int k = 0; k < nparams; k++)
+        selectedParams.push_back(cv::Mat(hp, wp, cv::DataType<T>::type));
+    
+    GridMat gargmax;
+    goodnesses.argmax<T>(gargmax);
+    
+    for (int i = 0; i < hp; i++) for (int j = 0; j < wp; j++)
+    {
+        int rowIdx = gargmax.at<T>(i,j,0,0); // maxrow index
+        
+        vector<T> lineParams = expandedParams[rowIdx];
+        
+        int l = i * wp + j;
+        for (int k = 0; k < nparams; k++)
+        {
+            selectedParams[k].at<T>(i,j) = lineParams[l * nparams + k];
+        }
+    }
+    
+    // debug
+    //    for (int k = 0; k < nparams; k++)
+    //        cout << selectedParams[k] << endl;
+}
+
+
+void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies)
+{
+    accuracies.create(predictions.crows(), predictions.ccols(), cv::DataType<float>::type);
+    
+    for (int i = 0; i < predictions.crows(); i++) for (int j = 0; j < predictions.ccols(); j++)
+    {
+        int nobjects  = cv::sum(actuals.at(i,j) == 0).val[0];
+        int nsubjects = cv::sum(actuals.at(i,j) == 1).val[0];
+        
+        int objectHits  = 0;
+        int subjectHits = 0;
+        
+        // label homogeinization
+        
+        double minVal, maxVal;
+        
+        cv::minMaxIdx(actuals.at(i,j), &minVal, &maxVal);
+        cv::Mat actualsMat = actuals.at(i,j) - minVal;
+        
+        cv::minMaxIdx(predictions.at(i,j), &minVal, &maxVal);
+        cv::Mat predictionsMat = predictions.at(i,j) - minVal;
+        
+        for (int k = 0; k < actuals.at(i,j).rows; k++)
+        {
+            int actualVal = actualsMat.at<int>(k,0);
+            int predVal = predictionsMat.at<int>(k,0);
+            
+            if (actualVal == 0 && predVal == 0) objectHits++;
+            else if (actualVal == 1 && predVal == 1) subjectHits++;
+        }
+        
+        accuracies.at<float>(i,j) = ( ((float)subjectHits)/nsubjects + ((float)objectHits)/nobjects ) / 2.0;
+    }
 }

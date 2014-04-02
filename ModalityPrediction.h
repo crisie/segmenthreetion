@@ -33,21 +33,6 @@ public:
     void setModelSelection(int k, bool best);
     void setModelValidation(int k, int seed);
     
-    template<typename T>
-    void expandParameters(vector<vector<T> > params, vector<vector<T> >& expandedParams);
-    template<typename T>
-    void expandParameters(vector<vector<T> > params, int ncells, vector<vector<T> >& expandedParams);
-    
-    template<typename T>
-    void selectParameterCombination(vector<vector<T> > expandedParams, int hp, int wp, int nparams,
-                                    int idx, vector<cv::Mat>& selectedParams);
-    
-    template<typename T>
-    void selectBestParameterCombination(vector<vector<T> > expandedParams, int hp, int wp, int nparams,
-                                        GridMat goodnesses, vector<cv::Mat>& selectedParams);
-    
-    void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies);
-    
 protected:
     ModalityGridData m_data;
     int m_hp, m_wp;
@@ -64,11 +49,6 @@ template<typename Prediction>
 class ModalityPrediction : public ModalityPredictionBase<Prediction>
 {
     ModalityPrediction();// : ModalityPredictionBase<Prediction>() {}
-
-//    void setModelSelection(int k = 3, bool best = 0);
-//    void setModelValidation(int k = 10, int seed = 74);
-//    
-//    void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies);
 };
 
 
@@ -76,10 +56,7 @@ template<>
 class ModalityPrediction<cv::EM> : public ModalityPredictionBase<cv::EM>
 {
 public:
-    ModalityPrediction(); // : ModalityPredictionBase<cv::EM>() {}
-    
-//    void setModelSelection(int k = 3, bool best = 0);
-//    void setModelValidation(int k = 10, int seed = 74);
+    ModalityPrediction();
     
     void setNumOfMixtures(int m);
     void setNumOfMixtures(vector<int> m);
@@ -94,8 +71,6 @@ public:
     
     void compute(GridMat& predictions, GridMat& loglikelihoods, bool normalizedLoglikelihoods = true);
     
-//    void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies);
-    
 private:
     vector<int> m_nmixtures;
     vector<int> m_logthresholds;
@@ -106,10 +81,7 @@ template<>
 class ModalityPrediction<CvSVM> : public ModalityPredictionBase<CvSVM>
 {
 public:
-    ModalityPrediction(); // : ModalityPredictionBase<cv::EM>() {}
-    
-//    void setModelSelection(int k = 3, bool best = 0);
-//    void setModelValidation(int k = 10, int seed = 74);
+    ModalityPrediction();
     
     void setSvmType(int type);
     void setKernelType(int type);
@@ -126,9 +98,7 @@ public:
                         GridMat& goodnesses);
     
     void compute(GridMat& predictions);
-    
-//    void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies);
-    
+        
 private:
     vector<float> m_cs;
     vector<float> m_gammas;

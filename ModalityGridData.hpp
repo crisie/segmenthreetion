@@ -468,7 +468,7 @@ public:
     
     void addDescriptor(cv::Mat descriptor, unsigned int i, unsigned int j)
     {
-        setValidness(cv::checkRange(descriptor), i, j, m_Descriptors.at(i,j).size());
+        setValidness(cv::checkRange(descriptor), i, j, m_Descriptors.at(i,j).rows);
         
         m_Descriptors.at(i,j).push_back(descriptor);
     }

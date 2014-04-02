@@ -49,4 +49,19 @@ void variate(vector<vector<T > > list, vector<vector<T > >& variations);
 template<typename T>
 void _variate(vector<vector<T > > list, int idx, vector<T> v, vector<vector<T > >& variations);
 
+template<typename T>
+void expandParameters(vector<vector<T> > params, vector<vector<T> >& expandedParams);
+template<typename T>
+void expandParameters(vector<vector<T> > params, int ncells, vector<vector<T> >& expandedParams);
+
+template<typename T>
+void selectParameterCombination(vector<vector<T> > expandedParams, int hp, int wp, int nparams,
+                                int idx, vector<cv::Mat>& selectedParams);
+
+template<typename T>
+void selectBestParameterCombination(vector<vector<T> > expandedParams, int hp, int wp, int nparams,
+                                    GridMat goodnesses, vector<cv::Mat>& selectedParams);
+
+void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies);
+
 #endif /* defined(__segmenthreetion__StatTools__) */

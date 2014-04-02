@@ -30,6 +30,8 @@
 
 #include "ModalityPrediction.h"
 
+#include "FusionPrediction.h"
+
 #include "GridMapWriter.h"
 
 #include "StatTools.h"
@@ -234,62 +236,94 @@ int main(int argc, const char* argv[])
 		tFE.describe(tGridData);
         tGridData.saveDescription(dataPath, sequences[s], "Thermal.yml");
 	}
-//
-//    cGridData.clear();
-//    mGridData.clear();
-////    dGridData.clear();
-//    tGridData.clear();
-//    
-//    
-//    //
-//    // Data re-loading
-//    //
-//    
-//    ModalityGridData cMockData;
-//    reader.mockread("Color", sequences, "jpg", hp, wp, cMockData);
-//    ModalityGridData mMockData;
-//    reader.mockread("Motion", sequences, "jpg", hp, wp, mMockData);
-////    ModalityGridData dMockData;
-////    reader.mockread("Depth", sequences, "png", hp, wp, dMockData);
-//    ModalityGridData tMockData;
-//    reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData);
-//
-//    cMockData.loadDescription(dataPath, sequences, "Color.yml");
-//    mMockData.loadDescription(dataPath, sequences, "Motion.yml");
-////    dMockData.loadDescription(dataPath, sequences, "Depth.yml");
-//    tMockData.loadDescription(dataPath, sequences, "Thermal.yml");
-//    
-//    //
-//    // Prediction
-//    //
-//    
-//    ModalityPrediction<cv::EM> prediction;
-//
-//    prediction.setNumOfMixtures(nmixtures);
-//    prediction.setLoglikelihoodThresholds(nlikelicuts);
-//
-//    prediction.setModelValidation(kTest, seed);
-//    prediction.setModelSelection(kModelSelec, true);
-//    
-//    // Thermal
-//    prediction.setData(tMockData);
-//
-//    GridMat tPredictions, tLoglikelihoods;
-//    prediction.compute(tPredictions, tLoglikelihoods);
-//    
-//    tPredictions.save("tPredictions.yml");
-//    tLoglikelihoods.save("tLoglikelihoods.yml");
-//
-//    // Color
-//    prediction.setData(cMockData);
-//
-//    GridMat cPredictions, cLoglikelihoods;
-//    prediction.compute(cPredictions, cLoglikelihoods);
-//
-//    cPredictions.save("cPredictions.yml");
-//    cLoglikelihoods.save("cLoglikelihoods.yml");
-//    
-//    
+
+    cGridData.clear();
+    mGridData.clear();
+//    dGridData.clear();
+    tGridData.clear();
+    
+    
+    // Data re-loading
+    
+    ModalityGridData cMockData;
+    reader.mockread("Color", sequences, "jpg", hp, wp, cMockData);
+    ModalityGridData mMockData;
+    reader.mockread("Motion", sequences, "jpg", hp, wp, mMockData);
+//    ModalityGridData dMockData;
+//    reader.mockread("Depth", sequences, "png", hp, wp, dMockData);
+    ModalityGridData tMockData;
+    reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData);
+
+    cMockData.loadDescription(dataPath, sequences, "Color.yml");
+    mMockData.loadDescription(dataPath, sequences, "Motion.yml");
+//    dMockData.loadDescription(dataPath, sequences, "Depth.yml");
+    tMockData.loadDescription(dataPath, sequences, "Thermal.yml");
+    
+    
+    //
+    // Individual prediction
+    //
+    
+    ModalityPrediction<cv::EM> prediction;
+
+    prediction.setNumOfMixtures(nmixtures);
+    prediction.setLoglikelihoodThresholds(nlikelicuts);
+
+    prediction.setModelValidation(kTest, seed);
+    prediction.setModelSelection(kModelSelec, true);
+    
+    // Thermal
+    prediction.setData(tMockData);
+
+    GridMat tPredictions, tLoglikelihoods;
+    prediction.compute(tPredictions, tLoglikelihoods);
+    
+    tPredictions.save("tPredictions.yml");
+    tLoglikelihoods.save("tLoglikelihoods.yml");
+
+    // Color
+    prediction.setData(cMockData);
+
+    GridMat cPredictions, cLoglikelihoods;
+    prediction.compute(cPredictions, cLoglikelihoods);
+
+    cPredictions.save("cPredictions.yml");
+    cLoglikelihoods.save("cLoglikelihoods.yml");
+
+    //
+    // Fusion
+    //
+    
+    vector<GridMat> predictions, loglikelihoods; // put together all the data
+    predictions += tPredictions, cPredictions;
+    loglikelihoods += tLoglikelihoods, cLoglikelihoods;
+
+    // Simple
+    GridMat simpleFusionPredictions;
+    
+    SimpleFusionPrediction<cv::EM> simpleFusion;
+    
+    simpleFusion.setModalitiesPredictions(predictions);
+    simpleFusion.setModalitiesLoglikelihoods(loglikelihoods);
+    
+    simpleFusion.predict(simpleFusionPredictions);
+    
+    // SVM
+    GridMat svmFusionPredictions;
+    
+    ClassifierFusionPrediction<cv::EM,CvSVM> svmFusion;
+    
+    svmFusion.setModalitiesPredictions(predictions);
+    svmFusion.setModalitiesLoglikelihoods(loglikelihoods);
+    
+    vector<float> cs, gammas;
+    cs += 1, 10, 100, 1000; // example
+    gammas += 0.0001, 0.001, 0.01, 0.1, 1, 10;
+    svmFusion.setCs(cs);
+    svmFusion.setGammas(gammas);
+    
+    svmFusion.predict(svmFusionPredictions);
+    
 //    //
 //    // Map writing
 //    //
