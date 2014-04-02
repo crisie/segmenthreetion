@@ -13,6 +13,7 @@
 #include <vector>
 
 #include <opencv2/opencv.hpp>
+#include <CvExtraTools.hpp>
 
 #include "ModalityGridData.hpp"
 #include "GridMat.h"
@@ -34,8 +35,7 @@ public:
     
     SimpleFusionPrediction();
     
-    void setModalitiesLoglikelihoods(vector<GridMat> loglikelihoods);
-    void setModalitiesPredictions(vector<GridMat> predictions);
+    void setData(vector<GridMat> loglikelihoods, vector<GridMat> predictions);
     // TODO: set the loglikelihoods' thresholds
     
     void predict(GridMat& predictions);
@@ -68,8 +68,8 @@ public:
     
     ClassifierFusionPredictionBase();
     
-    void setModalitiesLoglikelihoods(vector<GridMat> loglikelihoods);
-    void setModalitiesPredictions(vector<GridMat> predictions);
+    void setData(vector<GridMat> loglikelihoods, vector<GridMat> predictions);
+    void setResponses(cv::Mat responses);
     
     void setModelSelection(int k, bool best);
     void setModelValidation(int k, int seed);
@@ -77,14 +77,14 @@ public:
 protected:
     
     void formatData();
-    
-private:
-    
+
     // Attributes
     
     vector<GridMat> m_loglikelihoods;
     vector<GridMat> m_predictions;
-    cv::Mat m_data;
+    
+    cv::Mat m_data; // input data
+    cv::Mat m_responses; // output labels
     ClassifierT* m_pClassifier;
     
     int m_testK;
@@ -114,7 +114,10 @@ public:
     void setCs(vector<float> cs);
     void setGammas(vector<float> gammas);
     
-    void compute(GridMat& predictions);
+    template<typename T>
+    void modelSelection(cv::Mat data, cv::Mat responses, vector<vector<T> > params, cv::Mat& goodnesses);
+    
+    void compute(cv::Mat& predictions);
 
 private:
     

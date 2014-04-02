@@ -130,11 +130,11 @@ GridMat::GridMat(GridMat& other, GridMat indices, int k, bool inverse)
     {
         if (!inverse)
         {
-            indexMatElements(other.at(i,j), at(i,j), indices.at(i,j) == k);
+            cvx::indexMat(other.at(i,j), at(i,j), indices.at(i,j) == k);
         }
         else // inverse indexing: all but k-th index
         {
-            indexMatElements(other.at(i,j), at(i,j), indices.at(i,j) != k);
+            cvx::indexMat(other.at(i,j), at(i,j), indices.at(i,j) != k);
         }
     }
 }
@@ -148,7 +148,7 @@ GridMat::GridMat(GridMat& other, GridMat indices, bool logical)
     
     for (int i = 0; i < m_crows; i++) for (int j = 0; j < m_ccols; j++)
     {
-        indexMatElements(other.at(i,j), at(i,j), indices.at(i,j), logical);
+        cvx::indexMat(other.at(i,j), at(i,j), indices.at(i,j), logical);
     }
 }
 
@@ -409,7 +409,7 @@ void GridMat::set(GridMat src, GridMat indices, int k)
         
     for (int i = 0; i < indices.crows(); i++) for (int j = 0; j < indices.ccols(); j++)
     {
-        this->setMatElements(src.at(i,j), this->at(i,j), indices.at(i,j) == k);
+        cvx::setMat(src.at(i,j), this->at(i,j), indices.at(i,j) == k);
     }
 }
 
@@ -422,7 +422,7 @@ void GridMat::copyTo(GridMat& dst, GridMat indices, int k)
     
     for (int i = 0; i < indices.crows(); i++) for (int j = 0; j < indices.ccols(); j++)
     {
-        this->copyMatElements(this->at(i,j), dst.at(i,j), indices.at(i,j) == k);
+        cvx::copyMat(this->at(i,j), dst.at(i,j), indices.at(i,j) == k);
     }
 }
 
@@ -945,140 +945,3 @@ std::ostream& operator<<(std::ostream& os, const GridMat& gm)
     
     return os;
 }
-
-void GridMat::setMatElements(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical)
-{
-    if (logical)
-        setMatElementsLogically(src, dst, indices);
-    else
-        setMatElementsPositionally(src, dst, indices);
-}
-
-void GridMat::setMatElementsLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals)
-{
-    cv::Mat aux = src;
-    bool rowwise = logicals.rows > 1;
-    
-    if (dst.empty())
-    {
-        if (rowwise)
-            dst.create(logicals.rows, src.cols, src.type());
-        else
-            dst.create(src.rows, logicals.rows, src.type());
-    }
-    
-    int c = 0;
-    int n = rowwise ? dst.rows : dst.cols;
-    for (int i = 0; i < n; i++)
-    {
-        unsigned char indexed = rowwise ?
-        logicals.at<unsigned char>(i,0) : logicals.at<unsigned char>(0,i);
-        if (indexed)
-            rowwise ? src.row(c++).copyTo(dst.row(i)) : src.col(c++).copyTo(dst.col(i));
-    }
-}
-
-void GridMat::setMatElementsPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indexes)
-{
-    bool rowwise = indexes.rows > 1;
-    
-    int n = rowwise ? indexes.rows : indexes.cols;
-    for (int i = 0; i < n; i++)
-    {
-        int idx = rowwise ? indexes.at<int>(i,0) : indexes.at<int>(i,0);
-        rowwise ? src.row(i).copyTo(dst.row(idx)) : src.col(i).copyTo(dst.col(idx));
-    }
-}
-
-void GridMat::copyMatElements(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical)
-{
-    if (logical)
-        setMatElementsLogically(src, dst, indices);
-    else
-        setMatElementsPositionally(src, dst, indices);
-}
-
-void GridMat::copyMatElementsLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals)
-{
-    if (dst.empty())
-        dst.create(src.rows, src.cols, src.type());
-    
-    bool rowwise = logicals.rows > 1;
-    
-    for (int i = 0; i < rowwise ? logicals.rows : logicals.cols; i++)
-    {
-        unsigned char indexed = rowwise ?
-        logicals.at<unsigned char>(i,0) : logicals.at<unsigned char>(0,i);
-        if (indexed)
-            rowwise ? src.row(i).copyTo(dst.row(i)) : src.col(i).copyTo(dst.col(i));
-    }
-}
-
-void GridMat::copyMatElementsPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indexes)
-{
-    if (dst.empty())
-        dst.create(src.rows, src.cols, src.type());
-    
-    bool rowwise = indexes.rows > 1;
-    
-    for (int i = 0; i < rowwise ? indexes.rows : indexes.cols; i++)
-    {
-        int idx = rowwise ? indexes.at<int>(i,0) : indexes.at<int>(i,0);
-        rowwise ? src.row(idx).copyTo(dst.row(idx)) : src.col(idx).copyTo(dst.col(idx));
-    }
-}
-
-void GridMat::indexMatElements(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical)
-{
-    if (logical)
-        indexMatElementsLogically(src, dst, indices);
-    else
-        indexMatElementsPositionally(src, dst, indices);
-}
-
-void GridMat::indexMatElementsLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals)
-{
-    if (logicals.rows > 1) // row-wise
-        dst.create(0, src.cols, src.type());
-    else // col-wise
-        dst.create(src.rows, 0, src.type());
-    
-    for (int i = 0; i < (logicals.rows > 1 ? logicals.rows : logicals.cols); i++)
-    {
-        if (logicals.rows > 1)
-        {
-            if (logicals.at<unsigned char>(i,0))
-            {
-                dst.push_back(src.row(i));
-            }
-        }
-        else
-        {
-            if (logicals.at<unsigned char>(0,i))
-                dst.push_back(src.col(i));
-        }
-    }
-}
-
-void GridMat::indexMatElementsPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indices)
-{
-    dst.release();
-    
-    if (indices.rows > 1) // row-wise
-        dst.create(indices.rows, src.cols, src.type());
-    else // col-wise
-        dst.create(src.rows, indices.cols, src.type());
-    
-    for (int i = 0; i < (indices.rows > 1 ? indices.rows : indices.cols); i++)
-    {
-        int idx = indices.rows > 1 ? indices.at<int>(i,0) : indices.at<int>(0,i);
-        
-        if (indices.rows > 1)
-            src.row(idx).copyTo(dst.row(i));
-        else
-            src.col(idx).copyTo(dst.col(i));
-    }
-}
-
-
-

@@ -15,6 +15,8 @@
 
 #include <iostream>
 
+#include "CvExtraTools.h"
+
 using namespace std;
 
 class GridMat
@@ -136,18 +138,6 @@ private:
     
     GridMat getIndexedCellElementsPositionally(cv::Mat indices, int dim = 0);
     void setIndexedCellElementsPositionally(GridMat& grid, cv::Mat indices, int dim = 0);
-    
-    void setMatElements(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical = true);
-    void setMatElementsLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals);
-    void setMatElementsPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indices);
-    
-    void copyMatElements(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical = true);
-    void copyMatElementsLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals);
-    void copyMatElementsPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indices);
-    
-    void indexMatElements(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical = true);
-    void indexMatElementsLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals);
-    void indexMatElementsPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indices);
 };
 
 #endif /* defined(__Segmenthreetion__GridMat__) */

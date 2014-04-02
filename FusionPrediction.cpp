@@ -11,8 +11,11 @@
 
 // Instantiation of template member functions
 // -----------------------------------------------------------------------------
-template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setModalitiesPredictions(vector<GridMat> predictions);
-template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setModalitiesLoglikelihoods(vector<GridMat> loglikelihoods);
+template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setData(vector<GridMat> loglikelihoods, vector<GridMat> predictions);
+
+template void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection<int>(cv::Mat data, cv::Mat responses, vector<vector<int> > params, cv::Mat& goodnesses);
+template void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection<float>(cv::Mat data, cv::Mat responses, vector<vector<float> > params, cv::Mat& goodnesses);
+template void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection<double>(cv::Mat data, cv::Mat responses, vector<vector<double> > params, cv::Mat& goodnesses);
 // -----------------------------------------------------------------------------
 
 
@@ -21,14 +24,10 @@ SimpleFusionPrediction<cv::EM>::SimpleFusionPrediction()
     
 }
 
-void SimpleFusionPrediction<cv::EM>::setModalitiesPredictions(vector<GridMat> predictions)
-{
-    m_predictions = predictions;
-}
-
-void SimpleFusionPrediction<cv::EM>::setModalitiesLoglikelihoods(vector<GridMat> loglikelihoods)
+void SimpleFusionPrediction<cv::EM>::setData(vector<GridMat> loglikelihoods, vector<GridMat> predictions)
 {
     m_loglikelihoods = loglikelihoods;
+    m_predictions = predictions;
 }
 
 void SimpleFusionPrediction<cv::EM>::predict(GridMat& predictions)
@@ -49,15 +48,16 @@ ClassifierFusionPredictionBase<cv::EM, ClassifierT>::ClassifierFusionPredictionB
 }
 
 template<typename ClassifierT>
-void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setModalitiesPredictions(vector<GridMat> predictions)
+void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setData(vector<GridMat> loglikelihoods, vector<GridMat> predictions)
 {
+    m_loglikelihoods = loglikelihoods;
     m_predictions = predictions;
 }
 
 template<typename ClassifierT>
-void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setModalitiesLoglikelihoods(vector<GridMat> loglikelihoods)
+void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setResponses(cv::Mat responses)
 {
-    m_loglikelihoods = loglikelihoods;
+    m_responses = responses;
 }
 
 template<typename ClassifierT>
@@ -120,7 +120,7 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::setGammas(vector<float> gammas)
     m_gammas = gammas;
 }
 
-void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(GridMat &predictions)
+void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(cv::Mat& predictions)
 {
     formatData();
     
@@ -132,6 +132,70 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(GridMat &predictions)
     
     // create a list of parameters' variations
     expandParameters(params, expandedParameters);
+    
+    cv::Mat partitions;
+    cvpartition(m_responses, m_testK, m_seed, partitions);
+    
+    cout << "Model selection CVs [" << m_testK << "]: " << endl;
+    
+    vector<cv::Mat> goodnesses(m_testK); // for instance: accuracies
+    for (int k = 0; k < m_testK; k++)
+    {
+        cout << k << " ";
+        
+        cv::Mat trData = cvx::indexMat(m_data, partitions != k);
+        cv::Mat teData = cvx::indexMat(m_data, partitions == k);
+        cv::Mat trResponses = cvx::indexMat(m_responses, partitions != k);
+        cv::Mat teResponses = cvx::indexMat(m_responses, partitions == k);
+        
+        modelSelection(trData, trResponses, expandedParameters, goodnesses[k]);
+        
+        std::stringstream ss;
+        ss << "svm_goodnesses_" << k << ".yml" << endl;
+        cvx::save(ss.str(), goodnesses[k]);
+    }
+    cout << endl;
+    
+    
+    cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
+    
+    for (int k = 0; k < m_testK; k++)
+    {
+        cout << k << " ";
+        
+        cv::Mat trData = cvx::indexMat(m_data, partitions != k);
+        cv::Mat teData = cvx::indexMat(m_data, partitions == k);
+        cv::Mat trResponses = cvx::indexMat(m_responses, partitions != k);
+        cv::Mat teResponses = cvx::indexMat(m_responses, partitions == k);
+        
+        cv::Mat goodnesses;
+        std::stringstream ss;
+        ss << "svm_goodnesses_" << k << ".yml" << endl;
+        cvx::load(ss.str(), goodnesses);
+        
+        // Find best parameters (using goodnesses) to train the final model
+        double minVal, maxVal;
+        cv::Point min, max;
+        cv::minMaxLoc(goodnesses, &minVal, &maxVal, &min, &max);
+        
+        // Training phase
+        vector<float> bestParams = expandedParameters[max.x];
+        float bestC = bestParams[0];
+        float bestGamma = bestParams[1];
+        
+        CvSVMParams params (CvSVM::C_SVC, m_kernelType, 0, bestGamma, 0, bestC, 0, 0, 0,
+                            cvTermCriteria( CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 1000, FLT_EPSILON ));
+        m_pClassifier->train(trData, trResponses, cv::Mat(), cv::Mat(), params);
+        
+        // Prediction phase
+        cv::Mat tePredictions;
+        m_pClassifier->predict(teData, tePredictions);
+        
+        cvx::copyMat(tePredictions, predictions, partitions == k);
 }
 
-
+template<typename T>
+void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection(cv::Mat data, cv::Mat responses, vector<vector<T> > params, cv::Mat &goodnesses)
+{
+    
+}

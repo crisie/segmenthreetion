@@ -122,7 +122,7 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
     vector<GridMat> goodnesses(m_testK); // for instance: accuracies
     for (int k = 0; k < m_testK; k++)
     {
-        cout << k << " " << endl;
+        cout << k << " ";
         
         // Index the k-th training
         GridMat validnessesTrFold (validnesses, partitions, k, true);
@@ -208,12 +208,12 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
 
 template<typename T>
 void ModalityPrediction<cv::EM>::modelSelection(GridMat descriptors, GridMat tags,
-                                                vector<vector<T> > params,
+                                                vector<vector<T> > gridExpandedParams,
                                                 GridMat& goodnesses)
 {
     // Prepare parameters' combinations
-    vector<vector<T> > gridExpandedParameters;
-    expandParameters(params, m_hp * m_wp, gridExpandedParameters);
+//    vector<vector<T> > gridExpandedParameters;
+//    expandParameters(params, m_hp * m_wp, gridExpandedParameters);
     
     // Partitionate the data in folds
     GridMat partitions;
@@ -244,13 +244,15 @@ void ModalityPrediction<cv::EM>::modelSelection(GridMat descriptors, GridMat tag
         
         GridMat foldAccs; // results
         
-        for (int m = 0; m < gridExpandedParameters.size(); m++)
+        for (int m = 0; m < gridExpandedParams.size(); m++)
         {
             // Create predictor and its parametrization
             GridPredictor<cv::EM> predictor (m_hp, m_wp);
             
             vector<cv::Mat> selectedParams;
-            selectParameterCombination(gridExpandedParameters, m_hp, m_wp, params.size(), m, selectedParams);
+            selectParameterCombination(gridExpandedParams, m_hp, m_wp,
+                                       gridExpandedParams[0].size() / (m_hp * m_wp),
+                                       m, selectedParams);
             
             predictor.setNumOfMixtures(selectedParams[0]);
             predictor.setLoglikelihoodThreshold(selectedParams[1]);
