@@ -16,6 +16,10 @@ template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setData(vector<GridM
 template void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection<int>(cv::Mat data, cv::Mat responses, vector<vector<int> > params, cv::Mat& goodnesses);
 template void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection<float>(cv::Mat data, cv::Mat responses, vector<vector<float> > params, cv::Mat& goodnesses);
 template void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection<double>(cv::Mat data, cv::Mat responses, vector<vector<double> > params, cv::Mat& goodnesses);
+
+template void ClassifierFusionPredictionBase<cv::EM, CvSVM>::setResponses(cv::Mat);
+template void ClassifierFusionPredictionBase<cv::EM, CvSVM>::setModelSelection(int, bool);
+template void ClassifierFusionPredictionBase<cv::EM, CvSVM>::setModelValidation(int, int);
 // -----------------------------------------------------------------------------
 
 

@@ -95,7 +95,7 @@ cv::Mat cvx::indexMat(cv::Mat src, cv::Mat indices, bool logical)
 {
     cv::Mat mat;
     
-    cvx::copyMat(src, indices, logical);
+    cvx::copyMat(src, mat, indices, logical);
 
     return mat;
 }
@@ -177,7 +177,7 @@ void cvx::vmean(cv::Mat src, cv::Mat& mean)
 
 void cvx::load(std::string file, cv::Mat& mat, int format)
 {
-    cv::FileStorage fs(file, FileStorage::READ | format);
+    cv::FileStorage fs(file, cv::FileStorage::READ | format);
     
     fs["mat"] >> mat;
     
@@ -187,7 +187,7 @@ void cvx::load(std::string file, cv::Mat& mat, int format)
 
 void cvx::save(std::string file, cv::Mat mat, int format)
 {
-    cv::FileStorage fs(file, FileStorage::WRITE | format);
+    cv::FileStorage fs(file, cv::FileStorage::WRITE | format);
     
     fs << "mat" << mat;
     

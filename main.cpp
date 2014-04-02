@@ -313,12 +313,16 @@ int main(int argc, const char* argv[])
     ClassifierFusionPrediction<cv::EM,CvSVM> svmFusion;
     
     svmFusion.setData(loglikelihoods, predictions);
+    svmFusion.setResponses(cv::Mat()/* TODO: get groundturth values */);
     
     vector<float> cs, gammas;
     cs += 1, 10, 100, 1000; // example
     gammas += 0.0001, 0.001, 0.01, 0.1, 1, 10;
     svmFusion.setCs(cs);
     svmFusion.setGammas(gammas);
+    
+    svmFusion.setModelValidation(kTest, seed);
+    svmFusion.setModelSelection(kModelSelec, true);
     
     svmFusion.compute(svmFusionPredictions);
     
