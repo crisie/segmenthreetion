@@ -84,12 +84,8 @@ void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::formatData()
     // Better use GridMat functions...
     for (int i = 0; i < m_loglikelihoods.size(); i++)
     {
-        GridMat normLoglikes = m_loglikelihoods[i].getNormalizedLoglikelihoods();
-        GridMat sparseNormLoglikes;
-        normLoglikes.convertToSparse(m_loglikelihoods[i].getValidnesses(), sparseNormLoglikes);
-        
         cv::Mat serialMat;
-        normLoglikes.hserial(serialMat);
+        m_loglikelihoods[i].hserial(serialMat);
         
         cv::hconcat(m_data, serialMat, m_data);
     }
@@ -196,11 +192,51 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(cv::Mat& predictions)
 }
 
 template<typename T>
-void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection(cv::Mat data, cv::Mat responses, vector<vector<T> > params, cv::Mat &goodnesses)
+void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection(cv::Mat data, cv::Mat responses, vector<vector<T> > expandedParams, cv::Mat &goodnesses)
 {
     // Partitionate the data in folds
     cv::Mat partitions;
     cvpartition(responses, m_modelSelecK, m_seed, partitions);
     
-    cv::Mat accuracies;
+    cv::Mat accuracies (expandedParams.size(), 0, cv::DataType<float>::type);;
+    
+    cout << "(";
+    for (int k = 0; k < m_modelSelecK; k++)
+    {
+        cout << k << " ";
+        
+        // Get fold's data
+        
+        cv::Mat trData = cvx::indexMat(data, partitions != k);
+        cv::Mat valData = cvx::indexMat(data, partitions == k);
+        cv::Mat trResponses = cvx::indexMat(responses, partitions != k);
+        cv::Mat valResponses = cvx::indexMat(responses, partitions == k);
+        
+        cv::Mat foldAccs (expandedParams.size(), 1, cv::DataType<float>::type); // results
+        
+        for (int m = 0; m < expandedParams.size(); m++)
+        {
+            // Training phase
+            vector<T> selectedParams = expandedParams[m];
+            T C = selectedParams[0];
+            T gamma = selectedParams[1];
+            
+            CvSVMParams params (CvSVM::C_SVC, m_kernelType, 0, gamma, 0, C, 0, 0, 0,
+                                cvTermCriteria( CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 1000, FLT_EPSILON ));
+            m_pClassifier->train(trData, trResponses, cv::Mat(), cv::Mat(), params);
+            
+            // Test phase
+            cv::Mat valPredictions;
+            m_pClassifier->train(valData, valPredictions);
+            
+            // Compute an accuracy measure
+            foldAccs.at<float>(m,0) = accuracy(valResponses, valPredictions);
+        }
+        
+        accuracies.push_back(foldAccs); // concatenate along the horizontal direction
+    }
+    cout << ") " << endl;
+    
+    // mean along the horizontal direction
+    cvx::hmean(accuracies, goodnesses); // one column of m accuracies evaluation the m combinations is left
 }

@@ -154,6 +154,29 @@ void cvx::indexMatPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indices)
     }
 }
 
+void cvx::hmean(cv::Mat src, cv::Mat& mean)
+{
+    mean.release();
+    mean.create(src.rows, 1, cv::DataType<double>::type);
+    
+    for (int i = 0; src.rows; i++)
+    {
+        mean.at<double>(i,0) = cv::mean(src.row(i)).val[0];
+    }
+}
+
+void cvx::vmean(cv::Mat src, cv::Mat& mean)
+{
+    mean.release();
+    mean.create(1, src.cols, cv::DataType<double>::type);
+    
+    for (int i = 0; src.cols; i++)
+    {
+        mean.at<double>(0,i) = cv::mean(src.col(i)).val[0];
+    }
+}
+
+
 void cvx::load(std::string file, cv::Mat& mat, int format)
 {
     cv::FileStorage fs(file, FileStorage::READ | format);

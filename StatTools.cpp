@@ -363,6 +363,13 @@ void selectBestParameterCombination(vector<vector<T> > expandedParams, int hp, i
     //        cout << selectedParams[k] << endl;
 }
 
+float accuracy(cv::Mat actuals, cv::Mat predictions)
+{
+    cv::Mat aux;
+    cv::absdiff(actuals, predictions, aux);
+
+    return 1 - cv::mean(aux).val[0]; // acc = 1 - err
+}
 
 void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies)
 {

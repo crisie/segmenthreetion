@@ -13,7 +13,7 @@
 #include <vector>
 
 #include <opencv2/opencv.hpp>
-#include <CvExtraTools.hpp>
+#include "CvExtraTools.h"
 
 #include "ModalityGridData.hpp"
 #include "GridMat.h"

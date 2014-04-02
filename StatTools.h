@@ -62,6 +62,7 @@ template<typename T>
 void selectBestParameterCombination(vector<vector<T> > expandedParams, int hp, int wp, int nparams,
                                     GridMat goodnesses, vector<cv::Mat>& selectedParams);
 
+float accuracy(cv::Mat actuals, cv::Mat predictions);
 void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies);
 
 #endif /* defined(__segmenthreetion__StatTools__) */

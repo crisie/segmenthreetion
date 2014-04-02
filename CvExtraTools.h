@@ -12,6 +12,8 @@
 #include <iostream>
 #include <string>
 
+#include <opencv2/opencv.hpp>
+
 namespace cvx {
     void setMat(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical = true);
     void setMatLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals);
@@ -25,6 +27,9 @@ namespace cvx {
     void indexMat(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical = true);
     void indexMatLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals);
     void indexMatPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indices);
+    
+    void hmean(cv::Mat src, cv::Mat& mean);
+    void vmean(cv::Mat src, cv::Mat& mean);
     
     void load(std::string file, cv::Mat& mat, int format = cv::FileStorage::FORMAT_YAML);
     void save(std::string file, cv::Mat mat, int format = cv::FileStorage::FORMAT_YAML);
