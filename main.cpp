@@ -275,7 +275,7 @@ int main(int argc, const char* argv[])
 //    prediction.setData(tMockData);
 //
 //    GridMat tPredictions, tLoglikelihoods;
-//    prediction.predict(tPredictions, tLoglikelihoods);
+//    prediction.compute(tPredictions, tLoglikelihoods);
 //    
 //    tPredictions.save("tPredictions.yml");
 //    tLoglikelihoods.save("tLoglikelihoods.yml");
@@ -284,7 +284,7 @@ int main(int argc, const char* argv[])
 //    prediction.setData(cMockData);
 //
 //    GridMat cPredictions, cLoglikelihoods;
-//    prediction.predict(cPredictions, cLoglikelihoods);
+//    prediction.compute(cPredictions, cLoglikelihoods);
 //
 //    cPredictions.save("cPredictions.yml");
 //    cLoglikelihoods.save("cLoglikelihoods.yml");
