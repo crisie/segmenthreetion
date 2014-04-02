@@ -91,6 +91,7 @@ int main(int argc, const char* argv[])
     cParam.cellSizeX = 16;
     cParam.cellSizeY = 16;
     cParam.nbins = 9;
+    cParam.hogbins = 288; // total feature vector length
     
     MotionParametrization mParam;
     mParam.hoofbins = 8;
@@ -233,81 +234,81 @@ int main(int argc, const char* argv[])
 		tFE.describe(tGridData);
         tGridData.saveDescription(dataPath, sequences[s], "Thermal.yml");
 	}
-
-    cGridData.clear();
-    mGridData.clear();
-//    dGridData.clear();
-    tGridData.clear();
-    
-    
-    //
-    // Data re-loading
-    //
-    
-    ModalityGridData cMockData;
-    reader.mockread("Color", sequences, "jpg", hp, wp, cMockData);
-    ModalityGridData mMockData;
-    reader.mockread("Motion", sequences, "jpg", hp, wp, mMockData);
-//    ModalityGridData dMockData;
-//    reader.mockread("Depth", sequences, "png", hp, wp, dMockData);
-    ModalityGridData tMockData;
-    reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData);
-
-    cMockData.loadDescription(dataPath, sequences, "Color.yml");
-    mMockData.loadDescription(dataPath, sequences, "Motion.yml");
-//    dMockData.loadDescription(dataPath, sequences, "Depth.yml");
-    tMockData.loadDescription(dataPath, sequences, "Thermal.yml");
-    
-    // Important piece of code
-    vector<ModalityGridData*> mgds;
-    mgds += &cMockData, &mMockData, /*&dMockData,*/ &tMockData;
-    reader.agreement(mgds);
-    
-    
-    //
-    // Prediction
-    //
-    
-    ModalityPrediction<cv::EM> prediction;
-
-    prediction.setNumOfMixtures(nmixtures);
-    prediction.setLoglikelihoodThresholds(nlikelicuts);
-
-    prediction.setModelValidation(kTest, seed);
-    prediction.setModelSelection(kModelSelec, true);
-    
-    // Thermal
-    prediction.setData(tMockData);
-
-    GridMat tPredictions, tLoglikelihoods;
-    prediction.predict(tPredictions, tLoglikelihoods);
-    
-    tPredictions.save("tPredictions.yml");
-    tLoglikelihoods.save("tLoglikelihoods.yml");
-
-    // Color
-    prediction.setData(cMockData);
-
-    GridMat cPredictions, cLoglikelihoods;
-    prediction.predict(cPredictions, cLoglikelihoods);
-
-    cPredictions.save("cPredictions.yml");
-    cLoglikelihoods.save("cLoglikelihoods.yml");
-    
-    
-    //
-    // Map writing
-    //
-       
-    tPredictions.load("tPredictions.yml");
-    
-    GridMapWriter mapWriter;
-    
-    mapWriter.write<unsigned char>(tMockData, tPredictions, "Predictions/");
-    
-//    GridMat tNormLoglikelihoods;
-//    tLoglikelihoods.normalize(tNormLoglikelihoods);
-//    mapWriter.write<float>(tMockData, tNormLoglikelihoods, "Thermal/Loglikelihoods/"); // normalized values are float
+//
+//    cGridData.clear();
+//    mGridData.clear();
+////    dGridData.clear();
+//    tGridData.clear();
+//    
+//    
+//    //
+//    // Data re-loading
+//    //
+//    
+//    ModalityGridData cMockData;
+//    reader.mockread("Color", sequences, "jpg", hp, wp, cMockData);
+//    ModalityGridData mMockData;
+//    reader.mockread("Motion", sequences, "jpg", hp, wp, mMockData);
+////    ModalityGridData dMockData;
+////    reader.mockread("Depth", sequences, "png", hp, wp, dMockData);
+//    ModalityGridData tMockData;
+//    reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData);
+//
+//    cMockData.loadDescription(dataPath, sequences, "Color.yml");
+//    mMockData.loadDescription(dataPath, sequences, "Motion.yml");
+////    dMockData.loadDescription(dataPath, sequences, "Depth.yml");
+//    tMockData.loadDescription(dataPath, sequences, "Thermal.yml");
+//    
+//    // Important piece of code
+//    vector<ModalityGridData*> mgds;
+//    mgds += &cMockData, &mMockData, /*&dMockData,*/ &tMockData;
+//    reader.agreement(mgds);
+//    
+//    
+//    //
+//    // Prediction
+//    //
+//    
+//    ModalityPrediction<cv::EM> prediction;
+//
+//    prediction.setNumOfMixtures(nmixtures);
+//    prediction.setLoglikelihoodThresholds(nlikelicuts);
+//
+//    prediction.setModelValidation(kTest, seed);
+//    prediction.setModelSelection(kModelSelec, true);
+//    
+//    // Thermal
+//    prediction.setData(tMockData);
+//
+//    GridMat tPredictions, tLoglikelihoods;
+//    prediction.predict(tPredictions, tLoglikelihoods);
+//    
+//    tPredictions.save("tPredictions.yml");
+//    tLoglikelihoods.save("tLoglikelihoods.yml");
+//
+//    // Color
+//    prediction.setData(cMockData);
+//
+//    GridMat cPredictions, cLoglikelihoods;
+//    prediction.predict(cPredictions, cLoglikelihoods);
+//
+//    cPredictions.save("cPredictions.yml");
+//    cLoglikelihoods.save("cLoglikelihoods.yml");
+//    
+//    
+//    //
+//    // Map writing
+//    //
+//       
+//    tPredictions.load("tPredictions.yml");
+//    
+//    GridMapWriter mapWriter;
+//    
+//    mapWriter.write<unsigned char>(tMockData, tPredictions, "Predictions/");
+//    
+////    GridMat tNormLoglikelihoods;
+////    tLoglikelihoods.normalize(tNormLoglikelihoods);
+////    mapWriter.write<float>(tMockData, tNormLoglikelihoods, "Thermal/Loglikelihoods/"); // normalized values are float
 
     return 0;
 }

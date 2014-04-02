@@ -48,6 +48,9 @@ void ThermalFeatureExtractor::describe(ModalityGridData& data)
 
         for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
         {
+            cv::Mat tHist (1, m_ThermalParam.ibins + m_ThermalParam.oribins, CV_32F);
+            tHist.setTo(std::numeric_limits<float>::quiet_NaN());
+            
             if (gvalidness.at<unsigned char>(i,j))
             {
                 cv::Mat& cell = grid.at(i,j);
@@ -62,12 +65,12 @@ void ThermalFeatureExtractor::describe(ModalityGridData& data)
                 describeThermalGradOrients(cell, cellMask, tGradOrientsHist);
                 
                 // Join both descriptors in a row
-                cv::Mat tHist;
                 hconcat(tIntensitiesHist, tGradOrientsHist, tHist);
-                
-                data.addDescriptor(tHist, i, j); // row in a matrix of descriptors
+
                 data.setValidness(cv::checkRange(tHist), i, j, k);
             }
+            
+            data.addDescriptor(tHist, i, j); // row in a matrix of descriptors
         }
     }
 }

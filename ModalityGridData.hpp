@@ -143,7 +143,7 @@ public:
         return validness;
     }
     
-    GridMat getDescriptors(int k)
+    GridMat getDescriptor(int k)
     {
         GridMat gDescriptors (m_hp, m_wp);
         
@@ -160,7 +160,7 @@ public:
         return m_Descriptors.at(i,j);
     }
     
-    cv::Mat getDescriptor(unsigned int i, unsigned int j, int k)
+    cv::Mat getDescriptors(unsigned int i, unsigned int j, int k)
     {
         return m_Descriptors.at(i,j).row(k);
     }
@@ -503,7 +503,8 @@ public:
         
         setDescriptors(descriptors);
     }
-    
+
+
 private:
     int m_hp, m_wp;
     string m_ModalityName;

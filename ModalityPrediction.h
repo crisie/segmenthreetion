@@ -92,7 +92,7 @@ public:
                         vector<vector<T> > params,
                         GridMat& goodnesses);
     
-    void predict(GridMat& predictions, GridMat& loglikelihoods);
+    void predict(GridMat& predictions, GridMat& loglikelihoods, bool normalizedLoglikelihoods = true);
     
 //    void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies);
     

@@ -37,10 +37,10 @@ template void GridMat::argmin<int>(GridMat& gargmin);
 template void GridMat::argmin<float>(GridMat& gargmin);
 template void GridMat::argmin<double>(GridMat& gargmin);
 
-template void GridMat::setTo<unsigned char>(unsigned char value, unsigned int, unsigned j);
-template void GridMat::setTo<int>(int value, unsigned int, unsigned j);
-template void GridMat::setTo<float>(float value, unsigned int, unsigned j);
-template void GridMat::setTo<double>(double value, unsigned int, unsigned j);
+template void GridMat::setTo<unsigned char>(unsigned char value, unsigned int i, unsigned j);
+template void GridMat::setTo<int>(int value, unsigned int i, unsigned int j);
+template void GridMat::setTo<float>(float value, unsigned int i, unsigned int j);
+template void GridMat::setTo<double>(double value, unsigned int i, unsigned int j);
 
 template void GridMat::setTo<unsigned char>(unsigned char value, unsigned int i, unsigned int j, cv::Mat mask);
 template void GridMat::setTo<int>(int value, unsigned int i, unsigned int j, cv::Mat mask);
@@ -452,6 +452,14 @@ void GridMat::setTo(T value, unsigned int i, unsigned int j, cv::Mat mask)
     tmp.copyTo(this->at(i,j), mask);
 }
 
+void GridMat::setTo(cv::Mat mat)
+{
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
+    {
+        this->at(i,j).assignTo(mat);
+    }
+}
+
 template<typename T>
 void GridMat::convertToMat(cv::Mat& mat)
 {
@@ -479,6 +487,94 @@ cv::Mat GridMat::convertToMat()
     this->convertToMat<T>(tmp);
     
     return tmp;
+}
+
+GridMat GridMat::convertToSparse(GridMat indices)
+{
+    GridMat g;
+    convertToSparse(indices, g);
+    
+    return g;
+}
+
+void GridMat::convertToSparse(GridMat indices, GridMat& sparseGridMat)
+{
+    assert (crows() != indices.crows() || ccols() != indices.ccols());
+    
+    cv::Mat counts(crows(), ccols(), cv::DataType<int>::type);
+    counts.setTo(0);
+    
+    sparseGridMat.release();
+    sparseGridMat.create(indices.crows(), indices.ccols());
+    
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
+    {
+        if (indices.at(i,j).rows > 1)
+            sparseGridMat.at(i,j).create(indices.at(i,j).rows, this->at(i,j).cols, this->at(i,j).type());
+        else
+            sparseGridMat.at(i,j).create(this->at(i,j).rows, indices.at(i,j).cols, this->at(i,j).type());
+        
+        for (int k = 0; k < indices.at(i,j).rows; k++)
+        {
+            if (indices.at<unsigned char>(i,j,k,0))
+            {
+                if (indices.at(i,j).rows > 1)
+                    this->at(i,j).row(counts.at<int>(i,j)++).copyTo(sparseGridMat.at(i,j).row(k));
+                else
+                    this->at(i,j).col(counts.at<int>(i,j)++).copyTo(sparseGridMat.at(i,j).col(k));
+            }
+            else
+            {
+                cv::Mat mat;
+                if (indices.at(i,j).rows > 1)
+                {
+                    mat.create(1, this->at(i,j).cols, this->at(i,j).type());
+                    mat.setTo(0);
+                    mat.copyTo(sparseGridMat.at(i,j).row(k));
+                }
+                else
+                {
+                    mat.create(this->at(i,j).rows, 1, this->at(i,j).type());
+                    mat.setTo(0);
+                    mat.copyTo(sparseGridMat.at(i,j).col(k));
+                }
+            }
+        }
+    }
+}
+
+GridMat GridMat::convertToDense(GridMat indices)
+{
+    GridMat g;
+    convertToDense(indices, g);
+    
+    return g;
+}
+
+void GridMat::convertToDense(GridMat indices, GridMat& denseGridMat)
+{
+    assert (crows() != indices.crows() || ccols() != indices.ccols());
+    
+    denseGridMat = GridMat(*this, indices, 0, true);
+}
+
+
+void GridMat::hserial(cv::Mat& serial)
+{
+    serial = this->at(0,0).clone();
+    for (int i = 0; i < crows(); i++) for (int j = 1; j < ccols(); j++)
+    {
+        cv::hconcat(serial, this->at(i,j), serial);
+    }
+}
+
+void GridMat::vserial(cv::Mat& serial)
+{
+    serial = this->at(0,0).clone();
+    for (int i = 0; i < crows(); i++) for (int j = 1; j < ccols(); j++)
+    {
+        cv::vconcat(serial, this->at(i,j), serial);
+    }
 }
 
 void GridMat::normalize(GridMat& normalized)

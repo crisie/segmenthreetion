@@ -512,6 +512,7 @@ void ModalityReader::loadCalibVarsDir(string dir, vector<string>& calibVarsDirs)
     
 }
 
+/*
 void ModalityReader::agreement(vector<ModalityGridData*> mgds)
 {
     // at least one modality is passed
@@ -587,3 +588,4 @@ void ModalityReader::agreement(vector<ModalityGridData*> mgds)
             mgds[m]->setDescriptors(descriptors[m], i, j);
     }
 }
+*/

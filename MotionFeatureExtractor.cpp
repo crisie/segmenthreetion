@@ -39,6 +39,9 @@ void MotionFeatureExtractor::describe(ModalityGridData& data)
         
         for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
         {
+            cv::Mat mOrientedFlowHist (1, m_Param.hoofbins, CV_32F);
+            mOrientedFlowHist.setTo(std::numeric_limits<float>::quiet_NaN());
+            
             if (gvalidness.at<unsigned char>(i,j))
             {
                 cv::Mat & cell = grid.at(i,j);
@@ -49,12 +52,12 @@ void MotionFeatureExtractor::describe(ModalityGridData& data)
                 threshold(tmpCellMask,tmpCellMask,1,255,CV_THRESH_BINARY);
                 tmpCellMask.convertTo(cellMask, CV_8UC1);
                 
-                cv::Mat mOrientedFlowHist;
                 describeMotionOrientedFlow(cell, cellMask, mOrientedFlowHist);
-                
-                data.addDescriptor(mOrientedFlowHist, i, j); // row in a matrix of descriptors
+    
                 data.setValidness(cv::checkRange(mOrientedFlowHist), i, j, k);
             }
+            
+            data.addDescriptor(mOrientedFlowHist, i, j); // row in a matrix of descriptors
         }
 	}
 }

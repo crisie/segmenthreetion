@@ -185,6 +185,9 @@ void ColorFeatureExtractor::describe(ModalityGridData& data)
         
         for(int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
         {
+            cv::Mat cOrientedGradsHist (1, m_ColorParam.hogbins, CV_32F);
+            cOrientedGradsHist.setTo(std::numeric_limits<float>::quiet_NaN());
+            
             if (gvalidness.at<unsigned char>(i,j))
             {
                 cv::Mat & cell = grid.at(i,j);
@@ -196,12 +199,12 @@ void ColorFeatureExtractor::describe(ModalityGridData& data)
                 tmpCellMask.convertTo(cellMask, CV_8UC1);
                 
                 //HOG descriptor
-                cv::Mat cOrientedGradsHist;
                 describeColorHog(cell, cellMask, cOrientedGradsHist);
                 
-                data.addDescriptor(cOrientedGradsHist, i, j); // row in a matrix of descriptors
                 data.setValidness(cv::checkRange(cOrientedGradsHist), i, j, k);
             }
+            
+            data.addDescriptor(cOrientedGradsHist, i, j); // row in a matrix of descriptors
         }
 	}
 }

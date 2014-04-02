@@ -40,6 +40,7 @@ public:
     float L2HysThresh; // = 0.2;
     int gammaCorrection; // = 0;
     int nLevels; // = 64;
+    int hogbins; // = 288
     
 };
 

@@ -27,6 +27,8 @@ template void ModalityPredictionBase<cv::EM>::selectParameterCombination(vector<
 
 template void ModalityPredictionBase<cv::EM>::selectBestParameterCombination(vector<vector<int> > expandedParams, int hp, int wp, int nparams, GridMat goodnesses, vector<cv::Mat>& selectedParams);
 template void ModalityPredictionBase<cv::EM>::selectBestParameterCombination(vector<vector<double> > expandedParams, int hp, int wp, int nparams, GridMat goodnesses, vector<cv::Mat>& selectedParams);
+
+template class ModalityPredictionBase<cv::EM>;
 // -----------------------------------------------------------------------------
 
 
@@ -226,24 +228,6 @@ ModalityPrediction<PredictorT>::ModalityPrediction()
     
 }
 
-//template<typename PredictorT>
-//void ModalityPrediction<PredictorT>::setModelSelection(int k, bool best)
-//{
-//    ModalityPredictionBase<PredictorT>::setModelSelection(k, best);
-//}
-//
-//template<typename PredictorT>
-//void ModalityPrediction<PredictorT>::setModelValidation(int k, int seed)
-//{
-//    ModalityPredictionBase<PredictorT>::setModelValidation(k, seed);
-//}
-//
-//template<typename PredictorT>
-//void ModalityPrediction<PredictorT>::accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies)
-//{
-//    return ModalityPredictionBase<PredictorT>::accuracy(actuals, predictions);
-//}
-
 
 //
 // ModalityPrediction<cv::EM>
@@ -253,16 +237,6 @@ ModalityPrediction<cv::EM>::ModalityPrediction()
 : ModalityPredictionBase<cv::EM>()
 {
 }
-
-//void ModalityPrediction<cv::EM>::setModelSelection(int k, bool best)
-//{
-//    ModalityPredictionBase<cv::EM>::setModelSelection(k, best);
-//}
-//
-//void ModalityPrediction<cv::EM>::setModelValidation(int k, int seed)
-//{
-//    ModalityPredictionBase<cv::EM>::setModelValidation(k, seed);
-//}
 
 void ModalityPrediction<cv::EM>::setNumOfMixtures(int m)
 {
@@ -286,10 +260,11 @@ void ModalityPrediction<cv::EM>::setLoglikelihoodThresholds(vector<int> t)
     m_logthresholds = t;
 }
 
-void ModalityPrediction<cv::EM>::predict(GridMat& predictions, GridMat& loglikelihoods)
+void ModalityPrediction<cv::EM>::predict(GridMat& predictions, GridMat& loglikelihoods, bool normalizedLooglikelihoods)
 {
+    GridMat tags (m_data.getTagsMat());
     GridMat descriptors = m_data.getDescriptors();
-    GridMat tags = m_data.getValidTags(); // as many as descriptors
+    GridMat validnesses = m_data.getValidnesses();
     
     GridMat partitions;
     cvpartition(tags, m_testK, m_seed, partitions);
@@ -303,62 +278,94 @@ void ModalityPrediction<cv::EM>::predict(GridMat& predictions, GridMat& loglikel
     // create a list of parameters' variations
     expandParameters(params, m_hp * m_wp, gridExpandedParameters);
     
-//    cout << "Model selection CVs [" << m_testK << "]: " << endl;
-//    
-//    vector<GridMat> goodnesses(m_testK); // for instance: accuracies
-//    
-//    for (int k = 0; k < m_testK; k++)
-//    {
-//        cout << k << " " << endl;
-//        
-//        GridMat tagsTrFold (tags, partitions, k, true);
-//        GridMat tagsTeFold (tags, partitions, k);
-//        GridMat descriptorsTrFold (descriptors, partitions, k, true);
-//        GridMat descriptorsTeFold (descriptors, partitions, k);
-//        
-//        modelSelection(descriptorsTrFold, tagsTrFold,
-//                       params, goodnesses[k]);
-//        
-//        std::stringstream ss;
-//        ss << "gmm_goodnesses_" << k << ".yml" << endl;
-//        goodnesses[k].save(ss.str());
-//    }
-//    cout << endl;
+    
+    cout << "Model selection CVs [" << m_testK << "]: " << endl;
+    
+    vector<GridMat> goodnesses(m_testK); // for instance: accuracies
+    for (int k = 0; k < m_testK; k++)
+    {
+        cout << k << " " << endl;
+        
+        // Index the k-th training
+        GridMat validnessesTrFold (validnesses, partitions, k, true);
+        GridMat descriptorsTrFold (descriptors, partitions, k, true);
+        GridMat tagsTrFold (tags, partitions, k, true);
+        
+        // Within the k-th training partition,
+        // remove the nonvalid descriptors (validness == 0) and associated tags
+        GridMat validDescriptorsTrFold = descriptorsTrFold.convertToDense(validnessesTrFold);
+        GridMat validTagsTrFold = tagsTrFold.convertToDense(validnessesTrFold);
+        
+        modelSelection(validDescriptorsTrFold, validTagsTrFold,
+                       params, goodnesses[k]);
+        
+        std::stringstream ss;
+        ss << "gmm_goodnesses_" << k << ".yml" << endl;
+        goodnesses[k].save(ss.str());
+    }
+    cout << endl;
+    
     
     cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
+    
     for (int k = 0; k < m_testK; k++)
     {
         cout << k << " ";
         
-        GridMat tagsTrFold (tags, partitions, k, true);
-        GridMat tagsTeFold (tags, partitions, k);
+        // Index the k-th training and test partitions
         GridMat descriptorsTrFold (descriptors, partitions, k, true);
         GridMat descriptorsTeFold (descriptors, partitions, k);
+        GridMat validnessesTrFold (validnesses, partitions, k, true);
+        GridMat validnessesTeFold (validnesses, partitions, k);
+        GridMat tagsTrFold (tags, partitions, k, true);
+        GridMat tagsTeFold (tags, partitions, k);
         
-        GridMat descriptorsSubjTrFold (descriptorsTrFold, tagsTrFold, 1);
+        // Within the k-th training partition,
+        // remove the nonvalid descriptors (validness == 0) and associated tags
+        GridMat validDescriptorsTrFold = descriptorsTrFold.convertToDense(validnessesTrFold);
+        GridMat validTagsTrFold = tagsTrFold.convertToDense(validnessesTrFold);
         
-        GridPredictor<cv::EM> predictor;
-        predictor.setData(descriptorsSubjTrFold);
+        // Within the valid descriptors in the k-th training partition,
+        // index the subject descriptors (tag == 1)
+        GridMat validSubjectDescriptorsTrFold (validDescriptorsTrFold, validTagsTrFold, 1);
+        
+        
+        GridPredictor<cv::EM> predictor(m_hp, m_wp);
        
+        // Model selection information is kept on disk, reload it
         GridMat goodnesses;
         std::stringstream ss;
         ss << "gmm_goodnesses_" << k << ".yml" << endl;
         goodnesses.load(ss.str());
         
+        // Train with the best parameter combination in average in a model
+        // selection procedure within the training partition
         vector<cv::Mat> bestParams;
         selectBestParameterCombination(gridExpandedParameters, m_hp, m_wp, params.size(), goodnesses, bestParams);
 
         predictor.setNumOfMixtures(bestParams[0]);
         predictor.setLoglikelihoodThreshold(bestParams[1]);
-        predictor.train();
         
-        GridMat predictionsTeFold, loglikelihoodsTeFold;
-        predictor.predict(descriptorsTeFold, predictionsTeFold, loglikelihoodsTeFold);
+        // Training phase
+        
+        predictor.train(validSubjectDescriptorsTrFold);
+        
+        // Predict phase
+        
+        // Within the k-th test partition,
+        // remove the nonvalid descriptors (validness == 0) and associated tags
+        GridMat validDescriptorsTeFold = descriptorsTeFold.convertToDense(validnessesTeFold);
+        
+        GridMat validPredictionsTeFold, validLoglikelihoodsTeFold;
+        predictor.predict(validDescriptorsTeFold, validPredictionsTeFold, validLoglikelihoodsTeFold);
 
-        predictions.set(predictionsTeFold, partitions, k);
-        loglikelihoods.set(loglikelihoodsTeFold, partitions, k);
+        predictions.set(validPredictionsTeFold.convertToSparse(validnessesTeFold), partitions, k);
+        loglikelihoods.set(validLoglikelihoodsTeFold.convertToSparse(validnessesTeFold), partitions, k);
     }
     cout << endl;
+    
+    if (normalizedLooglikelihoods)
+        loglikelihoods.normalize(loglikelihoods);
 }
 
 template<typename T>
@@ -386,10 +393,11 @@ void ModalityPrediction<cv::EM>::modelSelection(GridMat descriptors, GridMat tag
         cout << k << " ";
         
         // Get fold's data
-        GridMat tagsTr (tags, partitions, k, true);
-        GridMat tagsVal (tags, partitions, k);
+
         GridMat descriptorsTr (descriptors, partitions, k, true);
         GridMat descriptorsVal (descriptors, partitions, k);
+        GridMat tagsTr (tags, partitions, k, true);
+        GridMat tagsVal (tags, partitions, k);
         
         GridMat descriptorsSubjTr (descriptorsTr, tagsTr, 1); // subjects' training sample
         
@@ -401,8 +409,7 @@ void ModalityPrediction<cv::EM>::modelSelection(GridMat descriptors, GridMat tag
         for (int m = 0; m < gridExpandedParameters.size(); m++)
         {
             // Create predictor and its parametrization
-            GridPredictor<cv::EM> predictor;
-            predictor.setData(descriptorsSubjTr); // unsupevised method, thus no tags
+            GridPredictor<cv::EM> predictor (m_hp, m_wp);
             
             vector<cv::Mat> selectedParams;
             selectParameterCombination(gridExpandedParameters, m_hp, m_wp, params.size(), m, selectedParams);
@@ -411,7 +418,7 @@ void ModalityPrediction<cv::EM>::modelSelection(GridMat descriptors, GridMat tag
             predictor.setLoglikelihoodThreshold(selectedParams[1]);
 
             // Train
-            predictor.train();
+            predictor.train(descriptorsSubjTr);
             
             // Test
             GridMat predictionsVal, loglikelihoodsVal;
@@ -431,190 +438,3 @@ void ModalityPrediction<cv::EM>::modelSelection(GridMat descriptors, GridMat tag
     
     accuracies.mean(goodnesses, 1);
 }
-
-
-//void ModalityPrediction<cv::EM>::accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies)
-//{
-//    return ModalityPredictionBase<cv::EM>::accuracy(actuals, predictions, accuracies);
-//}
-
-
-//
-// ModalityPrediction<CvSVM>
-//
-
-ModalityPrediction<CvSVM>::ModalityPrediction()
-: ModalityPredictionBase<CvSVM>()
-{
-}
-
-void ModalityPrediction<CvSVM>::setC(float c)
-{
-    m_cs.clear();
-    m_cs.push_back(c);
-}
-
-void ModalityPrediction<CvSVM>::setCs(vector<float> cs)
-{
-    m_cs = cs;
-}
-
-void ModalityPrediction<CvSVM>::setGamma(float gamma)
-{
-    m_gammas.clear();
-    m_gammas.push_back(gamma);
-}
-
-void ModalityPrediction<CvSVM>::setGammas(vector<float> gammas)
-{
-    m_gammas = gammas;
-}
-
-void ModalityPrediction<CvSVM>::predict(GridMat& predictions)
-{
-    GridMat descriptors = m_data.getDescriptors();
-    GridMat tags = m_data.getValidTags(); // as many as descriptors
-    
-    GridMat partitions;
-    cvpartition(tags, m_testK, m_seed, partitions);
-    
-    vector<GridPredictor<CvSVM> > predictors;
-    
-    vector<vector<float> > params, gridExpandedParameters;
-    
-    params.push_back(vector<float>(m_cs.begin(), m_cs.end()));
-    params.push_back(vector<float>(m_gammas.begin(), m_gammas.end()));
-    // create a list of parameters' variations
-    expandParameters(params, m_hp * m_wp, gridExpandedParameters);
-    
-    cout << "Model selection CVs [" << m_testK << "]: " << endl;
-
-    vector<GridMat> goodnesses(m_testK); // for instance: accuracies
-
-    for (int k = 0; k < m_testK; k++)
-    {
-        cout << k << " " << endl;
-
-        GridMat tagsTrFold (tags, partitions, k, true);
-        GridMat tagsTeFold (tags, partitions, k);
-        GridMat descriptorsTrFold (descriptors, partitions, k, true);
-        GridMat descriptorsTeFold (descriptors, partitions, k);
-
-        modelSelection(descriptorsTrFold, tagsTrFold,
-                       params, goodnesses[k]);
-
-        std::stringstream ss;
-        ss << "svm_goodnesses_" << k << ".yml" << endl;
-        goodnesses[k].save(ss.str());
-    }
-    cout << endl;
-    
-    cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
-    for (int k = 0; k < m_testK; k++)
-    {
-        cout << k << " ";
-        
-        GridMat tagsTrFold (tags, partitions, k, true);
-        GridMat tagsTeFold (tags, partitions, k);
-        GridMat descriptorsTrFold (descriptors, partitions, k, true);
-        GridMat descriptorsTeFold (descriptors, partitions, k);
-        
-        GridMat descriptorsSubjTrFold (descriptorsTrFold, tagsTrFold, 1);
-        
-        GridPredictor<CvSVM> predictor;
-        predictor.setData(descriptorsSubjTrFold);
-        
-        GridMat goodnesses;
-        std::stringstream ss;
-        ss << "svm_goodnesses_" << k << ".yml" << endl;
-        goodnesses.load(ss.str());
-        
-        vector<cv::Mat> bestParams;
-        selectBestParameterCombination(gridExpandedParameters, m_hp, m_wp, params.size(), goodnesses, bestParams);
-        
-        predictor.setParameters(bestParams[0], bestParams[1]);
-        predictor.train();
-        
-        GridMat predictionsTeFold;
-        predictor.predict(descriptorsTeFold, predictionsTeFold);
-        
-        predictions.set(predictionsTeFold, partitions, k);
-    }
-    cout << endl;
-}
-
-template<typename T>
-void ModalityPrediction<CvSVM>::modelSelection(GridMat descriptors, GridMat tags,
-                                                vector<vector<T> > params,
-                                                GridMat& goodnesses)
-{
-    // Prepare parameters' combinations
-    vector<vector<T> > gridExpandedParameters;
-    expandParameters(params, m_hp * m_wp, gridExpandedParameters);
-    
-    // Partitionate the data in folds
-    GridMat partitions;
-    cvpartition(tags, m_modelSelecK, m_seed, partitions);
-    
-    // Instanciate a hp-by-wp GridMat of accuracies. A cell contains a matrix
-    // being the rows the parameters' combinations and columns fold-runs
-    GridMat accuracies;
-    
-    vector<GridPredictor<CvSVM> > predictors;
-    
-    cout << "(";
-    for (int k = 0; k < m_modelSelecK; k++)
-    {
-        cout << k << " ";
-        
-        // Get fold's data
-        GridMat tagsTr (tags, partitions, k, true);
-        GridMat tagsVal (tags, partitions, k);
-        GridMat descriptorsTr (descriptors, partitions, k, true);
-        GridMat descriptorsVal (descriptors, partitions, k);
-        
-        GridMat descriptorsSubjObjTr (descriptorsTr, tagsTr, -1, true);
-        GridMat tagsSubjObjTr (tagsTr, tagsTr, -1, true);
-        
-        GridMat descriptorsSubjObjVal (descriptorsVal, tagsVal, -1, true);
-        GridMat tagsSubjObjVal (tagsVal, tagsVal, -1, true);
-        
-        GridMat foldAccs; // results
-        
-        for (int m = 0; m < gridExpandedParameters.size(); m++)
-        {
-            // Create predictor and its parametrization
-            GridPredictor<CvSVM> predictor;
-            predictor.setData(descriptorsSubjObjTr); // unsupevised method, thus no tags
-            predictor.setDataResponses(tagsSubjObjTr);
-
-            vector<cv::Mat> selectedParams;
-            selectParameterCombination(gridExpandedParameters, m_hp, m_wp, params.size(), m, selectedParams);
-            predictor.setParameters(selectedParams[0], selectedParams[1]);
-            
-            // Train
-            predictor.train();
-            
-            // Test
-            GridMat predictionsVal;
-            predictor.predict(descriptorsSubjObjVal, predictionsVal);
-            
-            // Compute an accuracy measure
-            cv::Mat accs; // (m_hp * m_wp) accuracies get by params combination in k-th fold
-            accuracy(tagsSubjObjVal, predictionsVal, accs);
-            
-            GridMat paramsAccs (accs, m_hp, m_wp);
-            foldAccs.vconcat(paramsAccs);
-        }
-        
-        accuracies.hconcat(foldAccs);
-    }
-    cout << ") " << endl;
-    
-    accuracies.mean(goodnesses, 1);
-}
-
-
-// Explicit template instanciation (to avoid linking errors)
-template class ModalityPredictionBase<cv::EM>;
-template class ModalityPredictionBase<CvSVM>;

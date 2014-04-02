@@ -59,11 +59,17 @@ public:
     void setTo(T value, unsigned int i, unsigned int j);
     template<typename T>
     void setTo(T value, unsigned int i, unsigned int j, cv::Mat mask);
+    void setTo(cv::Mat m);
     
     template<typename T>
     void convertToMat(cv::Mat& mat);
     template<typename T>
     cv::Mat convertToMat();
+    
+    GridMat convertToSparse(GridMat indices);
+    void convertToSparse(GridMat indices, GridMat& sparseGridMat);
+    GridMat convertToDense(GridMat indices);
+    void convertToDense(GridMat indices, GridMat& denseGridMat);
     
     void normalize(GridMat& g); // at cell level
     GridMat normalize(); // at cell level
@@ -86,6 +92,9 @@ public:
     void vconcat(GridMat& other);
     void hconcat(cv::Mat& mat, unsigned int i, unsigned int j);
     void vconcat(cv::Mat& mat, unsigned int i, unsigned int j);
+    
+    void hserial(cv::Mat& serial);
+    void vserial(cv::Mat& serial);
     
     void mean(GridMat& gmean, int dim = 0);
     void max(GridMat& gmax, int dim = 0);
