@@ -122,6 +122,8 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::setGammas(vector<float> gammas)
 
 void ClassifierFusionPrediction<cv::EM,CvSVM>::predict(GridMat &predictions)
 {
+    formatData();
+    
     // Prepare parameters' combinations
     vector<vector<float> > params, expandedParameters;
     params.push_back(m_cs);

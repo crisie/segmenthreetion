@@ -74,9 +74,11 @@ public:
     void setModelSelection(int k, bool best);
     void setModelValidation(int k, int seed);
     
-private:
+protected:
     
     void formatData();
+    
+private:
     
     // Attributes
     
