@@ -192,10 +192,15 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(cv::Mat& predictions)
         m_pClassifier->predict(teData, tePredictions);
         
         cvx::copyMat(tePredictions, predictions, partitions == k);
+    }
 }
 
 template<typename T>
 void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection(cv::Mat data, cv::Mat responses, vector<vector<T> > params, cv::Mat &goodnesses)
 {
+    // Partitionate the data in folds
+    cv::Mat partitions;
+    cvpartition(responses, m_modelSelecK, m_seed, partitions);
     
+    cv::Mat accuracies;
 }
