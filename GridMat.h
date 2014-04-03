@@ -62,7 +62,8 @@ public:
     void setTo(T value, unsigned int i, unsigned int j);
     template<typename T>
     void setTo(T value, unsigned int i, unsigned int j, cv::Mat mask);
-    void setTo(cv::Mat m);
+    //void setTo(cv::Mat& m);
+    //void setTo(GridMat& m);
     
     template<typename T>
     void convertToMat(cv::Mat& mat);
@@ -86,16 +87,16 @@ public:
     void copyTo(GridMat& dst, GridMat indices); // size(src) == src(dst)
     void copyTo(GridMat& dst, GridMat indices, int k); // size(src) == size(dst)
     
-    GridMat operator<(GridMat& other);
-    GridMat operator<=(GridMat& other);
-    GridMat operator>(GridMat& other);
-    GridMat operator>=(GridMat& other);
-    GridMat operator==(GridMat& other);
-    GridMat operator!=(GridMat& other);
-    GridMat operator+(GridMat& other);
-    GridMat operator-(GridMat& other);
-    GridMat operator*(GridMat& other);
-    GridMat operator/(GridMat& other);
+//    GridMat operator<(GridMat& other);
+//    GridMat operator<=(GridMat& other);
+//    GridMat operator>(GridMat& other);
+//    GridMat operator>=(GridMat& other);
+//    GridMat operator==(GridMat& other);
+//    GridMat operator!=(GridMat& other);
+//    GridMat operator+(GridMat& other);
+//    GridMat operator-(GridMat& other);
+//    GridMat operator*(GridMat& other);
+//    GridMat operator/(GridMat& other);
     
     template<typename T>
     GridMat operator<(T value);

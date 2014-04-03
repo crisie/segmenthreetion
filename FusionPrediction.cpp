@@ -72,22 +72,22 @@ void SimpleFusionPrediction<cv::EM>::compute(GridMat& gpredictions)
     
     // Consensus in the fusedPrediction cells
     
-    GridMat posDistsToMargin, negDistsToMargin;
-    posDistsToMargin.setTo(0);
-    negDistsToMargin.setTo(0);
-    
-    GridMat negPredictions (individualPredictions == 0);
-    GridMat posPredictions (individualPredictions == 1);
-    
-    distsToMargin.copyTo(negDistsToMargin, negPredictions);
-    distsToMargin.copyTo(posDistsToMargin, posPredictions);
-    
-    cv::Mat avgNegDistsToMargin, avgPosDistsToMargin;
-    
-    cv::divide(negDistsToMargin.accumulate(), negPredictions.accumulate(), avgNegDistsToMargin);
-    cv::divide(posDistsToMargin.accumulate(), posPredictions.accumulate(), avgPosDistsToMargin);
-    
-    consensusPredictions.setTo(avgPosDistsToMargin > cv::abs(avgNegDistsToMargin));
+//    GridMat posDistsToMargin, negDistsToMargin;
+//    posDistsToMargin.setTo(0);
+//    negDistsToMargin.setTo(0);
+//    
+//    GridMat negPredictions (individualPredictions == 0);
+//    GridMat posPredictions (individualPredictions == 1);
+//    
+//    distsToMargin.copyTo(negDistsToMargin, negPredictions);
+//    distsToMargin.copyTo(posDistsToMargin, posPredictions);
+//    
+//    cv::Mat avgNegDistsToMargin, avgPosDistsToMargin;
+//    
+//    cv::divide(negDistsToMargin.accumulate(), negPredictions.accumulate(), avgNegDistsToMargin);
+//    cv::divide(posDistsToMargin.accumulate(), posPredictions.accumulate(), avgPosDistsToMargin);
+//    
+//    consensusPredictions.setTo(avgPosDistsToMargin > cv::abs(avgNegDistsToMargin));
 }
 
 //

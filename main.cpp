@@ -181,150 +181,150 @@ int main(int argc, const char* argv[])
 //    writer.write("Thermal", tData);
 
     
-    // Color description
-
-    ModalityGridData cGridData;
-
-    ColorFeatureExtractor cFE(cParam);
-	for (int s = 0; s < sequences.size(); s++)
-	{
-        cout << "Reading color frames in scene " << s << ".." << endl;
-		reader.read("Color", sequences[s], "jpg", hp, wp, cGridData);
-        cout << "Describing color..." << endl;
-		cFE.describe(cGridData);
-        cGridData.saveDescription(dataPath, sequences[s], "Color.yml");
-    }
-
-    // Motion description
-    
-    ModalityGridData mGridData;
-
-    MotionFeatureExtractor mFE(mParam);
-    for (int s = 0; s < sequences.size(); s++)
-	{
-        cout << "Computing motion (from read color) frames in scene " << s << ".." << endl;
-		reader.read("Motion", sequences[s], "jpg", hp, wp, mGridData);
-        cout << "Describing motion..." << endl;
-        mFE.describe(mGridData);
-        mGridData.saveDescription(dataPath, sequences[s], "Motion.yml");
-	}
-    
-    // Depth description
-    
-    ModalityGridData dGridData;
-    
-    DepthFeatureExtractor dFE(dParam);
-	for (int s = 0; s < sequences.size(); s++)
-	{
-        cout << "Reading depth frames in scene " << s << ".." << endl;
-		reader.read("Depth", sequences[s], "png", hp, wp, dGridData);
-        cout << "Describing depth..." << endl;
-		dFE.describe(dGridData);
-        dGridData.saveDescription(dataPath, sequences[s], "Depth.yml");
-	}
-    
-    // Thermal description
-    
-    ModalityGridData tGridData;
-
-    ThermalFeatureExtractor tFE(tParam);
-	for (int s = 0; s < sequences.size(); s++)
-	{
-        cout << "Reading thermal frames in scene " << s << ".." << endl;
-		reader.read("Thermal", sequences[s], "jpg", hp, wp, tGridData);
-        cout << "Describing thermal..." << endl;
-		tFE.describe(tGridData);
-        tGridData.saveDescription(dataPath, sequences[s], "Thermal.yml");
-	}
-
-    cGridData.clear();
-    mGridData.clear();
-//    dGridData.clear();
-    tGridData.clear();
+//    // Color description
+//
+//    ModalityGridData cGridData;
+//
+//    ColorFeatureExtractor cFE(cParam);
+//	for (int s = 0; s < sequences.size(); s++)
+//	{
+//        cout << "Reading color frames in scene " << s << ".." << endl;
+//		reader.read("Color", sequences[s], "jpg", hp, wp, cGridData);
+//        cout << "Describing color..." << endl;
+//		cFE.describe(cGridData);
+//        cGridData.saveDescription(dataPath, sequences[s], "Color.yml");
+//    }
+//
+//    // Motion description
+//    
+//    ModalityGridData mGridData;
+//
+//    MotionFeatureExtractor mFE(mParam);
+//    for (int s = 0; s < sequences.size(); s++)
+//	{
+//        cout << "Computing motion (from read color) frames in scene " << s << ".." << endl;
+//		reader.read("Motion", sequences[s], "jpg", hp, wp, mGridData);
+//        cout << "Describing motion..." << endl;
+//        mFE.describe(mGridData);
+//        mGridData.saveDescription(dataPath, sequences[s], "Motion.yml");
+//	}
+//    
+//    // Depth description
+//    
+//    ModalityGridData dGridData;
+//    
+//    DepthFeatureExtractor dFE(dParam);
+//	for (int s = 0; s < sequences.size(); s++)
+//	{
+//        cout << "Reading depth frames in scene " << s << ".." << endl;
+//		reader.read("Depth", sequences[s], "png", hp, wp, dGridData);
+//        cout << "Describing depth..." << endl;
+//		dFE.describe(dGridData);
+//        dGridData.saveDescription(dataPath, sequences[s], "Depth.yml");
+//	}
+//    
+//    // Thermal description
+//    
+//    ModalityGridData tGridData;
+//
+//    ThermalFeatureExtractor tFE(tParam);
+//	for (int s = 0; s < sequences.size(); s++)
+//	{
+//        cout << "Reading thermal frames in scene " << s << ".." << endl;
+//		reader.read("Thermal", sequences[s], "jpg", hp, wp, tGridData);
+//        cout << "Describing thermal..." << endl;
+//		tFE.describe(tGridData);
+//        tGridData.saveDescription(dataPath, sequences[s], "Thermal.yml");
+//	}
+//
+//    cGridData.clear();
+//    mGridData.clear();
+////    dGridData.clear();
+//    tGridData.clear();
     
     
     // Data re-loading
     
-    ModalityGridData cMockData;
-    reader.mockread("Color", sequences, "jpg", hp, wp, cMockData);
-    ModalityGridData mMockData;
-    reader.mockread("Motion", sequences, "jpg", hp, wp, mMockData);
-//    ModalityGridData dMockData;
-//    reader.mockread("Depth", sequences, "png", hp, wp, dMockData);
-    ModalityGridData tMockData;
-    reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData);
+//    ModalityGridData cMockData;
+//    reader.mockread("Color", sequences, "jpg", hp, wp, cMockData);
+//    ModalityGridData mMockData;
+//    reader.mockread("Motion", sequences, "jpg", hp, wp, mMockData);
+    ModalityGridData dMockData;
+    reader.mockread("Depth", sequences, "png", hp, wp, dMockData);
+//    ModalityGridData tMockData;
+//    reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData);
 
-    cMockData.loadDescription(dataPath, sequences, "Color.yml");
-    mMockData.loadDescription(dataPath, sequences, "Motion.yml");
-//    dMockData.loadDescription(dataPath, sequences, "Depth.yml");
-    tMockData.loadDescription(dataPath, sequences, "Thermal.yml");
+//    cMockData.loadDescription(dataPath, sequences, "Color.yml");
+//    mMockData.loadDescription(dataPath, sequences, "Motion.yml");
+    dMockData.saveDescription(dataPath, sequences, "Depth.yml");
+//    tMockData.loadDescription(dataPath, sequences, "Thermal.yml");
     
     
     //
     // Individual prediction
     //
     
-    ModalityPrediction<cv::EM> prediction;
-
-    prediction.setNumOfMixtures(nmixtures);
-    prediction.setLoglikelihoodThresholds(nlikelicuts);
-
-    prediction.setModelValidation(kTest, seed);
-    prediction.setModelSelection(kModelSelec, true);
-    
-    // Thermal
-    prediction.setData(tMockData);
-
-    GridMat tPredictions, tLoglikelihoods;
-    prediction.compute(tPredictions, tLoglikelihoods);
-    
-    tPredictions.save("tPredictions.yml");
-    tLoglikelihoods.save("tLoglikelihoods.yml");
-
-    // Color
-    prediction.setData(cMockData);
-
-    GridMat cPredictions, cLoglikelihoods;
-    prediction.compute(cPredictions, cLoglikelihoods);
-
-    cPredictions.save("cPredictions.yml");
-    cLoglikelihoods.save("cLoglikelihoods.yml");
-
-    //
-    // Fusion
-    //
-    
-    vector<GridMat> predictions, loglikelihoods; // put together all the data
-    predictions += tPredictions, cPredictions;
-    loglikelihoods += tLoglikelihoods, cLoglikelihoods;
-
-    // Simple
-    GridMat simpleFusionPredictions;
-    
-    SimpleFusionPrediction<cv::EM> simpleFusion;
-    
-    simpleFusion.setData(loglikelihoods, predictions);
-    
-    simpleFusion.compute(simpleFusionPredictions);
-    
-    // SVM
-    GridMat svmFusionPredictions;
-    
-    ClassifierFusionPrediction<cv::EM,CvSVM> svmFusion;
-    
-    svmFusion.setData(loglikelihoods, predictions);
-    svmFusion.setResponses(cv::Mat()/* TODO: get groundturth values */);
-    
-    vector<float> cs, gammas;
-    cs += 1, 10, 100; // example
-    gammas += 0.0001, 0.01, 1;
-    svmFusion.setCs(cs);
-    svmFusion.setGammas(gammas);
-    
-    svmFusion.setModelValidation(kTest, seed);
-    svmFusion.setModelSelection(kModelSelec, true);
-    
-    svmFusion.compute(svmFusionPredictions);
+//    ModalityPrediction<cv::EM> prediction;
+//
+//    prediction.setNumOfMixtures(nmixtures);
+//    prediction.setLoglikelihoodThresholds(nlikelicuts);
+//
+//    prediction.setModelValidation(kTest, seed);
+//    prediction.setModelSelection(kModelSelec, true);
+//    
+//    // Thermal
+//    prediction.setData(tMockData);
+//
+//    GridMat tPredictions, tLoglikelihoods;
+//    prediction.compute(tPredictions, tLoglikelihoods);
+//    
+//    tPredictions.save("tPredictions.yml");
+//    tLoglikelihoods.save("tLoglikelihoods.yml");
+//
+//    // Color
+//    prediction.setData(cMockData);
+//
+//    GridMat cPredictions, cLoglikelihoods;
+//    prediction.compute(cPredictions, cLoglikelihoods);
+//
+//    cPredictions.save("cPredictions.yml");
+//    cLoglikelihoods.save("cLoglikelihoods.yml");
+//
+//    //
+//    // Fusion
+//    //
+//    
+//    vector<GridMat> predictions, loglikelihoods; // put together all the data
+//    predictions += tPredictions, cPredictions;
+//    loglikelihoods += tLoglikelihoods, cLoglikelihoods;
+//
+//    // Simple
+//    GridMat simpleFusionPredictions;
+//    
+//    SimpleFusionPrediction<cv::EM> simpleFusion;
+//    
+//    simpleFusion.setData(loglikelihoods, predictions);
+//    
+//    simpleFusion.compute(simpleFusionPredictions);
+//    
+//    // SVM
+//    GridMat svmFusionPredictions;
+//    
+//    ClassifierFusionPrediction<cv::EM,CvSVM> svmFusion;
+//    
+//    svmFusion.setData(loglikelihoods, predictions);
+//    svmFusion.setResponses(cv::Mat()/* TODO: get groundturth values */);
+//    
+//    vector<float> cs, gammas;
+//    cs += 1, 10, 100; // example
+//    gammas += 0.0001, 0.01, 1;
+//    svmFusion.setCs(cs);
+//    svmFusion.setGammas(gammas);
+//    
+//    svmFusion.setModelValidation(kTest, seed);
+//    svmFusion.setModelSelection(kModelSelec, true);
+//    
+//    svmFusion.compute(svmFusionPredictions);
     
 //    //
 //    // Map writing

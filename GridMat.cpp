@@ -417,6 +417,36 @@ void GridMat::copyTo(GridMat& dst, GridMat values, int k)
     }
 }
 
+template<>
+void GridMat::setTo <cv::Mat>(cv::Mat m)
+{
+    if (this->isEmpty())
+    {
+        this->create(2, 2);
+    }
+    
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
+    {
+        this->at(i,j).assignTo(m);
+    }
+}
+
+template<>
+void GridMat::setTo <cv::MatExpr>(cv::MatExpr e)
+{
+    if (this->isEmpty())
+    {
+        this->create(2, 2);
+    }
+    
+    cv::Mat m = e;
+    
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
+    {
+        this->at(i,j).assignTo(m);
+    }
+}
+
 template<typename T>
 void GridMat::setTo(T value)
 {
@@ -427,7 +457,7 @@ void GridMat::setTo(T value)
     
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
-        this->at(i,j).setTo(value);
+        this->at(i,j).setTo(5);
     }
 }
 
@@ -455,14 +485,6 @@ void GridMat::setTo(T value, unsigned int i, unsigned int j, cv::Mat mask)
     
     this->at(i,j).release();
     tmp.copyTo(this->at(i,j), mask);
-}
-
-void GridMat::setTo(cv::Mat mat)
-{
-    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
-    {
-        this->at(i,j).assignTo(mat);
-    }
 }
 
 template<typename T>
@@ -629,7 +651,9 @@ GridMat GridMat::standardize()
     return g;
 }
 
-GridMat GridMat::operator<(GridMat& other)
+
+template<>
+GridMat GridMat::operator<(GridMat other)
 {
     GridMat result;
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
@@ -640,7 +664,8 @@ GridMat GridMat::operator<(GridMat& other)
     return result;
 }
 
-GridMat GridMat::operator<=(GridMat& other)
+template<>
+GridMat GridMat::operator<=(GridMat other)
 {
     GridMat result;
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
@@ -651,7 +676,8 @@ GridMat GridMat::operator<=(GridMat& other)
     return result;
 }
 
-GridMat GridMat::operator>(GridMat& other)
+template<>
+GridMat GridMat::operator>(GridMat other)
 {
     GridMat result;
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
@@ -662,7 +688,8 @@ GridMat GridMat::operator>(GridMat& other)
     return result;
 }
 
-GridMat GridMat::operator>=(GridMat& other)
+template<>
+GridMat GridMat::operator>=(GridMat other)
 {
     GridMat result;
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
@@ -673,7 +700,8 @@ GridMat GridMat::operator>=(GridMat& other)
     return result;
 }
 
-GridMat GridMat::operator==(GridMat& other)
+template<>
+GridMat GridMat::operator==(GridMat other)
 {
     GridMat result;
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
@@ -684,7 +712,8 @@ GridMat GridMat::operator==(GridMat& other)
     return result;
 }
 
-GridMat GridMat::operator!=(GridMat& other)
+template<>
+GridMat GridMat::operator!=(GridMat other)
 {
     GridMat result;
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
@@ -695,7 +724,8 @@ GridMat GridMat::operator!=(GridMat& other)
     return result;
 }
 
-GridMat GridMat::operator+(GridMat& other)
+template<>
+GridMat GridMat::operator+(GridMat other)
 {
     GridMat result;
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
@@ -706,7 +736,8 @@ GridMat GridMat::operator+(GridMat& other)
     return result;
 }
 
-GridMat GridMat::operator-(GridMat& other)
+template<>
+GridMat GridMat::operator-(GridMat other)
 {
     GridMat result;
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
@@ -717,7 +748,8 @@ GridMat GridMat::operator-(GridMat& other)
     return result;
 }
 
-GridMat GridMat::operator*(GridMat& other)
+template<>
+GridMat GridMat::operator*(GridMat other)
 {
     GridMat result;
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
@@ -728,13 +760,133 @@ GridMat GridMat::operator*(GridMat& other)
     return result;
 }
 
-
-GridMat GridMat::operator/(GridMat& other)
+template<>
+GridMat GridMat::operator/(GridMat other)
 {
     GridMat result;
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::divide(at(i,j), other.at(i,j), result.at(i,j));
+    }
+    
+    return result;
+}
+
+template<>
+GridMat GridMat::operator<(cv::Mat other)
+{
+    GridMat result;
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
+    {
+        cv::compare(at(i,j), other, result.at(i,j), cv::CMP_LT);
+    }
+    
+    return result;
+}
+
+template<>
+GridMat GridMat::operator<=(cv::Mat other)
+{
+    GridMat result;
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
+    {
+        cv::compare(at(i,j), other, result.at(i,j), cv::CMP_LE);
+    }
+    
+    return result;
+}
+
+template<>
+GridMat GridMat::operator>(cv::Mat other)
+{
+    GridMat result;
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
+    {
+        cv::compare(at(i,j), other, result.at(i,j), cv::CMP_GT);
+    }
+    
+    return result;
+}
+
+template<>
+GridMat GridMat::operator>=(cv::Mat other)
+{
+    GridMat result;
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
+    {
+        cv::compare(at(i,j), other, result.at(i,j), cv::CMP_GE);
+    }
+    
+    return result;
+}
+
+template<>
+GridMat GridMat::operator==(cv::Mat other)
+{
+    GridMat result;
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
+    {
+        cv::compare(at(i,j), other, result.at(i,j), cv::CMP_EQ);
+    }
+    
+    return result;
+}
+
+template<>
+GridMat GridMat::operator!=(cv::Mat other)
+{
+    GridMat result;
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
+    {
+        cv::compare(at(i,j), other, result.at(i,j), cv::CMP_NE);
+    }
+    
+    return result;
+}
+
+template<>
+GridMat GridMat::operator+(cv::Mat other)
+{
+    GridMat result;
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
+    {
+        cv::add(at(i,j), other, result.at(i,j));
+    }
+    
+    return result;
+}
+
+template<>
+GridMat GridMat::operator-(cv::Mat other)
+{
+    GridMat result;
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
+    {
+        cv::subtract(at(i,j), other, result.at(i,j));
+    }
+    
+    return result;
+}
+
+template<>
+GridMat GridMat::operator*(cv::Mat other)
+{
+    GridMat result;
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
+    {
+        cv::multiply(at(i,j), other, result.at(i,j));
+    }
+    
+    return result;
+}
+
+template<>
+GridMat GridMat::operator/ <cv::Mat>(cv::Mat other)
+{
+    GridMat result;
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
+    {
+        cv::divide(at(i,j), other, result.at(i,j));
     }
     
     return result;
@@ -849,7 +1001,7 @@ GridMat GridMat::operator*(T value)
 }
 
 template<typename T>
-GridMat GridMat::operator/(T value)
+GridMat GridMat::operator/ (T value)
 {
     GridMat result;
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
@@ -1314,10 +1466,10 @@ template void GridMat::argmin<int>(GridMat& gargmin);
 template void GridMat::argmin<float>(GridMat& gargmin);
 template void GridMat::argmin<double>(GridMat& gargmin);
 
-template void GridMat::setTo<unsigned char>(unsigned char value);
 template void GridMat::setTo<int>(int value);
 template void GridMat::setTo<float>(float value);
 template void GridMat::setTo<double>(double value);
+template void GridMat::setTo<GridMat>(GridMat value);
 
 template void GridMat::setTo<unsigned char>(unsigned char value, unsigned int i, unsigned j);
 template void GridMat::setTo<int>(int value, unsigned int i, unsigned int j);

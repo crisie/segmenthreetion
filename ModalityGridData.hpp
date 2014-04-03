@@ -366,18 +366,19 @@ public:
             for (int k = 0; k < m_Validnesses.at(i,j).rows; k++)
             {
                 unsigned char bValidMask = m_Validnesses.at<unsigned char>(i,j,k,0);
-                if (bValidMask) // nonzero pixels in mask
-                {
+//                if (bValidMask) // nonzero pixels in mask
+//                {
                     cv::Mat g = descriptors.at(i,j);
                     cv::Mat d = g.row(c);
                     
                     bool bValidDescriptor = cv::checkRange(d);
-                    
-                    if (bValidDescriptor) m_Descriptors.at(i,j).push_back(d);
-                    else m_Validnesses.at<unsigned char>(i,j,k,0) = 0;
+                
+//                    if (bValidDescriptor)
+                        m_Descriptors.at(i,j).push_back(d);
+                    if (!bValidMask || !bValidDescriptor) m_Validnesses.at<unsigned char>(i,j,k,0) = 0;
                     
                     c++; // there are so many descriptors to check as 1s in validness (valid masks)
-                }
+//                }
             }
         }
     }
