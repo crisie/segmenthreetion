@@ -181,6 +181,10 @@ int main(int argc, const char* argv[])
 //    writer.write("Thermal", tData);
 
     
+//    //
+//    // Feature extraction
+//    //
+//    
 //    // Color description
 //
 //    ModalityGridData cGridData;
@@ -211,17 +215,17 @@ int main(int argc, const char* argv[])
 //    
 //    // Depth description
 //    
-//    ModalityGridData dGridData;
-//    
-//    DepthFeatureExtractor dFE(dParam);
-//	for (int s = 0; s < sequences.size(); s++)
-//	{
-//        cout << "Reading depth frames in scene " << s << ".." << endl;
-//		reader.read("Depth", sequences[s], "png", hp, wp, dGridData);
-//        cout << "Describing depth..." << endl;
-//		dFE.describe(dGridData);
-//        dGridData.saveDescription(dataPath, sequences[s], "Depth.yml");
-//	}
+////    ModalityGridData dGridData;
+////    
+////    DepthFeatureExtractor dFE(dParam);
+////	for (int s = 0; s < sequences.size(); s++)
+////	{
+////        cout << "Reading depth frames in scene " << s << ".." << endl;
+////		reader.read("Depth", sequences[s], "png", hp, wp, dGridData);
+////        cout << "Describing depth..." << endl;
+////		dFE.describe(dGridData);
+////        dGridData.saveDescription(dataPath, sequences[s], "Depth.yml");
+////	}
 //    
 //    // Thermal description
 //    
@@ -249,47 +253,69 @@ int main(int argc, const char* argv[])
 //    reader.mockread("Color", sequences, "jpg", hp, wp, cMockData);
 //    ModalityGridData mMockData;
 //    reader.mockread("Motion", sequences, "jpg", hp, wp, mMockData);
-    ModalityGridData dMockData;
-    reader.mockread("Depth", sequences, "png", hp, wp, dMockData);
-//    ModalityGridData tMockData;
-//    reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData);
+//    ModalityGridData dMockData;
+//    reader.mockread("Depth", sequences, "png", hp, wp, dMockData);
+    ModalityGridData tMockData;
+    reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData);
 
 //    cMockData.loadDescription(dataPath, sequences, "Color.yml");
 //    mMockData.loadDescription(dataPath, sequences, "Motion.yml");
-    dMockData.saveDescription(dataPath, sequences, "Depth.yml");
-//    tMockData.loadDescription(dataPath, sequences, "Thermal.yml");
-    
+//    dMockData.loadDescription(dataPath, sequences, "Depth.yml");
+    tMockData.loadDescription(dataPath, sequences, "Thermal.yml");
     
     //
     // Individual prediction
     //
     
-//    ModalityPrediction<cv::EM> prediction;
-//
-//    prediction.setNumOfMixtures(nmixtures);
-//    prediction.setLoglikelihoodThresholds(nlikelicuts);
-//
-//    prediction.setModelValidation(kTest, seed);
-//    prediction.setModelSelection(kModelSelec, true);
-//    
-//    // Thermal
-//    prediction.setData(tMockData);
-//
-//    GridMat tPredictions, tLoglikelihoods;
-//    prediction.compute(tPredictions, tLoglikelihoods);
-//    
-//    tPredictions.save("tPredictions.yml");
-//    tLoglikelihoods.save("tLoglikelihoods.yml");
-//
+    ModalityPrediction<cv::EM> prediction;
+
+    prediction.setNumOfMixtures(nmixtures);
+    prediction.setLoglikelihoodThresholds(nlikelicuts);
+
+    prediction.setValidationParameters(kTest, seed);
+    prediction.setModelSelection(true); // false load it from disk (see .h)
+    prediction.setModelSelectionParameters(kModelSelec, true);
+    
 //    // Color
 //    prediction.setData(cMockData);
-//
-//    GridMat cPredictions, cLoglikelihoods;
-//    prediction.compute(cPredictions, cLoglikelihoods);
-//
+//    
+//    GridMat cPredictions, cLoglikelihoods, cDistsToMargin;
+//    prediction.compute(cPredictions, cLoglikelihoods, cDistsToMargin);
+//    
 //    cPredictions.save("cPredictions.yml");
 //    cLoglikelihoods.save("cLoglikelihoods.yml");
-//
+//    cDistsToMargin.save("cDistsToMargin.yml");
+//    
+//    // Motion
+//    prediction.setData(mMockData);
+//    
+//    GridMat mPredictions, mLoglikelihoods, mDistsToMargin;
+//    prediction.compute(mPredictions, mLoglikelihoods, mDistsToMargin);
+//    
+//    mPredictions.save("mPredictions.yml");
+//    mLoglikelihoods.save("mLoglikelihoods.yml");
+//    mDistsToMargin.save("mDistsToMargin.yml");
+//    
+//    // Depth
+//    prediction.setData(dMockData);
+//    
+//    GridMat dPredictions, dLoglikelihoods, dDistsToMargin;
+//    prediction.compute(dPredictions, dLoglikelihoods, dDistsToMargin);
+//    
+//    dPredictions.save("dPredictions.yml");
+//    dLoglikelihoods.save("dLoglikelihoods.yml");
+//    dDistsToMargin.save("dDistsToMargin.yml");
+    
+    // Thermal
+    prediction.setData(tMockData);
+
+    GridMat tPredictions, tLoglikelihoods, tDistsToMargin;
+    prediction.compute(tPredictions, tLoglikelihoods, tDistsToMargin);
+    
+    tPredictions.save("tPredictions.yml");
+    tLoglikelihoods.save("tLoglikelihoods.yml");
+    tDistsToMargin.save("tDistsToMargin.yml");
+
 //    //
 //    // Fusion
 //    //

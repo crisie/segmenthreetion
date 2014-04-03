@@ -55,25 +55,30 @@ void cvx::setMatPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indexes)
 void cvx::indexMat(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical)
 {
     if (logical)
-        setMatLogically(src, dst, indices);
+        indexMatLogically(src, dst, indices);
     else
-        setMatPositionally(src, dst, indices);
+        indexMatPositionally(src, dst, indices);
 }
 
 void cvx::indexMatLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals)
 {
-    if (dst.empty())
-        dst.create(src.rows, src.cols, src.type());
-    
     bool rowwise = logicals.rows > 1;
     
+    if (dst.empty())
+    {
+        if (rowwise)
+            dst.create(0, src.cols, src.type());
+        else
+            dst.create(src.rows, 0, src.type());
+    }
+    
     int c = 0;
-    for (int i = 0; i < rowwise ? logicals.rows : logicals.cols; i++)
+    for (int i = 0; i < (rowwise ? logicals.rows : logicals.cols); i++)
     {
         unsigned char indexed = rowwise ?
         logicals.at<unsigned char>(i,0) : logicals.at<unsigned char>(0,i);
         if (indexed)
-            rowwise ? src.row(i).copyTo(dst.row(c++)) : src.col(i).copyTo(dst.col(c++));
+            rowwise ? dst.push_back(src.row(i)) : dst.push_back(src.col(i));
     }
 }
 
@@ -84,7 +89,7 @@ void cvx::indexMatPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indexes)
     
     bool rowwise = indexes.rows > 1;
     
-    for (int i = 0; i < rowwise ? indexes.rows : indexes.cols; i++)
+    for (int i = 0; i < (rowwise ? indexes.rows : indexes.cols); i++)
     {
         int idx = rowwise ? indexes.at<int>(i,0) : indexes.at<int>(i,0);
         rowwise ? src.row(idx).copyTo(dst.row(i)) : src.col(idx).copyTo(dst.col(i));

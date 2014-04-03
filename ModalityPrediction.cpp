@@ -11,23 +11,12 @@
 #include "StatTools.h"
 
 
-// Instantiation of template member functions
-// -----------------------------------------------------------------------------
-template void ModalityPrediction<cv::EM>::setData(ModalityGridData &data);
-template void ModalityPrediction<cv::EM>::setModelSelection(int k, bool best);
-template void ModalityPrediction<cv::EM>::setModelValidation(int k, int seed);
-
-template void ModalityPrediction<cv::EM>::modelSelection<int>(GridMat descriptors, GridMat tags, vector<vector<int> > params, GridMat& goodnesses);
-template void ModalityPrediction<cv::EM>::modelSelection<double>(GridMat descriptors, GridMat tags, vector<vector<double> > params, GridMat& goodnesses);
-// -----------------------------------------------------------------------------
-
-
 //
 // ModalityPredictionBase
 //
 
 template<typename PredictorT>
-ModalityPredictionBase<PredictorT>::ModalityPredictionBase()
+ModalityPredictionBase<PredictorT>::ModalityPredictionBase() : m_bModelSelection(true)
 {
 
 }
@@ -41,14 +30,20 @@ void ModalityPredictionBase<PredictorT>::setData(ModalityGridData &data)
 }
 
 template<typename PredictorT>
-void ModalityPredictionBase<PredictorT>::setModelSelection(int k, bool best)
+void ModalityPredictionBase<PredictorT>::setModelSelection(bool flag)
+{
+    m_bModelSelection = flag;
+}
+
+template<typename PredictorT>
+void ModalityPredictionBase<PredictorT>::setModelSelectionParameters(int k, bool best)
 {
     m_modelSelecK = k;
     m_selectBest = best;
 }
 
 template<typename PredictorT>
-void ModalityPredictionBase<PredictorT>::setModelValidation(int k, int seed)
+void ModalityPredictionBase<PredictorT>::setValidationParameters(int k, int seed)
 {
     m_testK = k;
     m_seed = seed;
@@ -124,32 +119,33 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
     // create a list of parameters' variations
     expandParameters(params, m_hp * m_wp, gridExpandedParameters);
     
-    
-    cout << "Model selection CVs [" << m_testK << "]: " << endl;
-    
-    vector<GridMat> goodnesses(m_testK); // for instance: accuracies
-    for (int k = 0; k < m_testK; k++)
+    if (m_bModelSelection)
     {
-        cout << k << " ";
+        cout << "Model selection CVs [" << m_testK << "]: " << endl;
         
-        // Index the k-th training
-        GridMat validnessesTrFold (gvalidnesses, gpartitions, k, true);
-        GridMat descriptorsTrFold (gdescriptors, gpartitions, k, true);
-        GridMat tagsTrFold (gtags, gpartitions, k, true);
-        
-        // Within the k-th training partition,
-        // remove the nonvalid descriptors (validness == 0) and associated tags
-        GridMat validDescriptorsTrFold = descriptorsTrFold.convertToDense(validnessesTrFold);
-        GridMat validTagsTrFold = tagsTrFold.convertToDense(validnessesTrFold);
-        
-        modelSelection(validDescriptorsTrFold, validTagsTrFold,
-                       params, goodnesses[k]);
-        
-        std::stringstream ss;
-        ss << "gmm_goodnesses_" << k << ".yml" << endl;
-        goodnesses[k].save(ss.str());
+        for (int k = 0; k < m_testK; k++)
+        {
+            cout << k << " ";
+            
+            // Index the k-th training
+            GridMat validnessesTrFold (gvalidnesses, gpartitions, k, true);
+            GridMat descriptorsTrFold (gdescriptors, gpartitions, k, true);
+            GridMat tagsTrFold (gtags, gpartitions, k, true);
+            
+            // Within the k-th training partition,
+            // remove the nonvalid descriptors (validness == 0) and associated tags
+            GridMat validDescriptorsTrFold = descriptorsTrFold.convertToDense(validnessesTrFold);
+            GridMat validTagsTrFold = tagsTrFold.convertToDense(validnessesTrFold);
+            
+            GridMat goodnesses;
+            modelSelection(validDescriptorsTrFold, validTagsTrFold, gridExpandedParameters, goodnesses);
+            
+            std::stringstream ss;
+            ss << "gmm_goodnesses_" << k << ".yml" << endl;
+            goodnesses.save(ss.str());
+        }
+        cout << endl;
     }
-    cout << endl;
     
     
     cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
@@ -350,3 +346,15 @@ void ModalityPrediction<cv::EM>::computeGridPredictionsConsensus(GridMat individ
 //    
 //    predictions.setTo(consensusPredictions)
 }
+
+
+// Instantiation of template member functions
+// -----------------------------------------------------------------------------
+template void ModalityPrediction<cv::EM>::setData(ModalityGridData &data);
+template void ModalityPrediction<cv::EM>::setModelSelection(bool flag);
+template void ModalityPrediction<cv::EM>::setModelSelectionParameters(int k, bool best);
+template void ModalityPrediction<cv::EM>::setValidationParameters(int k, int seed);
+
+template void ModalityPrediction<cv::EM>::modelSelection<int>(GridMat descriptors, GridMat tags, vector<vector<int> > params, GridMat& goodnesses);
+template void ModalityPrediction<cv::EM>::modelSelection<double>(GridMat descriptors, GridMat tags, vector<vector<double> > params, GridMat& goodnesses);
+// -----------------------------------------------------------------------------

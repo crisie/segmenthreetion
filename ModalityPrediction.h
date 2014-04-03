@@ -30,18 +30,24 @@ public:
     
     void setData(ModalityGridData& data);
     
-    void setModelSelection(int k, bool best);
-    void setModelValidation(int k, int seed);
+    void setModelSelection(bool flag);
+    void setModelSelectionParameters(int k, bool best);
+    
+    void setValidationParameters(int k, int seed);
     
 protected:
     ModalityGridData m_data;
     int m_hp, m_wp;
     
-    int m_modelSelecK; // number of folds in inner cross-validation to perform model selection
-    bool m_selectBest; // in model selection
+    int m_seed;
     
     int m_testK; // number of folds in outer cross-validation to obtain the test results
-    int m_seed;
+    
+    bool m_bModelSelection; // wheter to perform the selection or re-use an old one (in disk)
+                            // files would be named: goodnesses_1.yml, ..., goodnesses_N.yml
+                            // where N is equal to m_testK
+    int m_modelSelecK; // number of folds in inner cross-validation to perform model selection
+    bool m_selectBest; // in model selection
 };
 
 

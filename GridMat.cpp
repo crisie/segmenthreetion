@@ -427,7 +427,7 @@ void GridMat::setTo <cv::Mat>(cv::Mat m)
     
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
-        this->at(i,j).assignTo(m);
+        this->at(i,j) = m.clone();
     }
 }
 
@@ -443,7 +443,21 @@ void GridMat::setTo <cv::MatExpr>(cv::MatExpr e)
     
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
-        this->at(i,j).assignTo(m);
+        this->at(i,j) = m.clone();
+    }
+}
+
+template<>
+void GridMat::setTo(GridMat other)
+{
+    if (this->isEmpty())
+    {
+        return;
+    }
+    
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
+    {
+        this->at(i,j) = other.at(i,j);
     }
 }
 
@@ -452,12 +466,12 @@ void GridMat::setTo(T value)
 {
     if (this->isEmpty())
     {
-        this->create(2, 2);
+        return;
     }
     
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
-        this->at(i,j).setTo(5);
+        this->at(i,j).setTo(value);
     }
 }
 
@@ -580,7 +594,7 @@ GridMat GridMat::convertToDense(GridMat indices)
 
 void GridMat::convertToDense(GridMat indices, GridMat& denseGridMat)
 {
-    assert (crows() != indices.crows() || ccols() != indices.ccols());
+    assert (crows() == indices.crows() && ccols() == indices.ccols());
     
     denseGridMat = GridMat(*this, indices, 0, true);
 }

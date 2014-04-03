@@ -18,6 +18,7 @@ template<typename PredictorT>
 GridPredictorBase<PredictorT>::GridPredictorBase(int hp, int wp)
 : m_hp(hp), m_wp(wp)
 {
+    m_predictors.resize(m_hp * m_wp);
     for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
     {
         m_predictors[i * m_wp + j] = new PredictorT();
@@ -105,23 +106,39 @@ void GridPredictor<cv::EM>::predict(GridMat data, GridMat& predictions, GridMat&
             cellLoglikelihoods.at<double>(d,0) = res.val[0];
         }
 
-        cv::Mat normCellLoglikelihoods;
-        cv::normalize(cellLoglikelihoods, normCellLoglikelihoods);
+        //        cv::Mat normCellLoglikelihoods;
+        //        cv::normalize(cellLoglikelihoods, normCellLoglikelihoods);
+        cv::Mat stdCellLoglikelihoods;
+        cv::Scalar mean, stddev;
+        cv::meanStdDev(cellLoglikelihoods, mean, stddev);
+        stdCellLoglikelihoods = (cellLoglikelihoods - mean.val[0]) / stddev.val[0];
+        
+        double minVal, maxVal;
+        cv::minMaxIdx(stdCellLoglikelihoods, &minVal, &maxVal);
+        int histSize[] = { 20 };
+        int channels[] = { 0 }; // 1 channel, number 0
+        float range[] = { minVal, maxVal } ;
+        const float* ranges[] = { range };
+        bool uniform = true; bool accumulate = false;
+        
+        cv::Mat loglikesHist;
+        cv::calcHist(&stdCellLoglikelihoods, 1, channels, cv::Mat(), loglikesHist, 1, histSize, ranges, true, false);
+        cout << loglikesHist << endl;
         
         cv::Mat cellPredictions;
-        cv::threshold(normCellLoglikelihoods, cellPredictions, m_logthreshold.at<float>(i,j), 1, CV_THRESH_BINARY);
+        cv::threshold(stdCellLoglikelihoods, cellPredictions, m_logthreshold.at<float>(i,j), 1, CV_THRESH_BINARY);
 
         // Center the values around the loglikelihood threshold, so as to have
         // subjects' margin > 0 and objects' margin < 0. And scale to take into
         // accound the variance of the dists' sample
-        cv::Mat diffs = normCellLoglikelihoods - m_logthreshold.at<float>(i,j); // center
+        cv::Mat diffs = stdCellLoglikelihoods - m_logthreshold.at<float>(i,j); // center
         cv::Mat powers;
         cv::pow(diffs, 2, powers);
-        float scale = sqrt(cv::sum(powers).val[0] / normCellLoglikelihoods.rows);
+        float scale = sqrt(cv::sum(powers).val[0] / stdCellLoglikelihoods.rows);
         cv::Mat cellsDistsToMargin = diffs / scale; // scale
         
         predictions.assign(cellPredictions, i, j);
-        loglikelihoods.assign(normCellLoglikelihoods, i, j);
+        loglikelihoods.assign(stdCellLoglikelihoods, i, j);
         distsToMargin.assign(cellsDistsToMargin, i, j);
     }
 }
