@@ -79,8 +79,10 @@ public:
     void standardize(GridMat& g);
     GridMat standardize();
     
+    void set(GridMat src, GridMat indices); // size(src) < size(dst)
     void set(GridMat src, GridMat indices, int k); // size(src) < size(dst)
     void index(GridMat& dst, GridMat indices, int k); // size(src) > size(dst)
+    void copyTo(GridMat& dst);
     void copyTo(GridMat& dst, GridMat indices); // size(src) == src(dst)
     void copyTo(GridMat& dst, GridMat indices, int k); // size(src) == size(dst)
     
@@ -140,6 +142,7 @@ public:
     void max(GridMat& gmax, int dim = 0);
     void min(GridMat& gmin, int dim = 0);
     void sum(GridMat& gsum, int dim = 0);
+    GridMat abs();
     
     // Grid's collapse functions. The grid is turnet into a single-grid (Mat)
     cv::Mat accumulate();

@@ -335,6 +335,21 @@ void GridMat::set(GridMat& other)
     }
 }
 
+void GridMat::set(GridMat src, GridMat indices)
+{
+    if (isEmpty())
+    {
+        m_crows = src.crows();
+        m_ccols = src.ccols();
+        m_grid.resize(m_crows * m_cols);
+    }
+    
+    for (int i = 0; i < indices.crows(); i++) for (int j = 0; j < indices.ccols(); j++)
+    {
+        cvx::setMat(src.at(i,j), this->at(i,j), indices.at(i,j));
+    }
+}
+
 void GridMat::set(GridMat src, GridMat indices, int k)
 {
     if (isEmpty())
@@ -363,6 +378,19 @@ void GridMat::index(GridMat& dst, GridMat indices, int k)
     }
 }
 
+void GridMat::copyTo(GridMat& dst)
+{
+    if (dst.isEmpty())
+    {
+        dst.create(m_crows, m_ccols);
+    }
+    
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
+    {
+        this->at(i,j).copyTo(dst.at(i,j));
+    }
+}
+
 void GridMat::copyTo(GridMat& dst, GridMat logicals)
 {
     if (dst.isEmpty())
@@ -370,7 +398,7 @@ void GridMat::copyTo(GridMat& dst, GridMat logicals)
         dst.create(m_crows, m_ccols);
     }
     
-    for (int i = 0; i < logicals.crows(); i++) for (int j = 0; j < logicals.ccols(); j++)
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         this->at(i,j).copyTo(dst.at(i,j), logicals.at(i,j));
     }
@@ -383,7 +411,7 @@ void GridMat::copyTo(GridMat& dst, GridMat values, int k)
         dst.create(m_crows, m_ccols);
     }
     
-    for (int i = 0; i < values.crows(); i++) for (int j = 0; j < values.ccols(); j++)
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         this->at(i,j).copyTo(dst.at(i,j), values.at(i,j) == k);
     }
@@ -989,6 +1017,18 @@ void GridMat::sum(GridMat& gsum, int dim)
         cv::reduce(mat, col, dim, CV_REDUCE_SUM); // dim: 0 row-wise, 1 column-wise
         gsum.assign(col, i, j);
     }
+}
+
+GridMat GridMat::abs()
+{
+    GridMat abs (crows(), ccols());
+    
+    for (unsigned int i = 0; i < m_crows; i++) for (unsigned int j = 0; j < m_ccols; j++)
+    {
+        this->at(i,j) = cv::abs(this->at(i,j));
+    }
+    
+    return abs;
 }
 
 cv::Mat GridMat::accumulate()

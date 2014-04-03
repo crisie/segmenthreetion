@@ -41,15 +41,53 @@ void SimpleFusionPrediction<cv::EM>::compute(GridMat& gpredictions)
     // Concatenate along the horizontal direction all the modalities' predictions in a GridMat,
     // and the same for the distsToMargin
     
-    GridMat allPredictions, allDistsToMargin;
+    GridMat distsToMargin;
     
     for (int i = 0; i < m_mgds.size(); i++)
     {
-        allPredictions.hconcat(m_predictions[i]);
-        allDistsToMargin.hconcat(m_distsToMargin[i]);
+        distsToMargin.hconcat(m_distsToMargin[i]);
     }
     
-    // ...
+    GridMat negDists (distsToMargin < 0);
+    GridMat posDists (distsToMargin > 0);
+    
+    GridMat negDistsToMargin, posDistsToMargin;
+    negDistsToMargin.setTo(0);
+    posDistsToMargin.setTo(0);
+    
+    distsToMargin.copyTo(negDistsToMargin, negDists);
+    distsToMargin.copyTo(posDistsToMargin, posDists);
+    
+    GridMat sumNegDists, sumPosDists, sumNegDistsToMargin, sumPosDistsToMargin;
+    negDists.sum(sumNegDists, 1);
+    posDists.sum(sumPosDists, 1);
+    negDistsToMargin.sum(sumNegDistsToMargin, 1); // 1 indicates in the horizontal direction
+    posDistsToMargin.sum(sumPosDistsToMargin, 1);
+    
+    GridMat meanNegDistsToMargin, meanPosDistsToMargin;
+    meanNegDistsToMargin = sumNegDistsToMargin / sumNegDists;
+    meanPosDistsToMargin = sumNegDistsToMargin / sumNegDists;
+    
+    GridMat fusedPrediction = meanPosDistsToMargin > meanNegDistsToMargin.abs();
+    
+    // Consensus in the fusedPrediction cells
+    
+    GridMat posDistsToMargin, negDistsToMargin;
+    posDistsToMargin.setTo(0);
+    negDistsToMargin.setTo(0);
+    
+    GridMat negPredictions (individualPredictions == 0);
+    GridMat posPredictions (individualPredictions == 1);
+    
+    distsToMargin.copyTo(negDistsToMargin, negPredictions);
+    distsToMargin.copyTo(posDistsToMargin, posPredictions);
+    
+    cv::Mat avgNegDistsToMargin, avgPosDistsToMargin;
+    
+    cv::divide(negDistsToMargin.accumulate(), negPredictions.accumulate(), avgNegDistsToMargin);
+    cv::divide(posDistsToMargin.accumulate(), posPredictions.accumulate(), avgPosDistsToMargin);
+    
+    consensusPredictions.setTo(avgPosDistsToMargin > cv::abs(avgNegDistsToMargin));
 }
 
 //

@@ -298,23 +298,41 @@ void ModalityPrediction<cv::EM>::computeGridPredictionsConsensus(GridMat individ
                                                                  GridMat distsToMargin,
                                                                  GridMat& consensusPredictions)
 {
-    GridMat posDistsToMargin, negDistsToMargin;
-    posDistsToMargin.setTo(0);
-    negDistsToMargin.setTo(0);
+    cv::Mat tags = m_data.getTagsMat();
     
-    GridMat negPredictions (individualPredictions == 0);
-    GridMat posPredictions (individualPredictions == 1);
+    cv::Mat consensus (tags.rows, tags.cols, tags.type());
+    consensus.setTo(0);
     
-    distsToMargin.copyTo(negDistsToMargin, negPredictions);
-    distsToMargin.copyTo(posDistsToMargin, posPredictions);
+    cv::Mat votes = individualPredictions.accumulate(); // accumulation expresses #"cells vote for subject"
+    consensus.setTo(1, votes > ((m_hp * m_wp) / 2)); // if majority of cells vote for subject, it is
     
-    cv::Mat avgNegDistsToMargin, avgPosDistsToMargin;
+    // Deal with draws
     
-    cv::divide(negDistsToMargin.accumulate(), negPredictions.accumulate(), avgNegDistsToMargin);
-    cv::divide(posDistsToMargin.accumulate(), posPredictions.accumulate(), avgPosDistsToMargin);
+    GridMat drawIndices;
+    drawIndices.setTo(votes == ((m_hp * m_wp) / 2));
     
-    consensusPredictions.setTo(avgPosDistsToMargin > cv::abs(avgNegDistsToMargin));
+    GridMat drawnPredictions (individualPredictions, drawIndices); // index the subset of draws
+    GridMat drawnDists (distsToMargin, drawIndices); // and their corresponding distances to margin
     
+    GridMat negPredictions = (drawnPredictions == 0);
+    GridMat posPredictions = (drawnPredictions == 1);
+    
+    GridMat negDists (drawnDists); // it is not a deep copy, so it is useful to set the same size
+    GridMat posDists (drawnDists);
+    negDists.setTo(0);
+    posDists.setTo(0);
+    
+    drawnDists.copyTo(negDists, negPredictions);
+    drawnDists.copyTo(posDists, posPredictions);
+    
+    cv::Mat avgNegDists, avgPosDists;
+    cv::divide(negDists.accumulate(), negPredictions.accumulate(), avgNegDists);
+    cv::divide(posDists.accumulate(), posPredictions.accumulate(), avgPosDists);
+    
+    GridMat consensusDrawnPredictions;
+    consensusDrawnPredictions.setTo(avgPosDists > cv::abs(avgNegDists)); // not specifying the cell, copies to every cell
+    
+    consensusPredictions.set(consensusDrawnPredictions, drawIndices);
     
 //    cv::Mat consensus;
 //    consensus.setTo(0);
