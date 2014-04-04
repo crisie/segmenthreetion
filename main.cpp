@@ -117,9 +117,9 @@ int main(int argc, const char* argv[])
     // Classification step
     
 	vector<int> nmixtures;
-    nmixtures += 3, 6; // classification parameter (training step)
-    vector<int> nlikelicuts;
-    nlikelicuts += 0, 40;
+    nmixtures += 3;//, 7; // classification parameter (training step)
+    vector<float> nlikelicuts;
+    nlikelicuts += -0.42;//, -0.06, 0.28, 0.64;
     
     // Validation procedure
     
@@ -311,7 +311,18 @@ int main(int argc, const char* argv[])
 
     GridMat tPredictions, tLoglikelihoods, tDistsToMargin;
     prediction.compute(tPredictions, tLoglikelihoods, tDistsToMargin);
+
+//    // DEBUG
+//    cv::Mat l, sbjDist, objDist;
+//    prediction.computeLoglikelihoodsDistribution(60, -20, 1, sbjDist, objDist);
+//    cvx::linspace(-20, 1, 60, l);
+//    cout << l << endl;
+//    cout << sbjDist << endl;
+//    cout << objDist << endl;
     
+    cout << tPredictions.at(0,0) << endl;
+    cout << tLoglikelihoods.at(0,0) << endl;
+    cout << tDistsToMargin.at(0,0) << endl;
     tPredictions.save("tPredictions.yml");
     tLoglikelihoods.save("tLoglikelihoods.yml");
     tDistsToMargin.save("tDistsToMargin.yml");

@@ -34,8 +34,16 @@ namespace cvx {
     //    void indexMatLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals);
     //    void indexMatPositionally(cv::Mat src, cv::Mat& dst, cv::Mat indices);
     
+    // Wrappers for cv::collapse(...)
     void hmean(cv::Mat src, cv::Mat& mean); // row-wise mean
     void vmean(cv::Mat src, cv::Mat& mean); // column-wise mean
+    
+    void hist(cv::Mat src, int nbins, float min, float max, cv::Mat& hist);
+    void hist(cv::Mat src, cv::Mat msk, int nbins, float min, float max, cv::Mat& hist);
+    
+    void cumsum(cv::Mat src, cv::Mat& dst);
+    void linspace(float start, float end, int n, cv::Mat& v);
+    cv::Mat linspace(float start, float end, int n);
     
     // Data-to-disk and disk-to-data nice functions (hide cv::FileStorage declarations)
     void load(std::string file, cv::Mat& mat, int format = cv::FileStorage::FORMAT_YAML);

@@ -38,7 +38,7 @@ protected:
     
     unsigned int m_hp, m_wp;
     
-    vector<PredictorT*> m_predictors;
+    vector<PredictorT*> m_pPredictors;
 };
 
 
@@ -59,6 +59,7 @@ public:
     void setLoglikelihoodThreshold(cv::Mat loglikes);
     
     void train(GridMat data);
+    void predict(GridMat data, GridMat& loglikelihoods);
     void predict(GridMat data, GridMat& predictions, GridMat& loglikelihoods, GridMat& distsToMargin);
     
 private:

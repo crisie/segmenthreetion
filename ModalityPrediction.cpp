@@ -82,13 +82,13 @@ void ModalityPrediction<cv::EM>::setNumOfMixtures(vector<int> m)
     m_nmixtures = m;
 }
 
-void ModalityPrediction<cv::EM>::setLoglikelihoodThresholds(int t)
+void ModalityPrediction<cv::EM>::setLoglikelihoodThresholds(float t)
 {
     m_logthresholds.clear();
     m_logthresholds.push_back(t);
 }
 
-void ModalityPrediction<cv::EM>::setLoglikelihoodThresholds(vector<int> t)
+void ModalityPrediction<cv::EM>::setLoglikelihoodThresholds(vector<float> t)
 {
     m_logthresholds = t;
 }
@@ -110,13 +110,12 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
     GridMat gpartitions;
     cvpartition(gtags, m_testK, m_seed, gpartitions);
     
-    vector<GridPredictor<cv::EM> > predictors;
-    
-    vector<vector<int> > params, gridExpandedParameters;
-    
-    params.push_back(vector<int>(m_nmixtures.begin(), m_nmixtures.end()));
-    params.push_back(vector<int>(m_logthresholds.begin(), m_logthresholds.end()));
     // create a list of parameters' variations
+    vector<vector<float> > params, gridExpandedParameters;
+    vector<float> nmixtures (m_nmixtures.begin(), m_nmixtures.end());
+    vector<float> nlogthresholds (m_logthresholds.begin(), m_logthresholds.end());
+    params.push_back(nmixtures);
+    params.push_back(nlogthresholds);
     expandParameters(params, m_hp * m_wp, gridExpandedParameters);
     
     if (m_bModelSelection)
@@ -217,15 +216,101 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
     computeGridPredictionsConsensus(individualPredictions, distsToMargin, predictions); // predictions are consensued
 }
 
+
+void ModalityPrediction<cv::EM>::computeLoglikelihoodsDistribution(int nbins, double min, double max, cv::Mat& sbjDistribution, cv::Mat& objDistribution)
+{
+    cv::Mat tags = m_data.getTagsMat();
+    GridMat gtags;
+    gtags.setTo(tags);
+    
+    GridMat gdescriptors = m_data.getDescriptors();
+    GridMat gvalidnesses = m_data.getValidnesses();
+    
+    GridMat gpartitions;
+    cvpartition(gtags, m_testK, m_seed, gpartitions);
+    
+    vector<vector<int> > params, gridExpandedParams;
+    
+    params.push_back(vector<int>(m_nmixtures.begin(), m_nmixtures.end()));
+    // create a list of parameters' variations
+    expandParameters(params, gridExpandedParams);
+    
+    cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
+    
+    objDistribution.create(nbins, 1, cv::DataType<float>::type);
+    sbjDistribution.create(nbins, 1, cv::DataType<float>::type);
+    objDistribution.setTo(0);
+    sbjDistribution.setTo(0);
+    
+    for (int k = 0; k < m_testK; k++)
+    {
+        cout << k << " (";
+        
+        // Index the k-th training and test partitions
+        GridMat descriptorsTrFold (gdescriptors, gpartitions, k, true);
+        GridMat descriptorsTeFold (gdescriptors, gpartitions, k);
+        GridMat validnessesTrFold (gvalidnesses, gpartitions, k, true);
+        GridMat validnessesTeFold (gvalidnesses, gpartitions, k);
+        GridMat tagsTrFold (gtags, gpartitions, k, true);
+        GridMat tagsTeFold (gtags, gpartitions, k);
+        
+        // Within the k-th training partition,
+        // remove the nonvalid descriptors (validness == 0) and associated tags
+        GridMat validDescriptorsTrFold = descriptorsTrFold.convertToDense(validnessesTrFold);
+        GridMat validTagsTrFold = tagsTrFold.convertToDense(validnessesTrFold);
+        
+        GridMat validDescriptorsTeFold = descriptorsTeFold.convertToDense(validnessesTeFold);
+        GridMat validTagsTeFold = tagsTeFold.convertToDense(validnessesTeFold);
+        
+        // Within the valid descriptors in the k-th training partition,
+        // index the subject descriptors (tag == 1)
+        GridMat validSbjDescriptorsTrFold (validDescriptorsTrFold, validTagsTrFold, 1);
+        
+        GridMat validObjDescriptorsTeFold (validDescriptorsTeFold, validTagsTeFold, 0);
+        GridMat validSbjDescriptorsTeFold (validDescriptorsTeFold, validTagsTeFold, 1);
+        
+        
+        GridPredictor<cv::EM> predictor(m_hp, m_wp);
+        
+        for (int m = 0; m < gridExpandedParams.size(); m++)
+        {
+            cout << m << " ";
+
+            cv::Mat numOfMixtures;
+            numOfMixtures.setTo(gridExpandedParams[m][0]);
+            predictor.setNumOfMixtures(numOfMixtures);
+            
+            // Training phase
+            
+            predictor.train(validSbjDescriptorsTrFold);
+            
+            // Predict phase
+    
+            GridMat validObjLoglikelihoodsTeFold, validSbjLoglikelihoodsTeFold;
+            predictor.predict(validObjDescriptorsTeFold, validObjLoglikelihoodsTeFold);
+            predictor.predict(validSbjDescriptorsTeFold, validSbjLoglikelihoodsTeFold);
+            
+            GridMat valObjLoglikelihoodsTeFoldHist = validObjLoglikelihoodsTeFold.historize(nbins, min, max);
+            GridMat valSbjLoglikelihoodsTeFoldHist = validSbjLoglikelihoodsTeFold.historize(nbins, min, max);
+
+            cv::Mat objHist = valObjLoglikelihoodsTeFoldHist.accumulate();
+            cv::Mat sbjHist = valSbjLoglikelihoodsTeFoldHist.accumulate();
+            
+            cv::add(objDistribution, objHist, objDistribution);
+            cv::add(sbjDistribution, sbjHist, sbjDistribution);
+        }
+        
+        cout << ")" << endl;
+    }
+    cout << endl;
+}
+
+
 template<typename T>
 void ModalityPrediction<cv::EM>::modelSelection(GridMat descriptors, GridMat tags,
                                                 vector<vector<T> > gridExpandedParams,
                                                 GridMat& goodnesses)
 {
-    // Prepare parameters' combinations
-//    vector<vector<T> > gridExpandedParameters;
-//    expandParameters(params, m_hp * m_wp, gridExpandedParameters);
-    
     // Partitionate the data in folds
     GridMat partitions;
     cvpartition(tags, m_modelSelecK, m_seed, partitions);
@@ -233,8 +318,6 @@ void ModalityPrediction<cv::EM>::modelSelection(GridMat descriptors, GridMat tag
     // Instanciate a hp-by-wp GridMat of accuracies. A cell contains a matrix
     // being the rows the parameters' combinations and columns fold-runs
     GridMat accuracies;
-    
-    vector<GridPredictor<cv::EM> > predictors;
     
     cout << "(";
     for (int k = 0; k < m_modelSelecK; k++)
@@ -264,7 +347,6 @@ void ModalityPrediction<cv::EM>::modelSelection(GridMat descriptors, GridMat tag
             selectParameterCombination(gridExpandedParams, m_hp, m_wp,
                                        gridExpandedParams[0].size() / (m_hp * m_wp),
                                        m, selectedParams);
-            
             predictor.setNumOfMixtures(selectedParams[0]);
             predictor.setLoglikelihoodThreshold(selectedParams[1]);
 
@@ -322,8 +404,11 @@ void ModalityPrediction<cv::EM>::computeGridPredictionsConsensus(GridMat individ
     drawnDists.copyTo(posDists, posPredictions);
     
     cv::Mat avgNegDists, avgPosDists;
-    cv::divide(negDists.accumulate(), negPredictions.accumulate(), avgNegDists);
-    cv::divide(posDists.accumulate(), posPredictions.accumulate(), avgPosDists);
+    cv::Mat accNegPredictions, accPosPredictions;
+    negPredictions.accumulate().convertTo(accNegPredictions, CV_32F);
+    posPredictions.accumulate().convertTo(accPosPredictions, CV_32F);
+    cv::divide(negDists.accumulate(), accNegPredictions, avgNegDists);
+    cv::divide(posDists.accumulate(), accPosPredictions, avgPosDists);
     
     GridMat consensusDrawnPredictions;
     consensusDrawnPredictions.setTo(avgPosDists > cv::abs(avgNegDists)); // not specifying the cell, copies to every cell
@@ -335,6 +420,8 @@ void ModalityPrediction<cv::EM>::computeGridPredictionsConsensus(GridMat individ
 //    
 //    cv::Mat votes; // the consensus for a grid takes into account the positive and negative cells' votes
 //    individualPredictions.accumulate(votes); // 0 is object, 1 is subject. The accumulation expresses how many cells vote for subject
+
+
 //    
 //    cv::Mat positives = (votes > (m_hp * m_wp) / 2); // if the absolute majority of cells vote for subject, it is subject
 //    ones.copyTo(consensus, positives);

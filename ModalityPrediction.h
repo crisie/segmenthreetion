@@ -67,15 +67,17 @@ public:
     void setNumOfMixtures(int m);
     void setNumOfMixtures(vector<int> m);
     
-    void setLoglikelihoodThresholds(int t);
-    void setLoglikelihoodThresholds(vector<int> t);
+    void setLoglikelihoodThresholds(float t);
+    void setLoglikelihoodThresholds(vector<float> t);
     
     template<typename T>
     void modelSelection(GridMat descriptors, GridMat tags,
                         vector<vector<T> > params,
                         GridMat& goodnesses);
     
-    void compute(GridMat& predictions, GridMat& loglikelihoods, GridMat& distsToMargin);
+    void compute(GridMat& predictions, GridMat& loglikelihoods, GridMat& distsToMargin); // this
+    
+    void computeLoglikelihoodsDistribution(int nbins, double min, double max, cv::Mat& sbjDistribution, cv::Mat& objDistribution);
     
 private:
     
@@ -84,7 +86,7 @@ private:
     // Attributes
     
     vector<int> m_nmixtures;
-    vector<int> m_logthresholds;
+    vector<float> m_logthresholds;
 };
 
 #endif /* defined(__segmenthreetion__ModalityPrediction__) */

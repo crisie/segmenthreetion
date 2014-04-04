@@ -179,6 +179,63 @@ void cvx::vmean(cv::Mat src, cv::Mat& mean)
     }
 }
 
+void cvx::hist(cv::Mat src, int nbins, float min, float max, cv::Mat& hist)
+{
+    int histSize[] = { nbins };
+    int channels[] = { 0 }; // 1 channel, number 0
+    float range[] = { min, max } ;
+    const float* ranges[] = { range };
+    
+    src.convertTo(src, CV_32F);
+    
+    cv::calcHist(&src, 1, channels, cv::Mat(), hist, 1, histSize, ranges, true, true);
+}
+
+void cvx::hist(cv::Mat src, cv::Mat msk, int nbins, float min, float max, cv::Mat& hist)
+{
+    int histSize[] = { nbins };
+    int channels[] = { 0 }; // 1 channel, number 0
+    float range[] = { min, max } ;
+    const float* ranges[] = { range };
+    
+    src.convertTo(src, CV_32F);
+    
+    cv::calcHist(&src, 1, channels, msk, hist, 1, histSize, ranges, true, true);
+}
+
+void cvx::cumsum(cv::Mat src, cv::Mat& dst)
+{
+    dst = src.clone();
+    
+    //cv::add(dst.row(0), src.row(0), dst.row(0));
+    
+    for (int i = 0; i < src.rows - 1; i++)
+        for (int j = i+1; j < src.rows; j++)
+            cv::add(dst.row(j), src.row(i), dst.row(j));
+    
+    for (int i = 0; i < src.cols - 1; i++)
+        for (int j = i+1; j < src.cols; j++)
+            cv::add(dst.col(j), src.col(j), dst.col(j));
+}
+
+cv::Mat cvx::linspace(float start, float end, int n)
+{
+    cv::Mat l;
+    
+    cvx::linspace(start, end, n, l);
+    
+    return l;
+}
+
+void cvx::linspace(float start, float end, int n, cv::Mat& v)
+{
+    v.create(n, 1, cv::DataType<float>::type);
+    
+    for (int i = 0; i < n; i++)
+    {
+        v.at<float>(i,0) = start + i * (end - start) / (n - 1);
+    }
+}
 
 void cvx::load(std::string file, cv::Mat& mat, int format)
 {

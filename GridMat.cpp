@@ -540,7 +540,7 @@ GridMat GridMat::convertToSparse(GridMat indices)
 
 void GridMat::convertToSparse(GridMat indices, GridMat& sparseGridMat)
 {
-    assert (crows() != indices.crows() || ccols() != indices.ccols());
+    assert (crows() == indices.crows() || ccols() == indices.ccols());
     
     cv::Mat counts(crows(), ccols(), cv::DataType<int>::type);
     counts.setTo(0);
@@ -1350,6 +1350,21 @@ void GridMat::argmin(GridMat& gargmin)
         gargmin.at<int>(i,j,0,1) = mincol;
     }
 }
+
+GridMat GridMat::historize(int nbins, double min, double max)
+{
+    GridMat gridhist;
+    
+    for (unsigned int i = 0; i < m_crows; i++) for (unsigned int j = 0; j < m_ccols; j++)
+    {
+        cv::Mat cellHist;
+        cvx::hist(at(i,j), nbins, min, max, cellHist);
+        gridhist.assign(cellHist, i, j);
+    }
+    
+    return gridhist;
+}
+
 
 
 void GridMat::save(const std::string & filename)

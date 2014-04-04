@@ -160,6 +160,8 @@ public:
     template<typename T>
     void argmin(GridMat& gargmax);
     
+    GridMat historize (int nbins, double min, double max);
+    
 	void save(const string & filename);
     void load(const string & filename);
     void show(const char* namedWindow);
