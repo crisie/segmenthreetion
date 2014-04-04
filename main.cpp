@@ -117,9 +117,9 @@ int main(int argc, const char* argv[])
     // Classification step
     
 	vector<int> nmixtures;
-    nmixtures += 3;//, 7; // classification parameter (training step)
+    nmixtures += 2, 3, 4, 5, 6, 7; // classification parameter (training step)
     vector<float> nlikelicuts;
-    nlikelicuts += -0.42;//, -0.06, 0.28, 0.64;
+    nlikelicuts += -1.13, -0.77, -0.42, -0.06, 0.28, 0.64;
     
     // Validation procedure
     

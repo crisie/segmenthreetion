@@ -365,10 +365,17 @@ void selectBestParameterCombination(vector<vector<T> > expandedParams, int hp, i
 
 float accuracy(cv::Mat actuals, cv::Mat predictions)
 {
-    cv::Mat aux;
-    cv::absdiff(actuals, predictions, aux);
-
-    return 1 - cv::mean(aux).val[0]; // acc = 1 - err
+    cv::Mat objects  = (actuals == 0);
+    cv::Mat subjects = (actuals == 1);
+    cv::Mat hits = (actuals == predictions);
+    
+    int nobj = cv::sum(objects).val[0];
+    int nsbj = cv::sum(subjects).val[0];
+    
+    int objHits = cv::sum(objects & hits).val[0];
+    int sbjHits = cv::sum(subjects & hits).val[0];
+    
+    return (float(objHits)/nobj + float(sbjHits)/nsbj) / 2;
 }
 
 void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies)
@@ -377,31 +384,16 @@ void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies)
     
     for (int i = 0; i < predictions.crows(); i++) for (int j = 0; j < predictions.ccols(); j++)
     {
-        int nobjects  = cv::sum(actuals.at(i,j) == 0).val[0];
-        int nsubjects = cv::sum(actuals.at(i,j) == 1).val[0];
+        cv::Mat objects  = (actuals.at(i,j) == 0);
+        cv::Mat subjects = (actuals.at(i,j) == 1);
+        cv::Mat hits = (actuals.at(i,j) == predictions.at(i,j));
         
-        int objectHits  = 0;
-        int subjectHits = 0;
+        int nobj = cv::sum(objects).val[0];
+        int nsbj = cv::sum(subjects).val[0];
         
-        // label homogeinization
+        int objHits = cv::sum(objects & hits).val[0];
+        int sbjHits = cv::sum(subjects & hits).val[0];
         
-        double minVal, maxVal;
-        
-        cv::minMaxIdx(actuals.at(i,j), &minVal, &maxVal);
-        cv::Mat actualsMat = actuals.at(i,j) - minVal;
-        
-        cv::minMaxIdx(predictions.at(i,j), &minVal, &maxVal);
-        cv::Mat predictionsMat = predictions.at(i,j) - minVal;
-        
-        for (int k = 0; k < actuals.at(i,j).rows; k++)
-        {
-            int actualVal = actualsMat.at<int>(k,0);
-            int predVal = predictionsMat.at<int>(k,0);
-            
-            if (actualVal == 0 && predVal == 0) objectHits++;
-            else if (actualVal == 1 && predVal == 1) subjectHits++;
-        }
-        
-        accuracies.at<float>(i,j) = ( ((float)subjectHits)/nsubjects + ((float)objectHits)/nobjects ) / 2.0;
+        accuracies.at<float>(i,j) = (float(objHits)/nobj + float(sbjHits)/nsbj) / 2;
     }
 }

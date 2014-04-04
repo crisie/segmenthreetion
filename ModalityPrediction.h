@@ -71,9 +71,9 @@ public:
     void setLoglikelihoodThresholds(vector<float> t);
     
     template<typename T>
-    void modelSelection(GridMat descriptors, GridMat tags,
+    void modelSelection(cv::Mat descriptors, cv::Mat tags,
                         vector<vector<T> > params,
-                        GridMat& goodnesses);
+                        cv::Mat& goodness);
     
     void compute(GridMat& predictions, GridMat& loglikelihoods, GridMat& distsToMargin); // this
     
