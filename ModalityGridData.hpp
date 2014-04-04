@@ -71,6 +71,7 @@ public:
     {
         m_hp = other.m_hp;
         m_wp = other.m_wp;
+		m_ModalityName = other.m_ModalityName;
         m_GFrames = other.m_GFrames;
         m_GMasks = other.m_GMasks;
         m_MasksOffsets = other.m_MasksOffsets;
