@@ -229,13 +229,13 @@ cv::Mat cvx::linspace(float start, float end, int n)
 
 void cvx::linspace(float start, float end, int n, cv::Mat& m)
 {
-    vector<float> v;
+    std::vector<float> v;
     cvx::linspace(start, end, n, v);
     
     m = cv::Mat(v.size(), 1, cv::DataType<float>::type, v.data());
 }
 
-void cvx::linspace(float start, float end, int n, vector<float>& v)
+void cvx::linspace(float start, float end, int n, std::vector<float>& v)
 {
     for (int i = 0; i < n; i++)
     {

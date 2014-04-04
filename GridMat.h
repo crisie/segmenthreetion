@@ -15,8 +15,6 @@
 
 #include <iostream>
 
-#include "CvExtraTools.h"
-
 using namespace std;
 
 class GridMat

@@ -15,9 +15,8 @@
 
 #include <opencv2/opencv.hpp>
 
-using namespace std;
-
-namespace cvx {
+namespace cvx
+{
     
     // There are not functions in OpenCV letting you select a set of arbitrary
     // spare rows or columns and create from them a new and smaller cv::Mat
@@ -46,12 +45,13 @@ namespace cvx {
     
     void cumsum(cv::Mat src, cv::Mat& dst);
     void linspace(float start, float end, int n, cv::Mat& m);
-    void linspace(float start, float end, int n, vector<float>& v);
+    void linspace(float start, float end, int n, std::vector<float>& v);
     cv::Mat linspace(float start, float end, int n);
     
     // Data-to-disk and disk-to-data nice functions (hide cv::FileStorage declarations)
     void load(std::string file, cv::Mat& mat, int format = cv::FileStorage::FORMAT_YAML);
     void save(std::string file, cv::Mat mat, int format = cv::FileStorage::FORMAT_YAML);
 }
+
 
 #endif /* defined(__segmenthreetion__CvExtraTools__) */

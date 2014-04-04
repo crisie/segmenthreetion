@@ -155,74 +155,74 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
         cout << endl;
     }
     
-    cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
-    
-    GridMat individualPredictions;
-    
-    individualPredictions.setTo(zeros);
-    loglikelihoods.setTo(negInfinities);
-    distsToMargin.setTo(posInfinities);
-    
-    for (int k = 0; k < m_testK; k++)
-    {
-        cout << k << " ";
-        
-        // Index the k-th training and test partitions
-        GridMat descriptorsTrFold (gdescriptors, gpartitions, k, true);
-        GridMat descriptorsTeFold (gdescriptors, gpartitions, k);
-        GridMat validnessesTrFold (gvalidnesses, gpartitions, k, true);
-        GridMat validnessesTeFold (gvalidnesses, gpartitions, k);
-        GridMat tagsTrFold (gtags, gpartitions, k, true);
-        GridMat tagsTeFold (gtags, gpartitions, k);
-        
-        // Within the k-th training partition,
-        // remove the nonvalid descriptors (validness == 0) and associated tags
-        GridMat validDescriptorsTrFold = descriptorsTrFold.convertToDense(validnessesTrFold);
-        GridMat validTagsTrFold = tagsTrFold.convertToDense(validnessesTrFold);
-        
-        // Within the valid descriptors in the k-th training partition,
-        // index the subject descriptors (tag == 1)
-        GridMat validSubjectDescriptorsTrFold (validDescriptorsTrFold, validTagsTrFold, 1);
-        
-        
-        GridPredictor<cv::EM> predictor(m_hp, m_wp);
-       
-        // Model selection information is kept on disk, reload it
-        GridMat goodnesses;
-        std::stringstream ss;
-        ss << m_data.getModality() << "_models_goodnesses_" << k << ".yml" << endl;
-        goodnesses.load(ss.str());
-        
-        // Train with the best parameter combination in average in a model
-        // selection procedure within the training partition
-        vector<cv::Mat> bestParams;
-        selectBestParameterCombination(gridExpandedParameters, m_hp, m_wp, params.size(), goodnesses, bestParams);
+    //cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
+    //
+    //GridMat individualPredictions;
+    //
+    //individualPredictions.setTo(zeros);
+    //loglikelihoods.setTo(negInfinities);
+    //distsToMargin.setTo(posInfinities);
+    //
+    //for (int k = 0; k < m_testK; k++)
+    //{
+    //    cout << k << " ";
+    //    
+    //    // Index the k-th training and test partitions
+    //    GridMat descriptorsTrFold (gdescriptors, gpartitions, k, true);
+    //    GridMat descriptorsTeFold (gdescriptors, gpartitions, k);
+    //    GridMat validnessesTrFold (gvalidnesses, gpartitions, k, true);
+    //    GridMat validnessesTeFold (gvalidnesses, gpartitions, k);
+    //    GridMat tagsTrFold (gtags, gpartitions, k, true);
+    //    GridMat tagsTeFold (gtags, gpartitions, k);
+    //    
+    //    // Within the k-th training partition,
+    //    // remove the nonvalid descriptors (validness == 0) and associated tags
+    //    GridMat validDescriptorsTrFold = descriptorsTrFold.convertToDense(validnessesTrFold);
+    //    GridMat validTagsTrFold = tagsTrFold.convertToDense(validnessesTrFold);
+    //    
+    //    // Within the valid descriptors in the k-th training partition,
+    //    // index the subject descriptors (tag == 1)
+    //    GridMat validSubjectDescriptorsTrFold (validDescriptorsTrFold, validTagsTrFold, 1);
+    //    
+    //    
+    //    GridPredictor<cv::EM> predictor(m_hp, m_wp);
+    //   
+    //    // Model selection information is kept on disk, reload it
+    //    GridMat goodnesses;
+    //    std::stringstream ss;
+    //    ss << m_data.getModality() << "_models_goodnesses_" << k << ".yml" << endl;
+    //    goodnesses.load(ss.str());
+    //    
+    //    // Train with the best parameter combination in average in a model
+    //    // selection procedure within the training partition
+    //    vector<cv::Mat> bestParams;
+    //    selectBestParameterCombination(gridExpandedParameters, m_hp, m_wp, params.size(), goodnesses, bestParams);
 
-        predictor.setNumOfMixtures(bestParams[0]);
-        predictor.setLoglikelihoodThreshold(bestParams[1]);
-        cout << bestParams[0] << endl;
-        cout << bestParams[1] << endl;
-        // Training phase
-        
-        predictor.train(validSubjectDescriptorsTrFold);
-        
-        // Predict phase
-        
-        // Within the k-th test partition,
-        // remove the nonvalid descriptors (validness == 0) and associated tags
-        GridMat validDescriptorsTeFold = descriptorsTeFold.convertToDense(validnessesTeFold);
-        
-        GridMat validPredictionsTeFold, validLoglikelihoodsTeFold, validDistsToMargin;
-        predictor.predict(validDescriptorsTeFold, validPredictionsTeFold, validLoglikelihoodsTeFold, validDistsToMargin);
+    //    predictor.setNumOfMixtures(bestParams[0]);
+    //    predictor.setLoglikelihoodThreshold(bestParams[1]);
+    //    cout << bestParams[0] << endl;
+    //    cout << bestParams[1] << endl;
+    //    // Training phase
+    //    
+    //    predictor.train(validSubjectDescriptorsTrFold);
+    //    
+    //    // Predict phase
+    //    
+    //    // Within the k-th test partition,
+    //    // remove the nonvalid descriptors (validness == 0) and associated tags
+    //    GridMat validDescriptorsTeFold = descriptorsTeFold.convertToDense(validnessesTeFold);
+    //    
+    //    GridMat validPredictionsTeFold, validLoglikelihoodsTeFold, validDistsToMargin;
+    //    predictor.predict(validDescriptorsTeFold, validPredictionsTeFold, validLoglikelihoodsTeFold, validDistsToMargin);
 
-        individualPredictions.set(validPredictionsTeFold.convertToSparse(validnessesTeFold), gpartitions, k);
-        loglikelihoods.set(validLoglikelihoodsTeFold.convertToSparse(validnessesTeFold), gpartitions, k);
-        distsToMargin.set(validDistsToMargin.convertToSparse(validnessesTeFold), gpartitions, k);
-    }
-    cout << endl;
-    
-    // Grid cells' consensus
-    computeGridPredictionsConsensus(individualPredictions, distsToMargin, predictions); // predictions are consensued
+    //    individualPredictions.set(validPredictionsTeFold.convertToSparse(validnessesTeFold), gpartitions, k);
+    //    loglikelihoods.set(validLoglikelihoodsTeFold.convertToSparse(validnessesTeFold), gpartitions, k);
+    //    distsToMargin.set(validDistsToMargin.convertToSparse(validnessesTeFold), gpartitions, k);
+    //}
+    //cout << endl;
+    //
+    //// Grid cells' consensus
+    //computeGridPredictionsConsensus(individualPredictions, distsToMargin, predictions); // predictions are consensued
 }
 
 template<typename T>

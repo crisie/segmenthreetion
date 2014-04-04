@@ -249,18 +249,18 @@ int main(int argc, const char* argv[])
     
     // Data re-loading
     
-//    ModalityGridData cMockData;
-//    reader.mockread("Color", sequences, "jpg", hp, wp, cMockData);
-//    ModalityGridData mMockData;
-//    reader.mockread("Motion", sequences, "jpg", hp, wp, mMockData);
-//    ModalityGridData dMockData;
-//    reader.mockread("Depth", sequences, "png", hp, wp, dMockData);
+    //ModalityGridData cMockData;
+    //reader.mockread("Color", sequences, "jpg", hp, wp, cMockData);
+    ModalityGridData mMockData;
+    reader.mockread("Motion", sequences, "jpg", hp, wp, mMockData);
+    ModalityGridData dMockData;
+    reader.mockread("Depth", sequences, "png", hp, wp, dMockData);
     ModalityGridData tMockData;
     reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData);
 
-//    cMockData.loadDescription(dataPath, sequences, "Color.yml");
-//    mMockData.loadDescription(dataPath, sequences, "Motion.yml");
-//    dMockData.loadDescription(dataPath, sequences, "Depth.yml");
+    //cMockData.loadDescription(dataPath, sequences, "Color.yml");
+    mMockData.loadDescription(dataPath, sequences, "Motion.yml");
+    dMockData.loadDescription(dataPath, sequences, "Depth.yml");
     tMockData.loadDescription(dataPath, sequences, "Thermal.yml");
     
     //
@@ -276,32 +276,32 @@ int main(int argc, const char* argv[])
     prediction.setModelSelection(true); // false load it from disk (see .h)
     prediction.setModelSelectionParameters(kModelSelec, true);
     
-//    // Color
-//    prediction.setData(cMockData);
-//    
-//    GridMat cPredictions, cLoglikelihoods, cDistsToMargin;
-//    prediction.compute(cPredictions, cLoglikelihoods, cDistsToMargin);
+    //// Color
+    //prediction.setData(cMockData);
+    //
+    //GridMat cPredictions, cLoglikelihoods, cDistsToMargin;
+    //prediction.compute(cPredictions, cLoglikelihoods, cDistsToMargin);
 //    
 //    cPredictions.save("cPredictions.yml");
 //    cLoglikelihoods.save("cLoglikelihoods.yml");
 //    cDistsToMargin.save("cDistsToMargin.yml");
 //    
-//    // Motion
-//    prediction.setData(mMockData);
-//    
-//    GridMat mPredictions, mLoglikelihoods, mDistsToMargin;
-//    prediction.compute(mPredictions, mLoglikelihoods, mDistsToMargin);
-//    
+    // Motion
+    prediction.setData(mMockData);
+    
+    GridMat mPredictions, mLoglikelihoods, mDistsToMargin;
+    prediction.compute(mPredictions, mLoglikelihoods, mDistsToMargin);
+    
 //    mPredictions.save("mPredictions.yml");
 //    mLoglikelihoods.save("mLoglikelihoods.yml");
 //    mDistsToMargin.save("mDistsToMargin.yml");
 //    
-//    // Depth
-//    prediction.setData(dMockData);
-//    
-//    GridMat dPredictions, dLoglikelihoods, dDistsToMargin;
-//    prediction.compute(dPredictions, dLoglikelihoods, dDistsToMargin);
-//    
+    // Depth
+    prediction.setData(dMockData);
+    
+    GridMat dPredictions, dLoglikelihoods, dDistsToMargin;
+    prediction.compute(dPredictions, dLoglikelihoods, dDistsToMargin);
+    
 //    dPredictions.save("dPredictions.yml");
 //    dLoglikelihoods.save("dLoglikelihoods.yml");
 //    dDistsToMargin.save("dDistsToMargin.yml");
@@ -320,12 +320,9 @@ int main(int argc, const char* argv[])
 //    cout << sbjDist << endl;
 //    cout << objDist << endl;
     
-    cout << tPredictions.at(0,0) << endl;
-    cout << tLoglikelihoods.at(0,0) << endl;
-    cout << tDistsToMargin.at(0,0) << endl;
-    tPredictions.save("tPredictions.yml");
-    tLoglikelihoods.save("tLoglikelihoods.yml");
-    tDistsToMargin.save("tDistsToMargin.yml");
+    //tPredictions.save("tPredictions.yml");
+    //tLoglikelihoods.save("tLoglikelihoods.yml");
+    //tDistsToMargin.save("tDistsToMargin.yml");
 
 //    //
 //    // Fusion

@@ -12,6 +12,7 @@
 #include <iostream>
 #include <string>
 
+#include "CvExtraTools.h"
 
 GridMat::GridMat(unsigned int crows, unsigned int ccols) : m_crows(crows), m_ccols(ccols)
 {    
