@@ -155,9 +155,7 @@ public:
     
     template<typename T> cv::Mat findNonZero();
     
-    template<typename T>
     void argmax(GridMat& gargmax);
-    template<typename T>
     void argmin(GridMat& gargmax);
     
     GridMat historize (int nbins, double min, double max);

@@ -53,7 +53,6 @@ int main(int argc, const char* argv[])
     
     // Dataset handling
 	// Create a reader pointing the data streams
-
 #ifdef _WIN32
 	string dataPath = "../Sequences/";
 #elif __APPLE__
@@ -117,14 +116,15 @@ int main(int argc, const char* argv[])
     // Classification step
     
 	vector<int> nmixtures;
-    nmixtures += 2, 3, 4, 5, 6, 7; // classification parameter (training step)
-    vector<float> nlikelicuts;
-    nlikelicuts += -1.13, -0.77, -0.42, -0.06, 0.28, 0.64;
+    nmixtures += 2, 3, 4, 5, 7, 9, 11; // classification parameter (training step)
+    vector<float> likelicuts;
+    cvx::linspace(-1, 1, 11, likelicuts); // -1, -0.8, -0.6, ..., 0.8
+    likelicuts.pop_back();
     
     // Validation procedure
     
-    int kTest = 3; // number of folds in the outer cross-validation
-    int kModelSelec = 2;
+    int kTest = 10; // number of folds in the outer cross-validation
+    int kModelSelec = 5;
     int seed = 74;
     
     //
@@ -270,7 +270,7 @@ int main(int argc, const char* argv[])
     ModalityPrediction<cv::EM> prediction;
 
     prediction.setNumOfMixtures(nmixtures);
-    prediction.setLoglikelihoodThresholds(nlikelicuts);
+    prediction.setLoglikelihoodThresholds(likelicuts);
 
     prediction.setValidationParameters(kTest, seed);
     prediction.setModelSelection(true); // false load it from disk (see .h)

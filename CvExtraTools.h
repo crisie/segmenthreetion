@@ -11,8 +11,11 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include <opencv2/opencv.hpp>
+
+using namespace std;
 
 namespace cvx {
     
@@ -42,7 +45,8 @@ namespace cvx {
     void hist(cv::Mat src, cv::Mat msk, int nbins, float min, float max, cv::Mat& hist);
     
     void cumsum(cv::Mat src, cv::Mat& dst);
-    void linspace(float start, float end, int n, cv::Mat& v);
+    void linspace(float start, float end, int n, cv::Mat& m);
+    void linspace(float start, float end, int n, vector<float>& v);
     cv::Mat linspace(float start, float end, int n);
     
     // Data-to-disk and disk-to-data nice functions (hide cv::FileStorage declarations)

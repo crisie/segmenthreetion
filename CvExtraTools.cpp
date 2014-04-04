@@ -227,13 +227,19 @@ cv::Mat cvx::linspace(float start, float end, int n)
     return l;
 }
 
-void cvx::linspace(float start, float end, int n, cv::Mat& v)
+void cvx::linspace(float start, float end, int n, cv::Mat& m)
 {
-    v.create(n, 1, cv::DataType<float>::type);
+    vector<float> v;
+    cvx::linspace(start, end, n, v);
     
+    m = cv::Mat(v.size(), 1, cv::DataType<float>::type, v.data());
+}
+
+void cvx::linspace(float start, float end, int n, vector<float>& v)
+{
     for (int i = 0; i < n; i++)
     {
-        v.at<float>(i,0) = start + i * (end - start) / (n - 1);
+        v.push_back(start + i * (end - start) / (n - 1));
     }
 }
 

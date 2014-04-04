@@ -99,8 +99,11 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
     
     cv::Mat zeros = cv::Mat::zeros(tags.rows, tags.cols, tags.type());
     cv::Mat ones = cv::Mat::ones(tags.rows, tags.cols, tags.type());
-    cv::Mat infinities (tags.rows, tags.cols, cv::DataType<float>::type);
-    infinities.setTo(std::numeric_limits<float>::max());
+    cv::Mat negInfinities (tags.rows, tags.cols, cv::DataType<float>::type);
+    cv::Mat posInfinities (tags.rows, tags.cols, cv::DataType<float>::type);
+    
+    negInfinities.setTo(-std::numeric_limits<float>::infinity());
+    posInfinities.setTo(std::numeric_limits<float>::infinity());
     
     GridMat gtags;
     gtags.setTo(tags);
@@ -156,10 +159,10 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
     cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
     
     GridMat individualPredictions;
-    individualPredictions.setTo(zeros);
     
-    loglikelihoods.setTo(zeros);
-    distsToMargin.setTo(infinities);
+    individualPredictions.setTo(zeros);
+    loglikelihoods.setTo(negInfinities);
+    distsToMargin.setTo(posInfinities);
     
     for (int k = 0; k < m_testK; k++)
     {
@@ -198,7 +201,8 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
 
         predictor.setNumOfMixtures(bestParams[0]);
         predictor.setLoglikelihoodThreshold(bestParams[1]);
-        
+        cout << bestParams[0] << endl;
+        cout << bestParams[1] << endl;
         // Training phase
         
         predictor.train(validSubjectDescriptorsTrFold);
@@ -230,6 +234,8 @@ void ModalityPrediction<cv::EM>::modelSelection(cv::Mat descriptors, cv::Mat tag
     // Partitionate the data in folds
     cv::Mat partitions;
     cvpartition(tags, m_modelSelecK, m_seed, partitions);
+    cout << tags << endl;
+    cout << partitions << endl;
     
     cv::Mat accuracies (gridExpandedParams.size(), m_modelSelecK, cv::DataType<float>::type);
     
@@ -249,14 +255,18 @@ void ModalityPrediction<cv::EM>::modelSelection(cv::Mat descriptors, cv::Mat tag
         
         cv::Mat foldAccs; // results
         
+        cv::EM predictor;
         for (int m = 0; m < gridExpandedParams.size(); m++)
         {
             // Create predictor and its parametrization
-            cv::EM predictor;
-            predictor.set("nclusters", gridExpandedParams[m][0]);
+            int nclusters = predictor.get<int>("nclusters");
+            if (gridExpandedParams[m][0] != nclusters)
+            {
+                predictor.set("nclusters", gridExpandedParams[m][0]);
             
-            // Train
-            predictor.train(descriptorsSubjTr);
+                // Train
+                predictor.train(descriptorsSubjTr);
+            }
             
             // Test
             cv::Mat_<float> loglikelihoods;

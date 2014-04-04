@@ -1289,65 +1289,33 @@ cv::Mat GridMat::findNonZero()
 }
 
 
-template<typename T>
 void GridMat::argmax(GridMat& gargmax)
 {
     gargmax.release();
     gargmax.create<int>(m_crows, m_ccols, 1, 2);
     for (unsigned int i = 0; i < m_crows; i++) for (unsigned int j = 0; j < m_ccols; j++)
     {
-        cv::Mat& cell = this->at(i,j);
+        double minVal, maxVal;
+        cv::Point min, max;
+        cv::minMaxLoc(this->at(i,j), &minVal, &maxVal, &min, &max);
         
-        T max;
-        int maxrow, maxcol;
-        
-        for (int row = 0; row < cell.rows; row++)
-        {
-            for (int col = 0; col < cell.cols; col++)
-            {
-                T value = this->at<T>(i,j,row,col); // query value
-                if (value > max)
-                {
-                    max = value;
-                    maxrow = row;
-                    maxcol = col;
-                }
-            }
-        }
-        
-        gargmax.at<int>(i,j,0,0) = maxrow;
-        gargmax.at<int>(i,j,0,1) = maxcol;
+        gargmax.at<int>(i,j,0,0) = max.y;
+        gargmax.at<int>(i,j,0,1) = max.x;
     }
 }
 
-template<typename T>
 void GridMat::argmin(GridMat& gargmin)
 {
     gargmin.release();
     gargmin.create<int>(m_crows, m_ccols, 1, 2);
     for (unsigned int i = 0; i < m_crows; i++) for (unsigned int j = 0; j < m_ccols; j++)
     {
-        cv::Mat& cell = this->at(i,j);
+        double minVal, maxVal;
+        cv::Point min, max;
+        cv::minMaxLoc(this->at(i,j), &minVal, &maxVal, &min, &max);
         
-        T min;
-        int minrow, mincol;
-        
-        for (int row = 0; row < cell.rows; row++)
-        {
-            for (int col = 0; col < cell.cols; col++)
-            {
-                T value = this->at<T>(i,j,row,col); // query value
-                if (value > min)
-                {
-                    min = value;
-                    minrow = row;
-                    mincol = col;
-                }
-            }
-        }
-        
-        gargmin.at<int>(i,j,0,0) = minrow;
-        gargmin.at<int>(i,j,0,1) = mincol;
+        gargmin.at<int>(i,j,0,0) = min.y;
+        gargmin.at<int>(i,j,0,1) = min.x;
     }
 }
 
@@ -1484,16 +1452,6 @@ template unsigned char& GridMat::at<unsigned char>(unsigned int i, unsigned int 
 template int& GridMat::at<int>(unsigned int i, unsigned int j, unsigned int row, unsigned int col);
 template float& GridMat::at<float>(unsigned int i, unsigned int j, unsigned int row, unsigned int col);
 template double& GridMat::at<double>(unsigned int i, unsigned int j, unsigned int row, unsigned int col);
-
-template void GridMat::argmax<unsigned char>(GridMat& gargmax);
-template void GridMat::argmax<int>(GridMat& gargmax);
-template void GridMat::argmax<float>(GridMat& gargmax);
-template void GridMat::argmax<double>(GridMat& gargmax);
-
-template void GridMat::argmin<unsigned char>(GridMat& gargmin);
-template void GridMat::argmin<int>(GridMat& gargmin);
-template void GridMat::argmin<float>(GridMat& gargmin);
-template void GridMat::argmin<double>(GridMat& gargmin);
 
 template void GridMat::setTo<int>(int value);
 template void GridMat::setTo<float>(float value);

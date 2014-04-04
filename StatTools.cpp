@@ -334,6 +334,35 @@ void selectParameterCombination(vector<vector<T> > expandedParams, int hp, int w
 }
 
 
+//template<typename T>
+//void selectBestParameterCombination(vector<vector<T> > expandedParams, int hp, int wp, int nparams, GridMat goodnesses, vector<cv::Mat>& selectedParams)
+//{
+//    selectedParams.clear();
+//    
+//    for (int k = 0; k < nparams; k++)
+//        selectedParams.push_back(cv::Mat(hp, wp, cv::DataType<T>::type));
+//    
+//    GridMat gargmax;
+//    goodnesses.argmax<T>(gargmax);
+//    
+//    for (int i = 0; i < hp; i++) for (int j = 0; j < wp; j++)
+//    {
+//        int rowIdx = gargmax.at<T>(i,j,0,0); // maxrow index
+//        
+//        vector<T> lineParams = expandedParams[rowIdx];
+//        
+//        int l = i * wp + j;
+//        for (int k = 0; k < nparams; k++)
+//        {
+//            selectedParams[k].at<T>(i,j) = lineParams[l * nparams + k];
+//        }
+//    }
+//    
+//    // debug
+//    //    for (int k = 0; k < nparams; k++)
+//    //        cout << selectedParams[k] << endl;
+//}
+
 template<typename T>
 void selectBestParameterCombination(vector<vector<T> > expandedParams, int hp, int wp, int nparams, GridMat goodnesses, vector<cv::Mat>& selectedParams)
 {
@@ -343,18 +372,18 @@ void selectBestParameterCombination(vector<vector<T> > expandedParams, int hp, i
         selectedParams.push_back(cv::Mat(hp, wp, cv::DataType<T>::type));
     
     GridMat gargmax;
-    goodnesses.argmax<T>(gargmax);
+    goodnesses.argmax(gargmax);
+    cout << gargmax << endl;
     
     for (int i = 0; i < hp; i++) for (int j = 0; j < wp; j++)
     {
-        int rowIdx = gargmax.at<T>(i,j,0,0); // maxrow index
+        int rowIdx = gargmax.at(i,j).at<int>(0,0); // maxrow index
         
         vector<T> lineParams = expandedParams[rowIdx];
         
-        int l = i * wp + j;
-        for (int k = 0; k < nparams; k++)
+        for (int k = 0; k < lineParams.size(); k++)
         {
-            selectedParams[k].at<T>(i,j) = lineParams[l * nparams + k];
+            selectedParams[k].at<T>(i,j) = lineParams[k];
         }
     }
     
@@ -362,6 +391,7 @@ void selectBestParameterCombination(vector<vector<T> > expandedParams, int hp, i
     //    for (int k = 0; k < nparams; k++)
     //        cout << selectedParams[k] << endl;
 }
+
 
 float accuracy(cv::Mat actuals, cv::Mat predictions)
 {
