@@ -149,12 +149,11 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
             }
 
             std::stringstream ss;
-            ss << "gmm_goodnesses_" << k << ".yml" << endl;
+            ss << m_data.getModality() << "_models_goodnesses_" << k << ".yml" << endl;
             goodnesses.save(ss.str());
         }
         cout << endl;
     }
-    
     
     cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
     
@@ -191,7 +190,7 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
         // Model selection information is kept on disk, reload it
         GridMat goodnesses;
         std::stringstream ss;
-        ss << "gmm_goodnesses_" << k << ".yml" << endl;
+        ss << m_data.getModality() << "_models_goodnesses_" << k << ".yml" << endl;
         goodnesses.load(ss.str());
         
         // Train with the best parameter combination in average in a model
