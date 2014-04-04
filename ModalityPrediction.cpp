@@ -9,7 +9,7 @@
 #include "ModalityPrediction.h"
 #include "GridPredictor.h"
 #include "StatTools.h"
-
+#include "CvExtraTools.h"
 
 //
 // ModalityPredictionBase
@@ -123,7 +123,7 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
     
     if (m_bModelSelection)
     {
-        cout << "Model selection CVs [" << m_testK << "]: " << endl;
+		cout << m_data.getModality() << " model selection CVs [" << m_testK << "]: " << endl;
         
         for (int k = 0; k < m_testK; k++)
         {
@@ -233,8 +233,6 @@ void ModalityPrediction<cv::EM>::modelSelection(cv::Mat descriptors, cv::Mat tag
     // Partitionate the data in folds
     cv::Mat partitions;
     cvpartition(tags, m_modelSelecK, m_seed, partitions);
-    cout << tags << endl;
-    cout << partitions << endl;
     
     cv::Mat accuracies (gridExpandedParams.size(), m_modelSelecK, cv::DataType<float>::type);
     
