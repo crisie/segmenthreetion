@@ -1456,7 +1456,6 @@ template double& GridMat::at<double>(unsigned int i, unsigned int j, unsigned in
 template void GridMat::setTo<int>(int value);
 template void GridMat::setTo<float>(float value);
 template void GridMat::setTo<double>(double value);
-template void GridMat::setTo<GridMat>(GridMat value);
 
 template void GridMat::setTo<unsigned char>(unsigned char value, unsigned int i, unsigned j);
 template void GridMat::setTo<int>(int value, unsigned int i, unsigned int j);

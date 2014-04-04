@@ -453,10 +453,10 @@ void ModalityPrediction<cv::EM>::computeLoglikelihoodsDistribution(int nbins, do
 
 // Instantiation of template member functions
 // -----------------------------------------------------------------------------
-template void ModalityPrediction<cv::EM>::setData(ModalityGridData &data);
-template void ModalityPrediction<cv::EM>::setModelSelection(bool flag);
-template void ModalityPrediction<cv::EM>::setModelSelectionParameters(int k, bool best);
-template void ModalityPrediction<cv::EM>::setValidationParameters(int k, int seed);
+template void ModalityPredictionBase<cv::EM>::setData(ModalityGridData &data);
+template void ModalityPredictionBase<cv::EM>::setModelSelection(bool flag);
+template void ModalityPredictionBase<cv::EM>::setModelSelectionParameters(int k, bool best);
+template void ModalityPredictionBase<cv::EM>::setValidationParameters(int k, int seed);
 
 template void ModalityPrediction<cv::EM>::modelSelection<int>(cv::Mat descriptors, cv::Mat tags, vector<vector<int> > params, cv::Mat& goodness);
 template void ModalityPrediction<cv::EM>::modelSelection<float>(cv::Mat descriptors, cv::Mat tags, vector<vector<float> > params, cv::Mat& goodness);
