@@ -118,13 +118,13 @@ int main(int argc, const char* argv[])
 	vector<int> nmixtures;
     nmixtures += 2, 3, 4, 5, 7, 9, 11; // classification parameter (training step)
     vector<float> likelicuts;
-    cvx::linspace(-1, 1, 11, likelicuts); // -1, -0.8, -0.6, ..., 0.8
+    cvx::linspace(-1, 1, 13, likelicuts); // -1, -0.8, -0.6, ..., 0.8
     likelicuts.pop_back();
     
     // Validation procedure
     
-    int kTest = 10; // number of folds in the outer cross-validation
-    int kModelSelec = 5;
+    int kTest = 5; // number of folds in the outer cross-validation
+    int kModelSelec = 2;
     int seed = 74;
     
     //
