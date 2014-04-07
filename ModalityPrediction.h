@@ -84,7 +84,7 @@ public:
                         vector<vector<T> > params,
                         GridMat& goodnesses);
     
-    void compute(GridMat& predictions, GridMat& loglikelihoods, GridMat& distsToMargin); // this
+    void compute(GridMat& predictions, GridMat& loglikelihoods, GridMat& distsToMargin, GridMat& accuracies); // this
     
     void computeLoglikelihoodsDistribution(int nbins, double min, double max, cv::Mat& sbjDistribution, cv::Mat& objDistribution);
     

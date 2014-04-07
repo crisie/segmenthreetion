@@ -27,10 +27,13 @@ class GridPredictorBase
 {
 public:
     GridPredictorBase(int hp, int wp);
+    ~GridPredictorBase();
     
-    void setParameters(GridMat parameters);
+//    void setParameters(GridMat parameters);
+    void setDimensionalityReduction(cv::Mat variances);
     
     PredictorT* at(unsigned int i, unsigned int j);
+    cv::PCA* getPCA(unsigned int, unsigned j);
 
 protected:
     GridMat m_data;
@@ -39,6 +42,11 @@ protected:
     unsigned int m_hp, m_wp;
     
     vector<PredictorT*> m_pPredictors;
+    
+    vector<cv::PCA*> m_pPCAs;
+    GridMat m_projData;
+    bool m_bDimReduction;
+    cv::Mat m_variances;
 };
 
 
@@ -54,7 +62,6 @@ class GridPredictor<cv::EM> : public GridPredictorBase<cv::EM>
 public:
     GridPredictor(int hp, int wp);
     
-    void setParameters(GridMat parameters);
     void setNumOfMixtures(cv::Mat nmixtures);
     void setLoglikelihoodThreshold(cv::Mat loglikes);
     

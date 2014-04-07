@@ -138,7 +138,7 @@ void ModalityPrediction<cv::EM>::setLoglikelihoodThresholds(vector<float> t)
     m_logthresholds = t;
 }
 
-void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikelihoods, GridMat& distsToMargin)
+void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikelihoods, GridMat& distsToMargin, GridMat& accuracies)
 {
     cv::Mat tags = m_data.getTagsMat();
     
@@ -196,7 +196,7 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
     }
     
     cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
-    /*
+    
      
     GridMat individualPredictions;
     
@@ -254,7 +254,18 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
         
         GridMat validPredictionsTeFold, validLoglikelihoodsTeFold, validDistsToMargin;
         predictor.predict(validDescriptorsTeFold, validPredictionsTeFold, validLoglikelihoodsTeFold, validDistsToMargin);
+        
+        // Compute a goodness measure of this individual prediction (accuracy)
+        GridMat validTagsTeFold = tagsTeFold.convertToDense(validnessesTeFold);
+        GridMat validTagsSubjObjTeFold (validTagsTeFold, validTagsTeFold, -1, true);
+        GridMat validPredictionsSubjObjTeFold (validPredictionsTeFold, validTagsTeFold, -1, true);
+        
+        cv::Mat accsFold;
+        accuracy(validTagsSubjObjTeFold, validPredictionsSubjObjTeFold, accsFold);
+        GridMat aux (accsFold, m_hp, m_wp);
+        accuracies.vconcat(aux);
 
+        // Store other results apart from the goodness
         individualPredictions.set(validPredictionsTeFold.convertToSparse(validnessesTeFold), gpartitions, k);
         loglikelihoods.set(validLoglikelihoodsTeFold.convertToSparse(validnessesTeFold), gpartitions, k);
         distsToMargin.set(validDistsToMargin.convertToSparse(validnessesTeFold), gpartitions, k);
@@ -262,9 +273,8 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
     cout << endl;
 
     // Grid cells' consensus
-    computeGridPredictionsConsensus(individualPredictions, distsToMargin, predictions); // predictions are consensued
-     
-    */
+    // TODO: move this function to the fusion part
+    // computeGridPredictionsConsensus(individualPredictions, distsToMargin, predictions); // predictions are consensued
 }
 
 template<typename T>

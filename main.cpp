@@ -130,7 +130,7 @@ int main(int argc, const char* argv[])
     vector<float> scoreThresholds (tmp.begin()+1, tmp.end()-1);
     
     // CAUTION! CHANG
-    double colorVariance = 0.90; // variance to keep in PCA's dim reduction in ColorModality
+    double colorVariance = 0.99; // variance to keep in PCA's dim reduction in ColorModality
     
     // Validation procedure
     
@@ -260,19 +260,19 @@ int main(int argc, const char* argv[])
     
     // Data re-loading
     
-    ModalityGridData cMockData;
-    reader.mockread("Color", sequences, "jpg", hp, wp, cMockData);
+//    ModalityGridData cMockData;
+//    reader.mockread("Color", sequences, "jpg", hp, wp, cMockData);
 //    ModalityGridData mMockData;
 //    reader.mockread("Motion", sequences, "jpg", hp, wp, mMockData);
 //    ModalityGridData dMockData;
 //    reader.mockread("Depth", sequences, "png", hp, wp, dMockData);
-//    ModalityGridData tMockData;
-//    reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData);
+    ModalityGridData tMockData;
+    reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData);
 //
-    cMockData.loadDescription(dataPath, sequences, "Color.yml");
+//    cMockData.loadDescription(dataPath, sequences, "Color.yml");
 //    mMockData.loadDescription(dataPath, sequences, "Motion.yml");
 //    dMockData.loadDescription(dataPath, sequences, "Depth.yml");
-//    tMockData.loadDescription(dataPath, sequences, "Thermal.yml");
+    tMockData.loadDescription(dataPath, sequences, "Thermal.yml");
     
     //
     // Individual prediction
@@ -302,7 +302,7 @@ int main(int argc, const char* argv[])
     prediction.setLoglikelihoodThresholds(likelicuts);
 
     prediction.setValidationParameters(kTest, seed);
-    prediction.setModelSelection(true); // false load it from disk (see .h)
+    prediction.setModelSelection(false); // false load it from disk (see .h)
     prediction.setModelSelectionParameters(kModelSelec, true);
     
 //
@@ -330,18 +330,22 @@ int main(int argc, const char* argv[])
 //    dLoglikelihoods.save("dLoglikelihoods.yml");
 //    dDistsToMargin.save("dDistsToMargin.yml");
     
-    // Thermal
-//    prediction.setData(tMockData);
-//
-//    GridMat tPredictions, tLoglikelihoods, tDistsToMargin;
-//    prediction.compute(tPredictions, tLoglikelihoods, tDistsToMargin);
+     // Thermal
+    prediction.setData(tMockData);
 
-    //// Color
-    prediction.setData(cMockData);
-    prediction.setDimensionalityReduction(colorVariance);
-    
-    GridMat cPredictions, cLoglikelihoods, cDistsToMargin;
-    prediction.compute(cPredictions, cLoglikelihoods, cDistsToMargin);
+    GridMat tPredictions, tLoglikelihoods, tDistsToMargin, tAccuracies;
+    prediction.compute(tPredictions, tLoglikelihoods, tDistsToMargin, tAccuracies);
+    cout << tAccuracies << endl;
+    GridMat tMeanAccs;
+    tAccuracies.mean(tMeanAccs, 0);
+    cout << tMeanAccs << endl;
+
+//    //// Color
+//    prediction.setData(cMockData);
+//    prediction.setDimensionalityReduction(colorVariance);
+//    
+//    GridMat cPredictions, cLoglikelihoods, cDistsToMargin;
+//    prediction.compute(cPredictions, cLoglikelihoods, cDistsToMargin);
     
 //    // DEBUG
 //    cv::Mat l, sbjDist, objDist;

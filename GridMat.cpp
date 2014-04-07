@@ -238,6 +238,7 @@ void GridMat::create(unsigned int crows, unsigned int ccols)
 {
     m_crows = crows;
     m_ccols = ccols;
+    m_grid.clear();
     m_grid.resize( m_crows * m_ccols );
 }
 

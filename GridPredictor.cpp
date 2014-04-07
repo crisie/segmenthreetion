@@ -10,18 +10,24 @@
 #include "StatTools.h"
 #include "CvExtraTools.h"
 
+
+template GridPredictorBase<cv::EM>::~GridPredictorBase();
+
+
 //
 // GridPredictorBase
 //
 
 template<typename PredictorT>
 GridPredictorBase<PredictorT>::GridPredictorBase(int hp, int wp)
-: m_hp(hp), m_wp(wp)
+: m_hp(hp), m_wp(wp), m_bDimReduction(false)
 {
     m_pPredictors.resize(m_hp * m_wp);
+    m_pPCAs.resize(m_hp * m_wp);
     for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
     {
         m_pPredictors[i * m_wp + j] = new PredictorT();
+        m_pPCAs[i * m_wp + j] = new cv::PCA();
     }
 }
 
@@ -31,6 +37,27 @@ PredictorT* GridPredictorBase<PredictorT>::at(unsigned int i, unsigned int j)
     return m_pPredictors[i * m_wp + j];
 }
 
+template<typename PredictorT>
+cv::PCA* GridPredictorBase<PredictorT>::getPCA(unsigned int i, unsigned int j)
+{
+    return m_pPCAs[i * m_wp + j];
+}
+
+template<typename PredictorT>
+void GridPredictorBase<PredictorT>::setDimensionalityReduction(cv::Mat variances)
+{
+    m_variances = variances;
+}
+
+template<typename PredictorT>
+GridPredictorBase<PredictorT>::~GridPredictorBase()
+{
+    for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
+    {
+        delete m_pPredictors[i * m_wp + j];
+        delete m_pPCAs[i * m_wp + j];
+    }
+}
 
 //
 // GridPredictor<PredictorT>
@@ -43,22 +70,31 @@ GridPredictor<cv::EM>::GridPredictor(int hp, int wp)
     
 }
 
-void GridPredictor<cv::EM>::setParameters(GridMat parameters)
-{
-    m_nmixtures.release();
-    m_logthreshold.release();
-    
-    m_nmixtures.create(m_hp, m_wp, cv::DataType<int>::type);
-    m_logthreshold.create(m_hp, m_wp, cv::DataType<int>::type);
-    
-    for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
-    {
-        m_nmixtures.at<int>(i,j) = parameters.at<int>(i,j,0,0);
-        at(i,j)->set("nclusters", parameters.at<int>(i,j,0,0));
-        
-        m_logthreshold.at<int>(i,j) = parameters.at<int>(i,j,0,1);
-    }
-}
+//void GridPredictor<cv::EM>::setParameters(GridMat parameters)
+//{
+//    m_nmixtures.release();
+//    m_logthreshold.release();
+//    m_nmixtures.create(m_hp, m_wp, cv::DataType<int>::type);
+//    m_logthreshold.create(m_hp, m_wp, cv::DataType<int>::type);
+//    
+//    if (!m_data.isEmpty())
+//    {
+//        m_projData.release();
+//        m_projData.create(m_hp, m_wp);
+//    }
+//    
+//    for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
+//    {
+//        m_nmixtures.at<int>(i,j) = parameters.at<int>(i,j,0,0);
+//        at(i,j)->set("nclusters", parameters.at<int>(i,j,0,0));
+//        
+//        m_logthreshold.at<int>(i,j) = parameters.at<int>(i,j,0,1);
+//        
+//        if (!m_data.isEmpty())
+//            cvx::computePCA(m_data.at(i,j), *getPCA(i,j),
+//                            m_projData.at(i,j), CV_PCA_DATA_AS_ROW, m_variances.at<double>(i,j));
+//    }
+//}
 
 void GridPredictor<cv::EM>::setNumOfMixtures(cv::Mat nmixtures)
 {
@@ -79,9 +115,23 @@ void GridPredictor<cv::EM>::train(GridMat data)
 {
     m_data = data;
     
+    m_projData.create(m_hp, m_wp);
+    
     for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
     {
-        at(i,j)->train(m_data.at(i,j));
+        cv::Mat cellData;
+        if (!m_bDimReduction)
+        {
+            cellData = m_data.at(i,j);
+        }
+        else
+        {
+            cvx::computePCA(m_data.at(i,j), *getPCA(i,j),
+                            cellData, CV_PCA_DATA_AS_ROW, m_variances.at<double>(i,j));
+            m_projData.at(i,j) = cellData;
+        }
+        
+        at(i,j)->train(cellData);
     }
 }
 
@@ -93,14 +143,18 @@ void GridPredictor<cv::EM>::predict(GridMat data, GridMat& loglikelihoods)
     for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
     {
         cv::Mat& cell = data.at(i,j);
-        cv::Mat cellLoglikelihoods (cell.rows, 1, cv::DataType<double>::type);
+        cv::Mat cellLoglikelihoods (cell.rows, 1, cv::DataType<float>::type);
         
         for (int d = 0; d < cell.rows; d++)
         {
-            cv::Vec2d res;
-            res = at(i,j)->predict(cell.row(d));
+            cv::Mat descriptor = cell.row(d);
             
-            cellLoglikelihoods.at<double>(d,0) = res.val[0];
+            if (m_bDimReduction)
+                descriptor = getPCA(i,j)->project(descriptor);
+            
+            cv::Vec2d res = at(i,j)->predict(descriptor);
+            
+            cellLoglikelihoods.at<float>(d,0) = static_cast<float>(res.val[0]);
         }
         
         cv::Mat stdCellLoglikelihoods;
@@ -125,8 +179,12 @@ void GridPredictor<cv::EM>::predict(GridMat data, GridMat& predictions, GridMat&
         
         for (int d = 0; d < cell.rows; d++)
         {
-            cv::Vec2d res;
-            res = at(i,j)->predict(cell.row(d));
+            cv::Mat descriptor = cell.row(d);
+            
+            if (m_bDimReduction)
+                descriptor = getPCA(i,j)->project(descriptor);
+            
+            cv::Vec2d res = at(i,j)->predict(descriptor);
 
             cellLoglikelihoods.at<float>(d,0) = static_cast<float>(res.val[0]);
         }
@@ -147,15 +205,10 @@ void GridPredictor<cv::EM>::predict(GridMat data, GridMat& predictions, GridMat&
         // subjects' margin > 0 and objects' margin < 0. And scale to take into
         // accound the variance of the dists' sample
         cv::Mat_<float> diffs = stdCellLoglikelihoods - m_logthreshold.at<float>(i,j); // center
-//        cout << stdCellLoglikelihoods << endl;
-//        cout << diffs << endl;
         cv::Mat_<float> powers;
         cv::pow(diffs, 2, powers);
-//        cout << powers << endl;
         float scale = sqrt(cv::sum(powers).val[0] / stdCellLoglikelihoods.rows);
-//        cout << scale << endl;
         cv::Mat_<float> cellsDistsToMargin = diffs / scale; // scale
-//        cout << cellsDistsToMargin << endl;
         
         predictions.assign(cellPredictions, i, j);
         loglikelihoods.assign(stdCellLoglikelihoods, i, j);
