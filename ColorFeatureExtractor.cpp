@@ -192,6 +192,7 @@ void ColorFeatureExtractor::describe(ModalityGridData& data)
             {
                 cv::Mat & cell = grid.at(i,j);
                 cv::Mat & tmpCellMask = gmask.at(i,j);
+
                 cv::Mat cellMask = cv::Mat::zeros(tmpCellMask.rows, tmpCellMask.cols, CV_8UC1);
                 if (tmpCellMask.channels() == 3)
                     cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);

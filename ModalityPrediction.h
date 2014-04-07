@@ -35,7 +35,6 @@ public:
     
     void setValidationParameters(int k, int seed);
     
-    void setDimensionalityReduction(int ndims);
     void setDimensionalityReduction(float variance);
     
 protected:
@@ -56,8 +55,7 @@ protected:
     int m_modelSelecK; // number of folds in inner cross-validation to perform model selection
     bool m_selectBest; // in model selection
     
-    bool m_bVarianceReduction; // 0 for dims, 1 for variance
-    int m_ndims;
+    bool m_bDimReduction;
     float m_variance;
 };
 

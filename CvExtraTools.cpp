@@ -334,6 +334,24 @@ void cvx::matlabread(std::string file, cv::Mat& mat)
     Mat_Close(matfp);
 }
 
+void cvx::computePCA(cv::Mat src, cv::PCA& pca, cv::Mat& dst, int flags, double variance)
+{
+    pca.computeVar(src, cv::noArray(), flags, variance);
+    
+    dst.release();
+    
+    for (int i = 0; i < (flags == CV_PCA_DATA_AS_ROW ? src.rows : src.cols); i++)
+    {
+        cv::Mat p;
+        if (flags == CV_PCA_DATA_AS_ROW)
+            p = pca.project(src.row(i));
+        else
+            p = pca.project(src.col(i));
+        
+        dst.push_back(p);
+    }
+}
+
 template cv::Mat cvx::matlabread<int>(std::string file);
 template cv::Mat cvx::matlabread<float>(std::string file);
 template cv::Mat cvx::matlabread<double>(std::string file);

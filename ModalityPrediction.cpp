@@ -16,7 +16,8 @@
 //
 
 template<typename PredictorT>
-ModalityPredictionBase<PredictorT>::ModalityPredictionBase() : m_bModelSelection(true)
+ModalityPredictionBase<PredictorT>::ModalityPredictionBase()
+: m_bModelSelection(true), m_bDimReduction(false)
 {
 }
 
@@ -49,17 +50,10 @@ void ModalityPredictionBase<PredictorT>::setValidationParameters(int k, int seed
 }
 
 template<typename PredictorT>
-void ModalityPredictionBase<PredictorT>::setDimensionalityReduction(int ndims)
-{
-    m_ndims = ndims;
-    m_bVarianceReduction = false;
-}
-
-template<typename PredictorT>
 void ModalityPredictionBase<PredictorT>::setDimensionalityReduction(float variance)
 {
+    m_bDimReduction = true;
     m_variance = variance;
-    m_bVarianceReduction = true;
 }
 
 template<typename PredictorT>
@@ -175,7 +169,7 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
     {
 		cout << m_data.getModality() << " model selection CVs [" << m_testK << "]: " << endl;
         
-        for (int k = 4/*0*/; k < m_testK; k++)
+        for (int k = 0; k < m_testK; k++)
         {
             cout << k << " ";
             
@@ -306,9 +300,17 @@ void ModalityPrediction<cv::EM>::modelSelection(GridMat descriptors, GridMat tag
         GridMat accsFold; // results
         
         cv::EM predictor;
-        cv::PCA pca;
         for (int i = 0; i < m_data.getHp(); i++) for (int j = 0; j < m_data.getWp(); j++)
         {
+            cv::PCA pca; // if m_bDimReduction is false, this variable is not used anymore
+            
+            cv::Mat cellDescriptorsSubjTr;
+            if (!m_bDimReduction)
+                cellDescriptorsSubjTr = descriptorsSubjTr.at(i,j);
+            else
+                cvx::computePCA(descriptorsSubjTr.at(i,j), pca,
+                                cellDescriptorsSubjTr, CV_PCA_DATA_AS_ROW, m_variance);
+            
             for (int m = 0; m < gridExpandedParams.size(); m++)
             {
                 // Create predictor and its parametrization
@@ -318,14 +320,19 @@ void ModalityPrediction<cv::EM>::modelSelection(GridMat descriptors, GridMat tag
                     predictor.set("nclusters", gridExpandedParams[m][0]);
                 
                     // Train
-                    predictor.train(descriptorsSubjTr.at(i,j));
+                    predictor.train(cellDescriptorsSubjTr);
                 }
                 
                 // Test
                 cv::Mat_<float> loglikelihoods;
                 for (int d = 0; d < descriptorsSubjObjVal.at(i,j).rows; d++)
                 {
-                    cv::Vec2d res = predictor.predict(descriptorsSubjObjVal.at(i,j).row(d));
+                    cv::Mat descriptor = descriptorsSubjObjVal.at(i,j).row(d);
+                    
+                    if (m_bDimReduction)
+                        descriptor = pca.project(descriptor);
+                    
+                    cv::Vec2d res = predictor.predict(descriptor);
                     loglikelihoods.push_back(res.val[0]);
                 }
 
@@ -648,6 +655,7 @@ template void ModalityPredictionBase<cv::EM>::setData(ModalityGridData &data);
 template void ModalityPredictionBase<cv::EM>::setModelSelection(bool flag);
 template void ModalityPredictionBase<cv::EM>::setModelSelectionParameters(int k, bool best);
 template void ModalityPredictionBase<cv::EM>::setValidationParameters(int k, int seed);
+template void ModalityPredictionBase<cv::EM>::setDimensionalityReduction(float variance);
 template void ModalityPredictionBase<cv::EM>::computeGridPredictionsConsensus(GridMat individualPredictions, GridMat distsToMargin, GridMat& consensusPredictions);
 
 template void ModalityPredictionBase<cv::Mat>::setData(ModalityGridData &data);

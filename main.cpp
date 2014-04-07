@@ -129,6 +129,9 @@ int main(int argc, const char* argv[])
     tmp = cvx::linspace(0, 1.00, 20);
     vector<float> scoreThresholds (tmp.begin()+1, tmp.end()-1);
     
+    // CAUTION! CHANG
+    double colorVariance = 0.90; // variance to keep in PCA's dim reduction in ColorModality
+    
     // Validation procedure
     
     int kTest = 10; // number of folds in the outer cross-validation
@@ -257,18 +260,18 @@ int main(int argc, const char* argv[])
     
     // Data re-loading
     
-    //ModalityGridData cMockData;
-    //reader.mockread("Color", sequences, "jpg", hp, wp, cMockData);
+    ModalityGridData cMockData;
+    reader.mockread("Color", sequences, "jpg", hp, wp, cMockData);
 //    ModalityGridData mMockData;
 //    reader.mockread("Motion", sequences, "jpg", hp, wp, mMockData);
-    ModalityGridData dMockData;
-    reader.mockread("Depth", sequences, "png", hp, wp, dMockData);
+//    ModalityGridData dMockData;
+//    reader.mockread("Depth", sequences, "png", hp, wp, dMockData);
 //    ModalityGridData tMockData;
 //    reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData);
 //
-//    //cMockData.loadDescription(dataPath, sequences, "Color.yml");
+    cMockData.loadDescription(dataPath, sequences, "Color.yml");
 //    mMockData.loadDescription(dataPath, sequences, "Motion.yml");
-    dMockData.loadDescription(dataPath, sequences, "Depth.yml");
+//    dMockData.loadDescription(dataPath, sequences, "Depth.yml");
 //    tMockData.loadDescription(dataPath, sequences, "Thermal.yml");
     
     //
@@ -301,13 +304,8 @@ int main(int argc, const char* argv[])
     prediction.setValidationParameters(kTest, seed);
     prediction.setModelSelection(true); // false load it from disk (see .h)
     prediction.setModelSelectionParameters(kModelSelec, true);
-
-    //// Color
-    //prediction.setData(cMockData);
-    //
-    //GridMat cPredictions, cLoglikelihoods, cDistsToMargin;
-    //prediction.compute(cPredictions, cLoglikelihoods, cDistsToMargin);
-//    
+    
+//
 //    cPredictions.save("cPredictions.yml");
 //    cLoglikelihoods.save("cLoglikelihoods.yml");
 //    cDistsToMargin.save("cDistsToMargin.yml");
@@ -323,10 +321,10 @@ int main(int argc, const char* argv[])
 //    mDistsToMargin.save("mDistsToMargin.yml");
 //    
     // Depth
-    prediction.setData(dMockData);
-    
-    GridMat dPredictions, dLoglikelihoods, dDistsToMargin;
-    prediction.compute(dPredictions, dLoglikelihoods, dDistsToMargin);
+//    prediction.setData(dMockData);
+//    
+//    GridMat dPredictions, dLoglikelihoods, dDistsToMargin;
+//    prediction.compute(dPredictions, dLoglikelihoods, dDistsToMargin);
 //
 //    dPredictions.save("dPredictions.yml");
 //    dLoglikelihoods.save("dLoglikelihoods.yml");
@@ -338,6 +336,13 @@ int main(int argc, const char* argv[])
 //    GridMat tPredictions, tLoglikelihoods, tDistsToMargin;
 //    prediction.compute(tPredictions, tLoglikelihoods, tDistsToMargin);
 
+    //// Color
+    prediction.setData(cMockData);
+    prediction.setDimensionalityReduction(colorVariance);
+    
+    GridMat cPredictions, cLoglikelihoods, cDistsToMargin;
+    prediction.compute(cPredictions, cLoglikelihoods, cDistsToMargin);
+    
 //    // DEBUG
 //    cv::Mat l, sbjDist, objDist;
 //    prediction.computeLoglikelihoodsDistribution(60, -20, 1, sbjDist, objDist);
