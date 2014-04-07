@@ -121,7 +121,7 @@ void GridPredictor<cv::EM>::predict(GridMat data, GridMat& predictions, GridMat&
     for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
     {
         cv::Mat& cell = data.at(i,j);
-        cv::Mat cellLoglikelihoods (cell.rows, 1, cv::DataType<float>::type);
+        cv::Mat_<float> cellLoglikelihoods (cell.rows, 1);
         
         for (int d = 0; d < cell.rows; d++)
         {
@@ -132,7 +132,7 @@ void GridPredictor<cv::EM>::predict(GridMat data, GridMat& predictions, GridMat&
         }
 
         // Standardized loglikelihoods
-        cv::Mat stdCellLoglikelihoods;
+        cv::Mat_<float> stdCellLoglikelihoods;
         cv::Scalar mean, stddev;
         cv::meanStdDev(cellLoglikelihoods, mean, stddev);
         stdCellLoglikelihoods = (cellLoglikelihoods - mean.val[0]) / stddev.val[0];
@@ -141,15 +141,21 @@ void GridPredictor<cv::EM>::predict(GridMat data, GridMat& predictions, GridMat&
         // loglikelihoods over threshold are considered subject (1)
         cv::Mat cellPredictions;
         cv::threshold(stdCellLoglikelihoods, cellPredictions, m_logthreshold.at<float>(i,j), 1, CV_THRESH_BINARY);
+        cellPredictions.convertTo(cellPredictions, cv::DataType<int>::type);
         
         // Center the values around the loglikelihood threshold, so as to have
         // subjects' margin > 0 and objects' margin < 0. And scale to take into
         // accound the variance of the dists' sample
-        cv::Mat diffs = stdCellLoglikelihoods - m_logthreshold.at<float>(i,j); // center
-        cv::Mat powers;
+        cv::Mat_<float> diffs = stdCellLoglikelihoods - m_logthreshold.at<float>(i,j); // center
+//        cout << stdCellLoglikelihoods << endl;
+//        cout << diffs << endl;
+        cv::Mat_<float> powers;
         cv::pow(diffs, 2, powers);
+//        cout << powers << endl;
         float scale = sqrt(cv::sum(powers).val[0] / stdCellLoglikelihoods.rows);
-        cv::Mat cellsDistsToMargin = diffs / scale; // scale
+//        cout << scale << endl;
+        cv::Mat_<float> cellsDistsToMargin = diffs / scale; // scale
+//        cout << cellsDistsToMargin << endl;
         
         predictions.assign(cellPredictions, i, j);
         loglikelihoods.assign(stdCellLoglikelihoods, i, j);

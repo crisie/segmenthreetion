@@ -163,25 +163,42 @@ void ModalityReader::read(string modality, string dataPath, vector<string> scene
 void ModalityReader::readScene(string modality, string scenePath, const char* filetype, int hp, int wp, ModalityGridData& mgd)
 {
 	// auxiliary
-	vector<string> filenames; // Frames' filenames from <dataDir>/Frames/<modality>/
+	vector<string> framesFilenames; // Frames' filenames from <dataDir>/Frames/<modality>/
+    vector<string> masksFilenames; // Corresponding masks' filenames
 	vector<vector<cv::Rect> > rects; // Bounding rects at frame level (having several per frame)
 	vector<vector<int> > tags; // Tags corresponding to the bounding rects
     
-    if (modality.compare("Motion") != 0)
+    // Motion & Ramanan modalities need special treatment for reading
+    // .. In motion case, the optical flow vectors must be computed for every pair of frames
+    // .. In ramanan, the frames are already computed probability maps (from Matlab)
+    if (modality.compare("Motion") == 0)
     {
-        loadFilenames	 (scenePath + "/Frames/" + modality + "/", filetype, filenames);
-        loadBoundingRects(scenePath + "/Masks/" + modality + ".yml", rects, tags);
+        loadFilenames	 (scenePath + "/Frames/Color/", filetype, framesFilenames);
+        loadFilenames	 (scenePath + "/Masks/Color/", "png", masksFilenames);
+        
+        loadBoundingRects(scenePath + "/Masks/Color.yml", rects, tags);
+    }
+    else if (modality.compare("Ramanan") == 0)
+    {
+        loadFilenames	 (scenePath + "/Maps/" + modality + "/", filetype, framesFilenames);
+        loadFilenames	 (scenePath + "/Masks/Color/", "png", masksFilenames);
+        
+        loadBoundingRects(scenePath + "/Masks/Color.yml", rects, tags);
     }
     else
     {
-        loadFilenames	 (scenePath + "/Frames/Color/", filetype, filenames);
-        loadBoundingRects(scenePath + "/Masks/Color.yml", rects, tags);
+        loadFilenames	 (scenePath + "/Frames/" + modality + "/", filetype, framesFilenames);
+        loadFilenames	 (scenePath + "/Masks/" + modality + "/", "png", masksFilenames);
+        
+        loadBoundingRects(scenePath + "/Masks/" + modality + ".yml", rects, tags);
     }
 
+    assert (framesFilenames.size() == masksFilenames.size());
+    
     // Load frame-wise (Mat), extract the roi represented by the bounding boxes,
     // grid the rois (GridMat), and store in GridModalityData object
     
-	for (int f = 0; f < filenames.size(); f++)
+	for (int f = 0; f < framesFilenames.size(); f++)
 	{
         if (rects[f].size() < 1)
             continue;
@@ -189,19 +206,30 @@ void ModalityReader::readScene(string modality, string scenePath, const char* fi
         // Load the frame and its mask
         string framePath, maskPath;
         
-        if (modality.compare("Motion") != 0)
+        if (modality.compare("Motion") == 0)
         {
-            framePath = scenePath + "/Frames/" + modality + "/" + filenames[f] + "." + filetype;
-            maskPath = scenePath + "/Masks/" + modality + "/" + filenames[f] + ".png";
+            framePath = scenePath + "/Frames/Color/" + framesFilenames[f] + "." + filetype;
+            maskPath = scenePath + "/Masks/Color/" + masksFilenames[f] + ".png";
+        }
+        if (modality.compare("Ramanan") == 0)
+        {
+            framePath = scenePath + "/Maps/Ramanan/" + framesFilenames[f] + "." + filetype;
+            maskPath = scenePath + "/Masks/Color/" + masksFilenames[f] + ".png";
         }
         else
         {
-            framePath = scenePath + "/Frames/Color/" + filenames[f] + "." + filetype;
-            maskPath = scenePath + "/Masks/Color/" + filenames[f] + ".png";
+            framePath = scenePath + "/Frames/" + modality + "/" + framesFilenames[f] + "." + filetype;
+            maskPath = scenePath + "/Masks/" + modality + "/" + masksFilenames[f] + ".png";
         }
-            
-		cv::Mat frame = cv::imread(framePath, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+        
+        cv::Mat frame;
+        if (modality.compare("Ramanan") != 0)
+            frame = cv::imread(framePath, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+        else
+            frame = cvx::matlabread<double>(framePath); // ramanan maps are matlab matrices of doubles
+        
 		cv::Mat mask  = cv::imread(maskPath, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+        
 
         // (Motion modality) load also a second color frame to compute the actual motion frame
         // --------------------------------------------------------------------------------------
@@ -213,7 +241,7 @@ void ModalityReader::readScene(string modality, string scenePath, const char* fi
             if (f == 0)
                 currFrame.copyTo(prevFrame);
             else
-                prevFrame = cv::imread(scenePath + "/Frames/Color/" + filenames[f-1] + "." + filetype,
+                prevFrame = cv::imread(scenePath + "/Frames/Color/" + framesFilenames[f-1] + "." + filetype,
                                        CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
             
             MotionFeatureExtractor::computeOpticalFlow(pair<cv::Mat,cv::Mat>(prevFrame,currFrame), frame);
@@ -231,6 +259,11 @@ void ModalityReader::readScene(string modality, string scenePath, const char* fi
 				cv::Mat subjectroi (frame, rects[f][r]); // Get a roi in frame defined by the rectangle.
 				GridMat gsubject (subjectroi, hp, wp);
 				mgd.addGridFrame( gsubject );
+                
+                double minFVal, maxFVal;  // keep global min and max normalization purposes
+                cv::minMaxIdx(subjectroi, &minFVal, &maxFVal);
+                if (minFVal < mgd.getMinVal()) mgd.setMinVal(minFVal);
+                if (maxFVal > mgd.getMaxVal()) mgd.setMaxVal(maxFVal);
 
 				// Mask
 				cv::Mat maskroi (mask, rects[f][r]);
@@ -251,8 +284,11 @@ void ModalityReader::readScene(string modality, string scenePath, const char* fi
                 // Frame path
                 mgd.addFramePath(scenePath);
                 
-                // Frame resolution
-                mgd.addFrameFilename(filenames[f]);
+                // Frame filename
+                mgd.addFrameFilename(framesFilenames[f]);
+                
+                // Mask filename
+                mgd.addMaskFilename(masksFilenames[f]);
 
                 // Frame resolution
                 mgd.addFrameResolution(frame.cols, frame.rows);
@@ -305,20 +341,34 @@ void ModalityReader::mockread(string modality, string dataPath, vector<string> s
 void ModalityReader::mockreadScene(string modality, string scenePath, const char* filetype, int hp, int wp, ModalityGridData& mgd)
 {
 	// auxiliary
-	vector<string> filenames; // Frames' filenames from <dataDir>/Frames/<modality>/
+	vector<string> framesFilenames; // Frames' filenames from <dataDir>/Frames/<modality>/
+    vector<string> masksFilenames;
 	vector<vector<cv::Rect> > rects; // Bounding rects at frame level (having several per frame)
 	vector<vector<int> > tags; // Tags corresponding to the bounding rects
     
-    if (modality.compare("Motion") != 0)
+    if (modality.compare("Motion") == 0)
     {
-        loadFilenames	 (scenePath + "/Frames/" + modality + "/", filetype, filenames);
+        loadFilenames	 (scenePath + "/Frames/Color/", filetype, framesFilenames);
+        loadFilenames	 (scenePath + "/Masks/Color/", ".png", masksFilenames);
+        
+        loadBoundingRects(scenePath + "/Masks/Color.yml", rects, tags);
+    }
+    else if (modality.compare("Ramanan") != 0)
+    {
+        loadFilenames	 (scenePath + "/Maps/" + modality + "/", filetype, framesFilenames);
+        loadFilenames	 (scenePath + "/Masks/" + modality + "/", ".png", masksFilenames);
+        
         loadBoundingRects(scenePath + "/Masks/" + modality + ".yml", rects, tags);
     }
     else
     {
-        loadFilenames	 (scenePath + "/Frames/Color/", filetype, filenames);
-        loadBoundingRects(scenePath + "/Masks/Color.yml", rects, tags);
+        loadFilenames	 (scenePath + "/Frames/" + modality + "/", filetype, framesFilenames);
+        loadFilenames	 (scenePath + "/Masks/" + modality + "/", ".png", masksFilenames);
+        
+        loadBoundingRects(scenePath + "/Masks/" + modality + ".yml", rects, tags);
     }
+    
+    assert (framesFilenames.size() == masksFilenames.size());
     
     // Load frame-wise (Mat), extract the roi represented by the bounding boxes,
     // grid the rois (GridMat), and store in GridModalityData object
@@ -326,7 +376,7 @@ void ModalityReader::mockreadScene(string modality, string scenePath, const char
     mgd.setHp(hp);
     mgd.setWp(wp);
     
-	for (int f = 0; f < filenames.size(); f++)
+	for (int f = 0; f < framesFilenames.size(); f++)
 	{
         if (rects[f].size() < 1)
             continue;
@@ -334,10 +384,10 @@ void ModalityReader::mockreadScene(string modality, string scenePath, const char
         // Load the frame and its mask
         string maskPath;
         
-        if (modality.compare("Motion") != 0)
-            maskPath = scenePath + "/Masks/" + modality + "/" + filenames[f] + ".png";
+        if (modality.compare("Motion") == 0)
+            maskPath = scenePath + "/Masks/Color/" + masksFilenames[f] + ".png";
         else
-            maskPath = scenePath + "/Masks/Color/" + filenames[f] + ".png";
+            maskPath = scenePath + "/Masks/" + modality + "/" + masksFilenames[f] + ".png";
         
 		cv::Mat mask = cv::imread(maskPath, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
         
@@ -360,7 +410,10 @@ void ModalityReader::mockreadScene(string modality, string scenePath, const char
                 mgd.addFramePath(scenePath);
                 
                 // Frame filename
-                mgd.addFrameFilename(filenames[f]);
+                mgd.addFrameFilename(framesFilenames[f]);
+                
+                // Mask filename
+                mgd.addMaskFilename(masksFilenames[f]);
                 
                 // Frame resolution
                 mgd.addFrameResolution(mask.cols, mask.rows);

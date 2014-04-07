@@ -23,31 +23,43 @@ using namespace std;
 class ModalityGridData
 {
 public:
-    ModalityGridData() {}
+    ModalityGridData()
+    {
+        m_MinVal =  std::numeric_limits<double>::infinity();
+        m_MaxVal = -std::numeric_limits<double>::infinity();
+    }
     
     ModalityGridData(ModalityGridData& other, cv::Mat logicals)
     {
         m_hp = other.m_hp;
         m_wp = other.m_wp;
+        m_ModalityName = other.m_ModalityName;
+        m_MinVal = other.m_MinVal;
+        m_MaxVal = other.m_MaxVal;
         
-        for (int i = 0; i < other.getTags().size(); i++)
+        for (int k = 0; k < other.getTags().size(); k++)
         {
-            unsigned char logical = (logicals.rows > 1) ? logicals.at<int>(i,0) : logicals.at<int>(0,i);
+            unsigned char logical = (logicals.rows > 1) ? logicals.at<int>(k,0) : logicals.at<int>(0,k);
             if (logical)
             {
                 if (!other.isMock())
                 {
-                    addGridFrame(other.getGridFrame(i));
-                    addGridMask(other.getGridMask(i));
+                    addGridFrame(other.getGridFrame(k));
+                    addGridMask(other.getGridMask(k));
                 }
-                addGridFrameID(other.getGridFrameID(i));
-                addFramePath(other.getFramePath(i));
-                addFrameFilename(other.getFrameFilename(i));
-                addFrameResolution(other.getFrameResolution(i));
-                addGridBoundingRect(other.getGridBoundingRect(i));
-                addTag(other.getTag(i));
-                addValidnesses(other.getValidnesses(i));
-                // TODO: index descriptors
+                addGridMaskOffset(other.getGridMaskOffset(k));
+                addGridFrameID(other.getGridFrameID(k));
+                addFramePath(other.getFramePath(k));
+                addFrameFilename(other.getFrameFilename(k));
+                addMaskFilename(other.getMaskFilename(k));
+                addFrameResolution(other.getFrameResolution(k));
+                addGridBoundingRect(other.getGridBoundingRect(k));
+                addTag(other.getTag(k));
+                addValidnesses(other.getValidnesses(k));
+                for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
+                {
+                    addDescriptor(other.getDescriptor(i, j, k), i, j);
+                }
             }
         }
     }
@@ -83,6 +95,8 @@ public:
         m_Tags = other.m_Tags;
         m_Validnesses = other.m_Validnesses;
         m_Descriptors = other.m_Descriptors;
+        m_MinVal = other.m_MinVal;
+        m_MaxVal = other.m_MaxVal;
     }
     
     // Getters
@@ -97,7 +111,7 @@ public:
         return m_GMasks[k];
     }
     
-    unsigned char getMaskOffset(int k)
+    unsigned char getGridMaskOffset(int k)
     {
         return m_MasksOffsets[k];
     }
@@ -115,6 +129,11 @@ public:
     string getFrameFilename(int k)
     {
         return m_FramesFilenames[k];
+    }
+    
+    string getMaskFilename(int k)
+    {
+        return m_MasksFilenames[k];
     }
     
     cv::Point2d getFrameResolution(int k)
@@ -161,7 +180,7 @@ public:
         return m_Descriptors.at(i,j);
     }
     
-    cv::Mat getDescriptors(unsigned int i, unsigned int j, int k)
+    cv::Mat getDescriptor(unsigned int i, unsigned int j, int k)
     {
         return m_Descriptors.at(i,j).row(k);
     }
@@ -204,6 +223,11 @@ public:
     vector<string>& getFramesFilenames()
     {
         return m_FramesFilenames;
+    }
+    
+    vector<string>& getMasksFilenames()
+    {
+        return m_MasksFilenames;
     }
 
     vector<cv::Point2d>& getFramesResolutions()
@@ -299,6 +323,26 @@ public:
         m_wp = wp;
     }
     
+    void setMinVal(double value)
+    {
+        m_MinVal = value;
+    }
+    
+    void setMaxVal(double value)
+    {
+        m_MaxVal = value;
+    }
+    
+    double getMinVal()
+    {
+        return m_MinVal;
+    }
+    
+    double getMaxVal()
+    {
+        return m_MaxVal;
+    }
+    
     void setModality(string name)
     {
         m_ModalityName = name;
@@ -319,7 +363,7 @@ public:
         m_GMasks = gmasks;
     }
     
-    void setMasksOffsets(vector<unsigned char> gmasksoffsets)
+    void setGridMasksOffsets(vector<unsigned char> gmasksoffsets)
     {
         m_MasksOffsets = gmasksoffsets;
     }
@@ -337,6 +381,11 @@ public:
     void setFramesFilenames(vector<string> filenames)
     {
         m_FramesFilenames = filenames;
+    }
+    
+    void setMasksFilenames(vector<string> filenames)
+    {
+        m_MasksFilenames = filenames;
     }
     
     void setFramesResolutions(vector<cv::Point2d> resolutions)
@@ -377,6 +426,11 @@ public:
                 m_Descriptors.at(i,j).push_back(d);
             }
         }
+    }
+    
+    void setDescriptor(cv::Mat descriptor, unsigned int i, unsigned int j)
+    {
+        m_Descriptors.at(i,j) = descriptor;
     }
     
     void setDescriptors(cv::Mat descriptors, unsigned int i, unsigned int j)
@@ -435,6 +489,11 @@ public:
     void addFrameFilename(string filename)
     {
         m_FramesFilenames.push_back(filename);
+    }
+    
+    void addMaskFilename(string filename)
+    {
+        m_MasksFilenames.push_back(filename);
     }
     
     void addFrameResolution(int x, int y)
@@ -516,12 +575,15 @@ private:
     vector<string> m_ScenesPaths;
     vector<string> m_FramesPaths;
     vector<string> m_FramesFilenames;
+    vector<string> m_MasksFilenames;
     vector<cv::Point2d> m_FramesResolutions;
     vector<cv::Rect> m_GBoundingRects;
     vector<int> m_Tags;
     
     GridMat m_Validnesses; // whether cells in the grids are valid to be described
     GridMat m_Descriptors;
+    
+    double m_MinVal, m_MaxVal;
 };
 
 

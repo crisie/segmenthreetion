@@ -36,6 +36,10 @@ public:
     void setValidationParameters(int k, int seed);
     
 protected:
+    void computeGridPredictionsConsensus(GridMat individualPredictions, GridMat distsToMargin, GridMat& consensusPredictions);
+    
+    // Attributes
+    
     ModalityGridData m_data;
     int m_hp, m_wp;
     
@@ -81,12 +85,39 @@ public:
     
 private:
     
-    void computeGridPredictionsConsensus(GridMat individualPredictions, GridMat distsToMargin, GridMat& consensusPredictions);
-    
     // Attributes
     
     vector<int> m_nmixtures;
     vector<float> m_logthresholds;
 };
+
+template<>
+class ModalityPrediction<cv::Mat> : public ModalityPredictionBase<cv::Mat>
+{
+public:
+    ModalityPrediction();
+    
+    void setPositiveClassificationRatios(float m);
+    void setPositiveClassificationRatios(vector<float> m);
+    
+    void setScoreThresholds(float t);
+    void setScoreThresholds(vector<float> t);
+    
+    template<typename T>
+    void modelSelection(cv::Mat gridsIndices, cv::Mat tags,
+                        unsigned int i, unsigned int j,
+                        vector<vector<T> > params,
+                        cv::Mat& goodness);
+    
+    void compute(GridMat& predictions, GridMat& scores, GridMat& distsToMargin); // this
+    
+private:
+    
+    // Attributes
+    
+    vector<float> m_ratios;
+    vector<float> m_scores;
+};
+
 
 #endif /* defined(__segmenthreetion__ModalityPrediction__) */

@@ -42,11 +42,14 @@
 
 #include <boost/assign/std/vector.hpp>
 
+#include <matio.h>
+
 using namespace boost::assign;
 using namespace std;
 
 int main(int argc, const char* argv[])
-{
+{ 
+
     //
     // Parametrization
     //
@@ -117,14 +120,19 @@ int main(int argc, const char* argv[])
     
 	vector<int> nmixtures;
     nmixtures += 2, 3, 4, 5, 7, 9, 11; // classification parameter (training step)
-    vector<float> likelicuts;
-    cvx::linspace(-1, 1, 13, likelicuts); // -1, -0.8, -0.6, ..., 0.8
+    vector<float> likelicuts = cvx::linspace(-1, 1, 13); // -1, -0.8, -0.6, ..., 0.8
     likelicuts.pop_back();
+    
+    vector<float> tmp;
+    tmp = cvx::linspace(0, 0.15, 20);
+    vector<float> ratios (tmp.begin()+1, tmp.end()-1);
+    tmp = cvx::linspace(0, 1.00, 20);
+    vector<float> scoreThresholds (tmp.begin()+1, tmp.end()-1);
     
     // Validation procedure
     
-    int kTest = 5; // number of folds in the outer cross-validation
-    int kModelSelec = 2;
+    int kTest = 10; // number of folds in the outer cross-validation
+    int kModelSelec = 9;
     int seed = 74;
     
     //
@@ -251,30 +259,48 @@ int main(int argc, const char* argv[])
     
     //ModalityGridData cMockData;
     //reader.mockread("Color", sequences, "jpg", hp, wp, cMockData);
-    ModalityGridData mMockData;
-    reader.mockread("Motion", sequences, "jpg", hp, wp, mMockData);
-    ModalityGridData dMockData;
-    reader.mockread("Depth", sequences, "png", hp, wp, dMockData);
-    ModalityGridData tMockData;
-    reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData);
-
-    //cMockData.loadDescription(dataPath, sequences, "Color.yml");
-    mMockData.loadDescription(dataPath, sequences, "Motion.yml");
-    dMockData.loadDescription(dataPath, sequences, "Depth.yml");
-    tMockData.loadDescription(dataPath, sequences, "Thermal.yml");
+//    ModalityGridData mMockData;
+//    reader.mockread("Motion", sequences, "jpg", hp, wp, mMockData);
+//    ModalityGridData dMockData;
+//    reader.mockread("Depth", sequences, "png", hp, wp, dMockData);
+//    ModalityGridData tMockData;
+//    reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData);
+//
+//    //cMockData.loadDescription(dataPath, sequences, "Color.yml");
+//    mMockData.loadDescription(dataPath, sequences, "Motion.yml");
+//    dMockData.loadDescription(dataPath, sequences, "Depth.yml");
+//    tMockData.loadDescription(dataPath, sequences, "Thermal.yml");
     
     //
     // Individual prediction
     //
     
-    ModalityPrediction<cv::EM> prediction;
+    ModalityPrediction<cv::Mat> rprediction;
+    
+    rprediction.setPositiveClassificationRatios(ratios);
+    rprediction.setScoreThresholds(scoreThresholds);
+    
+    rprediction.setValidationParameters(kTest, seed);
+    rprediction.setModelSelection(false); // false load it from disk (see .h)
+    rprediction.setModelSelectionParameters(kModelSelec, true);
+    
+    // Ramanan
+    ModalityGridData rGridData;
+    reader.read("Ramanan", sequences, "mat", hp, wp, rGridData);
+    rprediction.setData(rGridData);
+    
+    GridMat rPredictions, rScores, rDistsToMargin;
+    rprediction.compute(rPredictions, rScores, rDistsToMargin);
 
-    prediction.setNumOfMixtures(nmixtures);
-    prediction.setLoglikelihoodThresholds(likelicuts);
-
-    prediction.setValidationParameters(kTest, seed);
-    prediction.setModelSelection(true); // false load it from disk (see .h)
-    prediction.setModelSelectionParameters(kModelSelec, true);
+    
+//    ModalityPrediction<cv::EM> prediction;
+//
+//    prediction.setNumOfMixtures(nmixtures);
+//    prediction.setLoglikelihoodThresholds(likelicuts);
+//
+//    prediction.setValidationParameters(kTest, seed);
+//    prediction.setModelSelection(false); // false load it from disk (see .h)
+//    prediction.setModelSelectionParameters(kModelSelec, true);
     
     //// Color
     //prediction.setData(cMockData);
@@ -287,30 +313,30 @@ int main(int argc, const char* argv[])
 //    cDistsToMargin.save("cDistsToMargin.yml");
 //    
     // Motion
-    prediction.setData(mMockData);
-    
-    GridMat mPredictions, mLoglikelihoods, mDistsToMargin;
-    prediction.compute(mPredictions, mLoglikelihoods, mDistsToMargin);
-    
+//    prediction.setData(mMockData);
+//    
+//    GridMat mPredictions, mLoglikelihoods, mDistsToMargin;
+//    prediction.compute(mPredictions, mLoglikelihoods, mDistsToMargin);
+//    
 //    mPredictions.save("mPredictions.yml");
 //    mLoglikelihoods.save("mLoglikelihoods.yml");
 //    mDistsToMargin.save("mDistsToMargin.yml");
 //    
     // Depth
-    prediction.setData(dMockData);
-    
-    GridMat dPredictions, dLoglikelihoods, dDistsToMargin;
-    prediction.compute(dPredictions, dLoglikelihoods, dDistsToMargin);
-    
+//    prediction.setData(dMockData);
+//    
+//    GridMat dPredictions, dLoglikelihoods, dDistsToMargin;
+//    prediction.compute(dPredictions, dLoglikelihoods, dDistsToMargin);
+//    
 //    dPredictions.save("dPredictions.yml");
 //    dLoglikelihoods.save("dLoglikelihoods.yml");
 //    dDistsToMargin.save("dDistsToMargin.yml");
     
-    // Thermal
-    prediction.setData(tMockData);
-
-    GridMat tPredictions, tLoglikelihoods, tDistsToMargin;
-    prediction.compute(tPredictions, tLoglikelihoods, tDistsToMargin);
+//    // Thermal
+//    prediction.setData(tMockData);
+//
+//    GridMat tPredictions, tLoglikelihoods, tDistsToMargin;
+//    prediction.compute(tPredictions, tLoglikelihoods, tDistsToMargin);
 
 //    // DEBUG
 //    cv::Mat l, sbjDist, objDist;
@@ -319,6 +345,8 @@ int main(int argc, const char* argv[])
 //    cout << l << endl;
 //    cout << sbjDist << endl;
 //    cout << objDist << endl;
+    
+//    cout << tPredictions << endl;
     
     //tPredictions.save("tPredictions.yml");
     //tLoglikelihoods.save("tLoglikelihoods.yml");

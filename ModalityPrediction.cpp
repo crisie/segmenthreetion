@@ -49,6 +49,44 @@ void ModalityPredictionBase<PredictorT>::setValidationParameters(int k, int seed
     m_seed = seed;
 }
 
+template<typename PredictorT>
+void ModalityPredictionBase<PredictorT>::computeGridPredictionsConsensus(GridMat individualPredictions,
+                                                                         GridMat distsToMargin,
+                                                                         GridMat& consensusPredictions)
+{
+    cv::Mat tags = m_data.getTagsMat();
+    
+    cv::Mat consensus (tags.rows, tags.cols, tags.type());
+    consensus.setTo(0);
+    
+    cv::Mat votes = individualPredictions.accumulate(); // accumulation expresses #"cells vote for subject"
+    consensus.setTo(1, votes > ((m_hp * m_wp) / 2)); // if majority of cells vote for subject, it is
+    
+    // Deal with draws
+    
+    GridMat drawIndices;
+    drawIndices.setTo(votes == ((m_hp * m_wp) / 2));
+    
+    GridMat drawnPredictions (individualPredictions, drawIndices); // index the subset of draws
+    GridMat drawnDists (distsToMargin, drawIndices); // and their corresponding distances to margin
+    
+    GridMat negPredictions = (drawnPredictions == 0) / 255;
+    GridMat posPredictions = (drawnPredictions == 1) / 255;
+    
+    GridMat negDists, posDists;
+    drawnDists.copyTo(negDists, negPredictions);
+    drawnDists.copyTo(posDists, posPredictions);
+    
+    cv::Mat_<float> avgNegDists, avgPosDists;
+    avgNegDists = negDists.accumulate() / ((m_hp * m_wp) / 2);
+    avgPosDists = posDists.accumulate() / ((m_hp * m_wp) / 2);
+    
+    cv::Mat aux = (avgPosDists > cv::abs(avgNegDists)) / 255;
+    cvx::setMat(aux, consensus, votes == ((m_hp * m_wp) / 2));
+    
+    consensusPredictions.setTo(consensus);
+}
+
 
 //
 // ModalityPrediction<PredictorT>
@@ -97,11 +135,10 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
 {
     cv::Mat tags = m_data.getTagsMat();
     
-    cv::Mat zeros = cv::Mat::zeros(tags.rows, tags.cols, tags.type());
-    cv::Mat ones = cv::Mat::ones(tags.rows, tags.cols, tags.type());
+//    cv::Mat zeros = cv::Mat::zeros(tags.rows, tags.cols, tags.type());
+//    cv::Mat ones = cv::Mat::ones(tags.rows, tags.cols, tags.type());
     cv::Mat negInfinities (tags.rows, tags.cols, cv::DataType<float>::type);
     cv::Mat posInfinities (tags.rows, tags.cols, cv::DataType<float>::type);
-    
     negInfinities.setTo(-std::numeric_limits<float>::infinity());
     posInfinities.setTo(std::numeric_limits<float>::infinity());
     
@@ -155,74 +192,73 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
         cout << endl;
     }
     
-    //cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
-    //
-    //GridMat individualPredictions;
-    //
-    //individualPredictions.setTo(zeros);
-    //loglikelihoods.setTo(negInfinities);
-    //distsToMargin.setTo(posInfinities);
-    //
-    //for (int k = 0; k < m_testK; k++)
-    //{
-    //    cout << k << " ";
-    //    
-    //    // Index the k-th training and test partitions
-    //    GridMat descriptorsTrFold (gdescriptors, gpartitions, k, true);
-    //    GridMat descriptorsTeFold (gdescriptors, gpartitions, k);
-    //    GridMat validnessesTrFold (gvalidnesses, gpartitions, k, true);
-    //    GridMat validnessesTeFold (gvalidnesses, gpartitions, k);
-    //    GridMat tagsTrFold (gtags, gpartitions, k, true);
-    //    GridMat tagsTeFold (gtags, gpartitions, k);
-    //    
-    //    // Within the k-th training partition,
-    //    // remove the nonvalid descriptors (validness == 0) and associated tags
-    //    GridMat validDescriptorsTrFold = descriptorsTrFold.convertToDense(validnessesTrFold);
-    //    GridMat validTagsTrFold = tagsTrFold.convertToDense(validnessesTrFold);
-    //    
-    //    // Within the valid descriptors in the k-th training partition,
-    //    // index the subject descriptors (tag == 1)
-    //    GridMat validSubjectDescriptorsTrFold (validDescriptorsTrFold, validTagsTrFold, 1);
-    //    
-    //    
-    //    GridPredictor<cv::EM> predictor(m_hp, m_wp);
-    //   
-    //    // Model selection information is kept on disk, reload it
-    //    GridMat goodnesses;
-    //    std::stringstream ss;
-    //    ss << m_data.getModality() << "_models_goodnesses_" << k << ".yml" << endl;
-    //    goodnesses.load(ss.str());
-    //    
-    //    // Train with the best parameter combination in average in a model
-    //    // selection procedure within the training partition
-    //    vector<cv::Mat> bestParams;
-    //    selectBestParameterCombination(gridExpandedParameters, m_hp, m_wp, params.size(), goodnesses, bestParams);
+    cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
+    
+    GridMat individualPredictions;
+    
+    individualPredictions.setTo(cv::Mat::zeros(tags.rows, tags.cols, cv::DataType<int>::type));
+    loglikelihoods.setTo(negInfinities);
+    distsToMargin.setTo(cv::Mat::zeros(tags.rows, tags.cols, cv::DataType<float>::type));
+    
+    for (int k = 0; k < m_testK; k++)
+    {
+        cout << k << " ";
+        
+        // Index the k-th training and test partitions
+        GridMat descriptorsTrFold (gdescriptors, gpartitions, k, true);
+        GridMat descriptorsTeFold (gdescriptors, gpartitions, k);
+        GridMat validnessesTrFold (gvalidnesses, gpartitions, k, true);
+        GridMat validnessesTeFold (gvalidnesses, gpartitions, k);
+        GridMat tagsTrFold (gtags, gpartitions, k, true);
+        GridMat tagsTeFold (gtags, gpartitions, k);
+        
+        // Within the k-th training partition,
+        // remove the nonvalid descriptors (validness == 0) and associated tags
+        GridMat validDescriptorsTrFold = descriptorsTrFold.convertToDense(validnessesTrFold);
+        GridMat validTagsTrFold = tagsTrFold.convertToDense(validnessesTrFold);
+        
+        // Within the valid descriptors in the k-th training partition,
+        // index the subject descriptors (tag == 1)
+        GridMat validSubjectDescriptorsTrFold (validDescriptorsTrFold, validTagsTrFold, 1);
+        
+        
+        GridPredictor<cv::EM> predictor(m_hp, m_wp);
+       
+        // Model selection information is kept on disk, reload it
+        GridMat goodnesses;
+        std::stringstream ss;
+        ss << m_data.getModality() << "_models_goodnesses_" << k << ".yml" << endl;
+        goodnesses.load(ss.str());
+        
+        // Train with the best parameter combination in average in a model
+        // selection procedure within the training partition
+        vector<cv::Mat> bestParams;
+        selectBestParameterCombination(gridExpandedParameters, m_hp, m_wp, params.size(), goodnesses, bestParams);
 
-    //    predictor.setNumOfMixtures(bestParams[0]);
-    //    predictor.setLoglikelihoodThreshold(bestParams[1]);
-    //    cout << bestParams[0] << endl;
-    //    cout << bestParams[1] << endl;
-    //    // Training phase
-    //    
-    //    predictor.train(validSubjectDescriptorsTrFold);
-    //    
-    //    // Predict phase
-    //    
-    //    // Within the k-th test partition,
-    //    // remove the nonvalid descriptors (validness == 0) and associated tags
-    //    GridMat validDescriptorsTeFold = descriptorsTeFold.convertToDense(validnessesTeFold);
-    //    
-    //    GridMat validPredictionsTeFold, validLoglikelihoodsTeFold, validDistsToMargin;
-    //    predictor.predict(validDescriptorsTeFold, validPredictionsTeFold, validLoglikelihoodsTeFold, validDistsToMargin);
+        predictor.setNumOfMixtures(bestParams[0]);
+        predictor.setLoglikelihoodThreshold(bestParams[1]);
 
-    //    individualPredictions.set(validPredictionsTeFold.convertToSparse(validnessesTeFold), gpartitions, k);
-    //    loglikelihoods.set(validLoglikelihoodsTeFold.convertToSparse(validnessesTeFold), gpartitions, k);
-    //    distsToMargin.set(validDistsToMargin.convertToSparse(validnessesTeFold), gpartitions, k);
-    //}
-    //cout << endl;
-    //
-    //// Grid cells' consensus
-    //computeGridPredictionsConsensus(individualPredictions, distsToMargin, predictions); // predictions are consensued
+        // Training phase
+        
+        predictor.train(validSubjectDescriptorsTrFold);
+        
+        // Predict phase
+        
+        // Within the k-th test partition,
+        // remove the nonvalid descriptors (validness == 0) and associated tags
+        GridMat validDescriptorsTeFold = descriptorsTeFold.convertToDense(validnessesTeFold);
+        
+        GridMat validPredictionsTeFold, validLoglikelihoodsTeFold, validDistsToMargin;
+        predictor.predict(validDescriptorsTeFold, validPredictionsTeFold, validLoglikelihoodsTeFold, validDistsToMargin);
+
+        individualPredictions.set(validPredictionsTeFold.convertToSparse(validnessesTeFold), gpartitions, k);
+        loglikelihoods.set(validLoglikelihoodsTeFold.convertToSparse(validnessesTeFold), gpartitions, k);
+        distsToMargin.set(validDistsToMargin.convertToSparse(validnessesTeFold), gpartitions, k);
+    }
+    cout << endl;
+
+    // Grid cells' consensus
+    computeGridPredictionsConsensus(individualPredictions, distsToMargin, predictions); // predictions are consensued
 }
 
 template<typename T>
@@ -284,7 +320,7 @@ void ModalityPrediction<cv::EM>::modelSelection(cv::Mat descriptors, cv::Mat tag
             cv::Mat predictions;
             cv::threshold(stdLoglikelihoods, predictions, gridExpandedParams[m][1], 1, CV_THRESH_BINARY);
             predictions.convertTo(predictions, cv::DataType<int>::type);
-            
+
             // Compute an accuracy measure
             float acc = accuracy(tagsSubjObjVal, predictions);
             
@@ -295,68 +331,6 @@ void ModalityPrediction<cv::EM>::modelSelection(cv::Mat descriptors, cv::Mat tag
     }
     
     cv::reduce(accuracies, goodness, 1, CV_REDUCE_AVG); // column of row-wise averages
-}
-
-void ModalityPrediction<cv::EM>::computeGridPredictionsConsensus(GridMat individualPredictions,
-                                                                 GridMat distsToMargin,
-                                                                 GridMat& consensusPredictions)
-{
-    cv::Mat tags = m_data.getTagsMat();
-    
-    cv::Mat consensus (tags.rows, tags.cols, tags.type());
-    consensus.setTo(0);
-    
-    cv::Mat votes = individualPredictions.accumulate(); // accumulation expresses #"cells vote for subject"
-    consensus.setTo(1, votes > ((m_hp * m_wp) / 2)); // if majority of cells vote for subject, it is
-    
-    // Deal with draws
-    
-    GridMat drawIndices;
-    drawIndices.setTo(votes == ((m_hp * m_wp) / 2));
-    
-    GridMat drawnPredictions (individualPredictions, drawIndices); // index the subset of draws
-    GridMat drawnDists (distsToMargin, drawIndices); // and their corresponding distances to margin
-    
-    GridMat negPredictions = (drawnPredictions == 0);
-    GridMat posPredictions = (drawnPredictions == 1);
-    
-    GridMat negDists (drawnDists); // it is not a deep copy, so it is useful to set the same size
-    GridMat posDists (drawnDists);
-    negDists.setTo(0);
-    posDists.setTo(0);
-    
-    drawnDists.copyTo(negDists, negPredictions);
-    drawnDists.copyTo(posDists, posPredictions);
-    
-    cv::Mat avgNegDists, avgPosDists;
-    cv::Mat accNegPredictions, accPosPredictions;
-    negPredictions.accumulate().convertTo(accNegPredictions, CV_32F);
-    posPredictions.accumulate().convertTo(accPosPredictions, CV_32F);
-    cv::divide(negDists.accumulate(), accNegPredictions, avgNegDists);
-    cv::divide(posDists.accumulate(), accPosPredictions, avgPosDists);
-    
-    GridMat consensusDrawnPredictions;
-    consensusDrawnPredictions.setTo(avgPosDists > cv::abs(avgNegDists)); // not specifying the cell, copies to every cell
-    
-    consensusPredictions.set(consensusDrawnPredictions, drawIndices);
-    
-//    cv::Mat consensus;
-//    consensus.setTo(0);
-//    
-//    cv::Mat votes; // the consensus for a grid takes into account the positive and negative cells' votes
-//    individualPredictions.accumulate(votes); // 0 is object, 1 is subject. The accumulation expresses how many cells vote for subject
-
-
-//    
-//    cv::Mat positives = (votes > (m_hp * m_wp) / 2); // if the absolute majority of cells vote for subject, it is subject
-//    ones.copyTo(consensus, positives);
-//    
-//    cv::Mat draws = (votes == (m_hp * m_wp) / 2); // draws must be undrawed by comparing the average dist to margin of the negative cells' votes and the positive cells' votes
-//    cv::Mat negAvgDistToMargin, posAvgDistToMargin;
-//    distsToMargin.standardize().biaverage(predictions, 0, negAvgDistToMargin, posAvgDistToMargin); // two averages, the one of the negative cells' predictions (==0) and the positive cells' predictions (>0);
-//    ones.copyTo(consensusPredictions, posAvgDistToMargin < cv::abs(negAvgDistToMargin));
-//    
-//    predictions.setTo(consensusPredictions)
 }
 
 void ModalityPrediction<cv::EM>::computeLoglikelihoodsDistribution(int nbins, double min, double max, cv::Mat& sbjDistribution, cv::Mat& objDistribution)
@@ -448,6 +422,203 @@ void ModalityPrediction<cv::EM>::computeLoglikelihoodsDistribution(int nbins, do
 }
 
 
+//
+// ModalityPrediction<cv::Mat>
+//
+
+ModalityPrediction<cv::Mat>::ModalityPrediction()
+: ModalityPredictionBase<cv::Mat>()
+{
+}
+
+void ModalityPrediction<cv::Mat>::setPositiveClassificationRatios(float m)
+{
+    m_ratios.clear();
+    m_ratios.push_back(m);
+}
+
+void ModalityPrediction<cv::Mat>::setPositiveClassificationRatios(vector<float> m)
+{
+    m_ratios = m;
+}
+
+void ModalityPrediction<cv::Mat>::setScoreThresholds(float t)
+{
+    m_scores.clear();
+    m_scores.push_back(t);
+}
+
+void ModalityPrediction<cv::Mat>::setScoreThresholds(vector<float> t)
+{
+    m_scores = t;
+}
+
+void ModalityPrediction<cv::Mat>::compute(GridMat& predictions, GridMat& gscores, GridMat& distsToMargin)
+{
+    cv::Mat tags = m_data.getTagsMat();
+    
+    cv::Mat negInfinities (tags.rows, tags.cols, cv::DataType<float>::type);
+    cv::Mat posInfinities (tags.rows, tags.cols, cv::DataType<float>::type);
+    negInfinities.setTo(-std::numeric_limits<float>::infinity());
+    posInfinities.setTo(std::numeric_limits<float>::infinity());
+    
+    GridMat gtags;
+    gtags.setTo(tags);
+    GridMat gvalidnesses = m_data.getValidnesses();
+    
+    cv::Mat partitions;
+    cvpartition(tags, m_testK, m_seed, partitions);
+    GridMat gpartitions (partitions);
+    
+    // create a list of parameters' variations
+    vector<vector<float> > params, gridExpandedParameters;
+    vector<float> ratios (m_ratios.begin(), m_ratios.end());
+    vector<float> scoreThresholds (m_scores.begin(), m_scores.end());
+    params.push_back(ratios);
+    params.push_back(scoreThresholds);
+    expandParameters(params, gridExpandedParameters);
+    
+    if (m_bModelSelection)
+    {
+		cout << m_data.getModality() << " model selection CVs [" << m_testK << "]: " << endl;
+        
+        for (int k = 0; k < m_testK; k++)
+        {
+            cout << k << " ";
+            
+            GridMat goodnesses (m_hp, m_wp);
+            for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
+            {
+                cv::Mat validnessesTr = cvx::indexMat(gvalidnesses.at(i,j), partitions != k);
+                cv::Mat tagsTr = cvx::indexMat(tags, partitions != k);
+                cv::Mat indicesTr = cvx::indexMat(cvx::linspace(0, tags.rows), partitions != k);
+                
+                cv::Mat validIndicesTr = cvx::indexMat(indicesTr, validnessesTr);
+                cv::Mat validTagsTr = cvx::indexMat(tagsTr, validnessesTr);
+
+                cv::Mat goodness;
+                modelSelection(validIndicesTr, validTagsTr, i, j,
+                               gridExpandedParameters, goodness);
+                
+                goodnesses.assign(goodness, i, j);
+            }
+            
+            std::stringstream ss;
+            ss << m_data.getModality() << "_models_goodnesses_" << k << ".yml" << endl;
+            goodnesses.save(ss.str());
+        }
+        cout << endl;
+    }
+    
+    cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
+    
+    GridMat individualPredictions;
+    
+    individualPredictions.setTo(cv::Mat::zeros(tags.rows, tags.cols, cv::DataType<int>::type));
+    gscores.setTo(negInfinities);
+    distsToMargin.setTo(cv::Mat::zeros(tags.rows, tags.cols, cv::DataType<float>::type));
+    
+    for (int k = 0; k < m_testK; k++)
+    {
+        cout << k << " ";
+        
+        // Index the k-th test partitions
+        cv::Mat indicesTeFold = cvx::indexMat(cvx::linspace(0, tags.rows), partitions == k);
+//        GridMat validnessesTeFold (gvalidnesses, gpartitions, k);
+//        GridMat tagsTeFold (gtags, gpartitions, k);
+        
+        // Model selection information is kept on disk, reload it
+        GridMat goodnesses;
+        std::stringstream ss;
+        ss << m_data.getModality() << "_models_goodnesses_" << k << ".yml" << endl;
+        goodnesses.load(ss.str());
+        
+        // Train with the best parameter combination in average in a model
+        // selection procedure within the training partition
+        vector<cv::Mat> bestParams;
+        selectBestParameterCombination(gridExpandedParameters, m_hp, m_wp, params.size(), goodnesses, bestParams);
+        
+        // Predict phase
+        
+        for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
+        {
+            cv::Mat validnessesTe = cvx::indexMat(gvalidnesses.at(i,j), partitions == k);
+            
+            cv::Mat validIndicesTe = cvx::indexMat(indicesTeFold, validnessesTe);
+        
+            cv::Mat validPredictions (validIndicesTe.rows, 1, cv::DataType<int>::type);
+            cv::Mat validScores      (validIndicesTe.rows, 1, cv::DataType<float>::type);
+            cv::Mat validDistances   (validIndicesTe.rows, 1, cv::DataType<float>::type);
+            
+            for (int k = 0; k < validIndicesTe.rows; k++)
+            {
+                int idx = validIndicesTe.at<int>(k,0);
+                
+                cv::Mat_<float> cell = m_data.getGridFrame(idx).at(i,j);
+                cv::Mat cellMask = m_data.getGridMask(idx).at(i,j);
+                
+                cv::Mat_<float> aux;
+                cv::threshold(cell, aux, bestParams[0].at<float>(i,j), 1, cv::THRESH_BINARY);
+                CvScalar mean = cv::mean(aux, cellMask);
+                
+                validPredictions.at<int>(k,0) = (mean.val[0] > bestParams[1].at<float>(i,j));
+                validScores.at<float>(k,0) = (mean.val[0]);
+                validDistances.at<float>(k,0) = bestParams[1].at<float>(i,j) - mean.val[0];
+            }
+            
+            cv::Mat predictions, scores, distances;
+            cvx::setMat(validPredictions, predictions, validnessesTe);
+            cvx::setMat(validScores, scores, validnessesTe);
+            cvx::setMat(validDistances, distances, validnessesTe);
+            
+            cvx::setMat(validPredictions, individualPredictions.at(i,j), partitions == k);
+            cvx::setMat(validScores, gscores.at(i,j), partitions == k);
+            cvx::setMat(validDistances, distsToMargin.at(i,j), partitions == k);
+        }
+    }
+    cout << endl;
+    
+    // Grid cells' consensus
+    computeGridPredictionsConsensus(individualPredictions, distsToMargin, predictions); // predictions are consensued
+}
+
+template<typename T>
+void ModalityPrediction<cv::Mat>::modelSelection(cv::Mat indices, cv::Mat tags,
+                                                 unsigned int i, unsigned int j,
+                                                 vector<vector<T> > gridExpandedParams,
+                                                 cv::Mat& goodness)
+{
+    cv::Mat indsSubjObj  = cvx::indexMat(indices, tags >= 0);
+    cv::Mat tagsSubjObj = cvx::indexMat(tags, tags >= 0);
+
+    goodness.create(gridExpandedParams.size(), 1, cv::DataType<float>::type); // results
+
+    for (int m = 0; m < gridExpandedParams.size(); m++)
+    {
+        float ratio = gridExpandedParams[m][0];
+        float score = gridExpandedParams[m][1];
+        
+        cv::Mat predictions (tagsSubjObj.rows, 1, cv::DataType<int>::type);
+        predictions.setTo(0);
+        for (int k = 0; k < indsSubjObj.rows; k++)
+        {
+            int idx = indsSubjObj.at<int>(k,0);
+            
+            cv::Mat_<float> cell = m_data.getGridFrame(idx).at(i,j);
+            cv::Mat cellMask = m_data.getGridMask(idx).at(i,j);
+            
+            cv::Mat_<float> thrCell;
+            cv::threshold(cell, thrCell, score, 1, cv::THRESH_BINARY);
+            CvScalar mean = cv::mean(thrCell, cellMask);
+            
+            predictions.at<int>(k,0) = (mean.val[0] > ratio);
+        }
+        
+        // Compute an accuracy measure
+        goodness.at<float>(m,0) = accuracy(tagsSubjObj, predictions);
+    }
+}
+
 
 // Instantiation of template member functions
 // -----------------------------------------------------------------------------
@@ -455,8 +626,19 @@ template void ModalityPredictionBase<cv::EM>::setData(ModalityGridData &data);
 template void ModalityPredictionBase<cv::EM>::setModelSelection(bool flag);
 template void ModalityPredictionBase<cv::EM>::setModelSelectionParameters(int k, bool best);
 template void ModalityPredictionBase<cv::EM>::setValidationParameters(int k, int seed);
+template void ModalityPredictionBase<cv::EM>::computeGridPredictionsConsensus(GridMat individualPredictions, GridMat distsToMargin, GridMat& consensusPredictions);
+
+template void ModalityPredictionBase<cv::Mat>::setData(ModalityGridData &data);
+template void ModalityPredictionBase<cv::Mat>::setModelSelection(bool flag);
+template void ModalityPredictionBase<cv::Mat>::setModelSelectionParameters(int k, bool best);
+template void ModalityPredictionBase<cv::Mat>::setValidationParameters(int k, int seed);
+template void ModalityPredictionBase<cv::Mat>::computeGridPredictionsConsensus(GridMat individualPredictions, GridMat distsToMargin, GridMat& consensusPredictions);
 
 template void ModalityPrediction<cv::EM>::modelSelection<int>(cv::Mat descriptors, cv::Mat tags, vector<vector<int> > params, cv::Mat& goodness);
 template void ModalityPrediction<cv::EM>::modelSelection<float>(cv::Mat descriptors, cv::Mat tags, vector<vector<float> > params, cv::Mat& goodness);
 template void ModalityPrediction<cv::EM>::modelSelection<double>(cv::Mat descriptors, cv::Mat tags, vector<vector<double> > params, cv::Mat& goodness);
+
+//template void ModalityPrediction<cv::Mat>::modelSelection<int>(GridMat grids, cv::Mat tags, vector<vector<int> > params, cv::Mat& goodness);
+//template void ModalityPrediction<cv::Mat>::modelSelection<float>(GridMat grids, cv::Mat tags, vector<vector<float> > params, cv::Mat& goodness);
+//template void ModalityPrediction<cv::Mat>::modelSelection<double>(GridMat grids, cv::Mat tags, vector<vector<double> > params, cv::Mat& goodness);
 // -----------------------------------------------------------------------------

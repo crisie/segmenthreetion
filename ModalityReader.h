@@ -20,6 +20,8 @@
 #include "ModalityData.hpp"
 #include "ModalityGridData.hpp"
 
+#include "CvExtraTools.h"
+
 class ModalityReader
 {
 public:
@@ -50,6 +52,7 @@ private:
     string m_DataPath;
     vector<string> m_ScenesPaths;
     unsigned char m_MasksOffset;
+    double m_MinVal, m_MaxVal;
     
     // TODO:
     // void read(string modality, string scenePath, const char* filetype, ModalityData& md);

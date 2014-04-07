@@ -401,6 +401,11 @@ void GridMat::copyTo(GridMat& dst, GridMat logicals)
     
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
+        if (dst.at(i,j).empty())
+        {
+            dst.at(i,j).create(at(i,j).rows, at(i,j).cols, at(i,j).type());
+            dst.at(i,j).setTo(0);
+        }
         this->at(i,j).copyTo(dst.at(i,j), logicals.at(i,j));
     }
 }
@@ -1201,6 +1206,7 @@ GridMat GridMat::abs()
 cv::Mat GridMat::accumulate()
 {
     cv::Mat acc;
+    acc.create(at(0,0).rows, at(0,0).cols, at(0,0).type());
     
     this->accumulate(acc);
     
@@ -1210,11 +1216,14 @@ cv::Mat GridMat::accumulate()
 void GridMat::accumulate(cv::Mat& accumulation)
 {
     // Assume the cells of the grid have all the same size
-    accumulation = cv::Mat::zeros(at(0,0).rows, at(0,0).cols, at(0,0).type());
+    if (accumulation.empty())
+        accumulation.create(at(0,0).rows, at(0,0).cols, accumulation.type());
     
     for (unsigned int i = 0; i < m_crows; i++) for (unsigned int j = 0; j < m_ccols; j++)
     {
-        cv::add(accumulation, at(i,j), accumulation);
+        cv::Mat tmp;
+        at(i,j).convertTo(tmp, accumulation.type());
+        cv::add(accumulation, tmp, accumulation);
     }
 }
 

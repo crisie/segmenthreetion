@@ -44,13 +44,23 @@ namespace cvx
     void hist(cv::Mat src, cv::Mat msk, int nbins, float min, float max, cv::Mat& hist);
     
     void cumsum(cv::Mat src, cv::Mat& dst);
+    
     void linspace(float start, float end, int n, cv::Mat& m);
     void linspace(float start, float end, int n, std::vector<float>& v);
     cv::Mat linspace(float start, float end, int n);
     
+    void linspace(int start, int end, cv::Mat& m);
+    void linspace(int start, int end, std::vector<int>& v);
+    cv::Mat linspace(int start, int end);
+    
     // Data-to-disk and disk-to-data nice functions (hide cv::FileStorage declarations)
     void load(std::string file, cv::Mat& mat, int format = cv::FileStorage::FORMAT_YAML);
     void save(std::string file, cv::Mat mat, int format = cv::FileStorage::FORMAT_YAML);
+    
+    template<typename T>
+    cv::Mat matlabread(std::string file);
+    template<typename T>
+    void matlabread(std::string file, cv::Mat& mat);
 }
 
 

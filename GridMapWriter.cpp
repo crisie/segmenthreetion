@@ -115,7 +115,7 @@ void GridMapWriter::write(ModalityGridData& mgd, GridMat& gvalues, string output
 
                 cv::Mat roiMask (mask, mgd.getGridBoundingRect(idx));
                 cv::Mat indexedmaskroi;
-                roiMask.copyTo(indexedmaskroi, roiMask == mgd.getMaskOffset(idx));
+                roiMask.copyTo(indexedmaskroi, roiMask == mgd.getGridMaskOffset(idx));
                 GridMat gRoiMask (indexedmaskroi, mgd.getHp(), mgd.getWp());
 
                 for (int i = 0; i < mgd.getHp(); i++) for (int j = 0; j < mgd.getWp(); j++)

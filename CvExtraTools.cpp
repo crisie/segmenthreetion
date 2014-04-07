@@ -8,6 +8,8 @@
 
 #include "CvExtraTools.h"
 
+#include <matio.h>
+
 void cvx::setMat(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical)
 {
     if (logical)
@@ -18,7 +20,6 @@ void cvx::setMat(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical)
 
 void cvx::setMatLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals)
 {
-    cv::Mat aux = src;
     bool rowwise = logicals.rows > 1;
     
     if (dst.empty())
@@ -218,6 +219,15 @@ void cvx::cumsum(cv::Mat src, cv::Mat& dst)
             cv::add(dst.col(j), src.col(j), dst.col(j));
 }
 
+cv::Mat cvx::linspace(int start, int end)
+{
+    cv::Mat l;
+    
+    cvx::linspace(start, end, l);
+    
+    return l;
+}
+
 cv::Mat cvx::linspace(float start, float end, int n)
 {
     cv::Mat l;
@@ -227,12 +237,30 @@ cv::Mat cvx::linspace(float start, float end, int n)
     return l;
 }
 
-void cvx::linspace(float start, float end, int n, cv::Mat& m)
+void cvx::linspace(int start, int end, cv::Mat& mat)
+{
+    std::vector<int> v;
+    cvx::linspace(start, end, v);
+    
+    mat.create(v.size(), 1, cv::DataType<int>::type);
+    memcpy(mat.data, v.data(), sizeof(int) * v.size());
+}
+
+void cvx::linspace(float start, float end, int n, cv::Mat& mat)
 {
     std::vector<float> v;
     cvx::linspace(start, end, n, v);
-    
-    m = cv::Mat(v.size(), 1, cv::DataType<float>::type, v.data());
+
+    mat.create(v.size(), 1, cv::DataType<float>::type);
+    memcpy(mat.data, v.data(), sizeof(float) * v.size());
+}
+
+void cvx::linspace(int start, int end, std::vector<int>& v)
+{
+    for (int i = start; i < end; i++)
+    {
+        v.push_back(i);
+    }
 }
 
 void cvx::linspace(float start, float end, int n, std::vector<float>& v)
@@ -262,3 +290,54 @@ void cvx::save(std::string file, cv::Mat mat, int format)
     fs.release();
     
 }
+
+template<typename T>
+cv::Mat cvx::matlabread(std::string file)
+{
+    cv::Mat mat;
+    
+    cvx::matlabread<T>(file, mat);
+    
+    return mat;
+}
+
+template<typename T>
+void cvx::matlabread(std::string file, cv::Mat& mat)
+{
+    mat_t *matfp;
+    matvar_t *matvar;
+
+    matfp = Mat_Open(file.c_str(), MAT_ACC_RDONLY);
+    
+    if ( NULL == matfp ) {
+        fprintf(stderr,"Error opening MAT file \"%s\"!\n", file.c_str());
+        return;
+    }
+
+    matvar = Mat_VarRead(matfp,"perMap");
+    if ( NULL == matvar ) {
+        fprintf(stderr, "Variable ’perMap’ not found, or error "
+                "reading MAT file\n");
+    }
+    else
+    {
+        int nrows, ncols;
+        nrows = matvar->dims[0];
+        ncols = matvar->dims[1];
+        
+        cv::Mat rmap (nrows, ncols, cv::DataType<T>::type, matvar->data);
+        mat = rmap.clone();
+        
+        Mat_VarFree(matvar);
+    }
+    
+    Mat_Close(matfp);
+}
+
+template cv::Mat cvx::matlabread<int>(std::string file);
+template cv::Mat cvx::matlabread<float>(std::string file);
+template cv::Mat cvx::matlabread<double>(std::string file);
+
+template void cvx::matlabread<int>(std::string file, cv::Mat& mat);
+template void cvx::matlabread<float>(std::string file, cv::Mat& mat);
+template void cvx::matlabread<double>(std::string file, cv::Mat& mat);
