@@ -18,7 +18,6 @@
 template<typename PredictorT>
 ModalityPredictionBase<PredictorT>::ModalityPredictionBase() : m_bModelSelection(true)
 {
-
 }
 
 template<typename PredictorT>
@@ -47,6 +46,20 @@ void ModalityPredictionBase<PredictorT>::setValidationParameters(int k, int seed
 {
     m_testK = k;
     m_seed = seed;
+}
+
+template<typename PredictorT>
+void ModalityPredictionBase<PredictorT>::setDimensionalityReduction(int ndims)
+{
+    m_ndims = ndims;
+    m_bVarianceReduction = false;
+}
+
+template<typename PredictorT>
+void ModalityPredictionBase<PredictorT>::setDimensionalityReduction(float variance)
+{
+    m_variance = variance;
+    m_bVarianceReduction = true;
 }
 
 template<typename PredictorT>
@@ -162,7 +175,7 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
     {
 		cout << m_data.getModality() << " model selection CVs [" << m_testK << "]: " << endl;
         
-        for (int k = 0; k < m_testK; k++)
+        for (int k = 4/*0*/; k < m_testK; k++)
         {
             cout << k << " ";
             
@@ -176,14 +189,10 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
             GridMat validDescriptorsTrFold = descriptorsTrFold.convertToDense(validnessesTrFold);
             GridMat validTagsTrFold = tagsTrFold.convertToDense(validnessesTrFold);
             
-            GridMat goodnesses (m_hp, m_wp);
-            for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
-            {
-                cv::Mat goodness;
-                modelSelection(validDescriptorsTrFold.at(i,j), validTagsTrFold.at(i,j),
-                               gridExpandedParameters, goodness);
-                goodnesses.assign(goodness, i, j);
-            }
+            GridMat goodnesses;
+            modelSelection(validDescriptorsTrFold, validTagsTrFold,
+                           gridExpandedParameters, goodnesses);
+
 
             std::stringstream ss;
             ss << m_data.getModality() << "_models_goodnesses_" << k << ".yml" << endl;
@@ -193,7 +202,8 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
     }
     
     cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
-    
+    /*
+     
     GridMat individualPredictions;
     
     individualPredictions.setTo(cv::Mat::zeros(tags.rows, tags.cols, cv::DataType<int>::type));
@@ -259,78 +269,90 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
 
     // Grid cells' consensus
     computeGridPredictionsConsensus(individualPredictions, distsToMargin, predictions); // predictions are consensued
+     
+    */
 }
 
 template<typename T>
-void ModalityPrediction<cv::EM>::modelSelection(cv::Mat descriptors, cv::Mat tags,
+//void ModalityPrediction<cv::EM>::modelSelection(cv::Mat descriptors, cv::Mat tags,
+//                                                vector<vector<T> > gridExpandedParams,
+//                                                cv::Mat& goodness)
+void ModalityPrediction<cv::EM>::modelSelection(GridMat descriptors, GridMat tags,
                                                 vector<vector<T> > gridExpandedParams,
-                                                cv::Mat& goodness)
+                                                GridMat& goodnesses)
 {
-    // Partitionate the data in folds
-    cv::Mat partitions;
+    GridMat partitions;
     cvpartition(tags, m_modelSelecK, m_seed, partitions);
     
-    cv::Mat accuracies (gridExpandedParams.size(), m_modelSelecK, cv::DataType<float>::type);
+    GridMat accuracies;
+    accuracies.setTo(cv::Mat(gridExpandedParams.size(), m_modelSelecK, cv::DataType<float>::type));
     
+    cout << "(";
     for (int k = 0; k < m_modelSelecK; k++)
     {
         // Get fold's data
-
-        cv::Mat descriptorsTr = cvx::indexMat(descriptors, partitions != k);
-        cv::Mat descriptorsVal = cvx::indexMat(descriptors, partitions == k);
-        cv::Mat tagsTr = cvx::indexMat(tags, partitions != k);
-        cv::Mat tagsVal = cvx::indexMat(tags, partitions == k);
+        cout << k;
         
-        cv::Mat descriptorsSubjTr = cvx::indexMat(descriptorsTr, tagsTr == 1); // subjects' training sample
+        GridMat descriptorsTr (descriptors, partitions, k, true);
+        GridMat descriptorsVal (descriptors, partitions, k);
+        GridMat tagsTr (tags, partitions, k, true);
+        GridMat tagsVal (tags, partitions, k);
         
-        cv::Mat descriptorsSubjObjVal = cvx::indexMat(descriptorsVal, tagsVal >= 0);
-        cv::Mat tagsSubjObjVal = cvx::indexMat(tagsVal, tagsVal >= 0);
+        GridMat descriptorsSubjTr (descriptorsTr, tagsTr, 1); // subjects' training sample
         
-        cv::Mat foldAccs; // results
+        GridMat descriptorsSubjObjVal (descriptorsVal, tagsVal, -1, true);
+        GridMat tagsSubjObjVal (tagsVal, tagsVal, -1, true);
+        
+        GridMat accsFold; // results
         
         cv::EM predictor;
-        for (int m = 0; m < gridExpandedParams.size(); m++)
+        cv::PCA pca;
+        for (int i = 0; i < m_data.getHp(); i++) for (int j = 0; j < m_data.getWp(); j++)
         {
-            // Create predictor and its parametrization
-            int nclusters = predictor.get<int>("nclusters");
-            if (gridExpandedParams[m][0] != nclusters)
+            for (int m = 0; m < gridExpandedParams.size(); m++)
             {
-                predictor.set("nclusters", gridExpandedParams[m][0]);
-            
-                // Train
-                predictor.train(descriptorsSubjTr);
+                // Create predictor and its parametrization
+                int nclusters = predictor.get<int>("nclusters");
+                if (gridExpandedParams[m][0] != nclusters)
+                {
+                    predictor.set("nclusters", gridExpandedParams[m][0]);
+                
+                    // Train
+                    predictor.train(descriptorsSubjTr.at(i,j));
+                }
+                
+                // Test
+                cv::Mat_<float> loglikelihoods;
+                for (int d = 0; d < descriptorsSubjObjVal.at(i,j).rows; d++)
+                {
+                    cv::Vec2d res = predictor.predict(descriptorsSubjObjVal.at(i,j).row(d));
+                    loglikelihoods.push_back(res.val[0]);
+                }
+
+                // Standardized loglikelihoods
+                cv::Mat_<float> stdLoglikelihoods;
+                cv::Scalar mean, stddev;
+                cv::meanStdDev(loglikelihoods, mean, stddev);
+                stdLoglikelihoods = (loglikelihoods - mean.val[0]) / stddev.val[0];
+                
+                // Predictions evaluation comparing the standardized loglikelihoods to a threshold,
+                // loglikelihoods over threshold are considered subject (1)
+                cv::Mat predictions;
+                cv::threshold(stdLoglikelihoods, predictions, gridExpandedParams[m][1], 1, CV_THRESH_BINARY);
+                predictions.convertTo(predictions, cv::DataType<int>::type);
+
+                // Compute an accuracy measure
+                float acc = accuracy(tagsSubjObjVal.at(i,j), predictions);
+                
+                accsFold.at(i,j).push_back(acc); // element to row
             }
             
-            // Test
-            cv::Mat_<float> loglikelihoods;
-            for (int i = 0; i < descriptorsSubjObjVal.rows; i++)
-            {
-                cv::Vec2d res = predictor.predict(descriptorsSubjObjVal.row(i));
-                loglikelihoods.push_back(res.val[0]);
-            }
-
-            // Standardized loglikelihoods
-            cv::Mat_<float> stdLoglikelihoods;
-            cv::Scalar mean, stddev;
-            cv::meanStdDev(loglikelihoods, mean, stddev);
-            stdLoglikelihoods = (loglikelihoods - mean.val[0]) / stddev.val[0];
-            
-            // Predictions evaluation comparing the standardized loglikelihoods to a threshold,
-            // loglikelihoods over threshold are considered subject (1)
-            cv::Mat predictions;
-            cv::threshold(stdLoglikelihoods, predictions, gridExpandedParams[m][1], 1, CV_THRESH_BINARY);
-            predictions.convertTo(predictions, cv::DataType<int>::type);
-
-            // Compute an accuracy measure
-            float acc = accuracy(tagsSubjObjVal, predictions);
-            
-            foldAccs.push_back(acc); // element to row
+            accsFold.at(i,j).copyTo(accuracies.at(i,j).col(k));
         }
-        
-        foldAccs.copyTo(accuracies.col(k));
     }
+    cout << ")" << endl;
     
-    cv::reduce(accuracies, goodness, 1, CV_REDUCE_AVG); // column of row-wise averages
+    accuracies.mean(goodnesses, 1);
 }
 
 void ModalityPrediction<cv::EM>::computeLoglikelihoodsDistribution(int nbins, double min, double max, cv::Mat& sbjDistribution, cv::Mat& objDistribution)
@@ -634,9 +656,9 @@ template void ModalityPredictionBase<cv::Mat>::setModelSelectionParameters(int k
 template void ModalityPredictionBase<cv::Mat>::setValidationParameters(int k, int seed);
 template void ModalityPredictionBase<cv::Mat>::computeGridPredictionsConsensus(GridMat individualPredictions, GridMat distsToMargin, GridMat& consensusPredictions);
 
-template void ModalityPrediction<cv::EM>::modelSelection<int>(cv::Mat descriptors, cv::Mat tags, vector<vector<int> > params, cv::Mat& goodness);
-template void ModalityPrediction<cv::EM>::modelSelection<float>(cv::Mat descriptors, cv::Mat tags, vector<vector<float> > params, cv::Mat& goodness);
-template void ModalityPrediction<cv::EM>::modelSelection<double>(cv::Mat descriptors, cv::Mat tags, vector<vector<double> > params, cv::Mat& goodness);
+template void ModalityPrediction<cv::EM>::modelSelection<int>(GridMat descriptors, GridMat tags, vector<vector<int> > params, GridMat& goodness);
+template void ModalityPrediction<cv::EM>::modelSelection<float>(GridMat descriptors, GridMat tags, vector<vector<float> > params, GridMat& goodness);
+template void ModalityPrediction<cv::EM>::modelSelection<double>(GridMat descriptors, GridMat tags, vector<vector<double> > params, GridMat& goodness);
 
 //template void ModalityPrediction<cv::Mat>::modelSelection<int>(GridMat grids, cv::Mat tags, vector<vector<int> > params, cv::Mat& goodness);
 //template void ModalityPrediction<cv::Mat>::modelSelection<float>(GridMat grids, cv::Mat tags, vector<vector<float> > params, cv::Mat& goodness);

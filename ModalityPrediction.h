@@ -35,6 +35,9 @@ public:
     
     void setValidationParameters(int k, int seed);
     
+    void setDimensionalityReduction(int ndims);
+    void setDimensionalityReduction(float variance);
+    
 protected:
     void computeGridPredictionsConsensus(GridMat individualPredictions, GridMat distsToMargin, GridMat& consensusPredictions);
     
@@ -52,6 +55,10 @@ protected:
                             // where N is equal to m_testK
     int m_modelSelecK; // number of folds in inner cross-validation to perform model selection
     bool m_selectBest; // in model selection
+    
+    bool m_bVarianceReduction; // 0 for dims, 1 for variance
+    int m_ndims;
+    float m_variance;
 };
 
 
@@ -75,9 +82,9 @@ public:
     void setLoglikelihoodThresholds(vector<float> t);
     
     template<typename T>
-    void modelSelection(cv::Mat descriptors, cv::Mat tags,
+    void modelSelection(GridMat descriptors, GridMat tags,
                         vector<vector<T> > params,
-                        cv::Mat& goodness);
+                        GridMat& goodnesses);
     
     void compute(GridMat& predictions, GridMat& loglikelihoods, GridMat& distsToMargin); // this
     

@@ -349,21 +349,21 @@ void ModalityReader::mockreadScene(string modality, string scenePath, const char
     if (modality.compare("Motion") == 0)
     {
         loadFilenames	 (scenePath + "/Frames/Color/", filetype, framesFilenames);
-        loadFilenames	 (scenePath + "/Masks/Color/", ".png", masksFilenames);
+        loadFilenames	 (scenePath + "/Masks/Color/", "png", masksFilenames);
         
         loadBoundingRects(scenePath + "/Masks/Color.yml", rects, tags);
     }
-    else if (modality.compare("Ramanan") != 0)
+    else if (modality.compare("Ramanan") == 0)
     {
         loadFilenames	 (scenePath + "/Maps/" + modality + "/", filetype, framesFilenames);
-        loadFilenames	 (scenePath + "/Masks/" + modality + "/", ".png", masksFilenames);
+        loadFilenames	 (scenePath + "/Masks/" + modality + "/", "png", masksFilenames);
         
         loadBoundingRects(scenePath + "/Masks/" + modality + ".yml", rects, tags);
     }
     else
     {
         loadFilenames	 (scenePath + "/Frames/" + modality + "/", filetype, framesFilenames);
-        loadFilenames	 (scenePath + "/Masks/" + modality + "/", ".png", masksFilenames);
+        loadFilenames	 (scenePath + "/Masks/" + modality + "/", "png", masksFilenames);
         
         loadBoundingRects(scenePath + "/Masks/" + modality + ".yml", rects, tags);
     }
