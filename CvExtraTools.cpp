@@ -187,9 +187,11 @@ void cvx::hist(cv::Mat src, int nbins, float min, float max, cv::Mat& hist)
     float range[] = { min, max } ;
     const float* ranges[] = { range };
     
-    src.convertTo(src, CV_32F);
+    src.convertTo(src, cv::DataType<float>::type);
     
-    cv::calcHist(&src, 1, channels, cv::Mat(), hist, 1, histSize, ranges, true, true);
+    cv::calcHist(&src, 1, channels, cv::Mat(), hist, 1, histSize, ranges, true, false);
+    
+    hist.convertTo(hist, cv::DataType<int>::type);
 }
 
 void cvx::hist(cv::Mat src, cv::Mat msk, int nbins, float min, float max, cv::Mat& hist)
@@ -199,9 +201,11 @@ void cvx::hist(cv::Mat src, cv::Mat msk, int nbins, float min, float max, cv::Ma
     float range[] = { min, max } ;
     const float* ranges[] = { range };
     
-    src.convertTo(src, CV_32F);
+    src.convertTo(src, cv::DataType<float>::type);
     
-    cv::calcHist(&src, 1, channels, msk, hist, 1, histSize, ranges, true, true);
+    cv::calcHist(&src, 1, channels, msk, hist, 1, histSize, ranges, true, false);
+    
+    hist.convertTo(hist, cv::DataType<int>::type);
 }
 
 void cvx::cumsum(cv::Mat src, cv::Mat& dst)

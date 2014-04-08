@@ -26,7 +26,7 @@ public:
      * Constructors
      */
     GridMat(unsigned int hp = 2, unsigned int wp = 2);
-    GridMat(unsigned int hp, unsigned int wp, unsigned int helems, unsigned int welems, int type = CV_32FC1);
+    GridMat(unsigned int hp, unsigned int wp, unsigned int helems, unsigned int welems, cv::Scalar s = cv::Scalar(0), int type = CV_32FC1);
     GridMat(cv::Mat mat, unsigned int hp = 2, unsigned int wp = 2);
     GridMat(const GridMat& other);
     GridMat(GridMat& other, GridMat indices, int k, bool inverse = false);
@@ -36,7 +36,7 @@ public:
     
     template<typename T>
     void create(unsigned int hp, unsigned int wp, unsigned int helems = 1, unsigned int welems = 1);
-    
+    GridMat clone();
     void copyTo(cv::Mat mat, unsigned int i, unsigned int j);
     
     bool isEmpty();
@@ -116,6 +116,10 @@ public:
     GridMat operator*(T value);
     template<typename T>
     GridMat operator/(T value);
+    
+    GridMat operator!();
+    GridMat operator&(GridMat g);
+    GridMat operator|(GridMat g);
 
 //    GridMat vget(cv::Mat indices, bool logical = true);
 //    GridMat hget(cv::Mat indices, bool logical = true);

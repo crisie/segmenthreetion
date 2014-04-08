@@ -12,7 +12,7 @@
 
 
 template GridPredictorBase<cv::EM>::~GridPredictorBase();
-
+template void GridPredictorBase<cv::EM>::setDimensionalityReduction(cv::Mat variances);
 
 //
 // GridPredictorBase
@@ -46,6 +46,7 @@ cv::PCA* GridPredictorBase<PredictorT>::getPCA(unsigned int i, unsigned int j)
 template<typename PredictorT>
 void GridPredictorBase<PredictorT>::setDimensionalityReduction(cv::Mat variances)
 {
+    m_bDimReduction = true;
     m_variances = variances;
 }
 

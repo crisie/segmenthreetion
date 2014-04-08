@@ -20,13 +20,13 @@ GridMat::GridMat(unsigned int crows, unsigned int ccols) : m_crows(crows), m_cco
 }
 
 
-GridMat::GridMat(unsigned int crows, unsigned int ccols, unsigned int helems, unsigned int welems, int type)
+GridMat::GridMat(unsigned int crows, unsigned int ccols, unsigned int helems, unsigned int welems, cv::Scalar s, int type)
 : m_crows(crows), m_ccols(ccols)
 {
     m_grid.resize(m_crows * m_ccols);
     for (unsigned int row = 0; row < m_crows; row++) for (unsigned int col = 0; col < m_ccols; col++)
     {
-        cv::Mat mat (helems, welems, type);
+        cv::Mat mat (helems, welems, type, s);
         this->assign(mat, row, col);
     }
 }
@@ -254,6 +254,18 @@ void GridMat::create(unsigned int crows, unsigned int ccols, unsigned int helems
         cv::Mat_<T> mat (helems, welems);
         this->assign(mat, i, j);
     }
+}
+
+GridMat GridMat::clone()
+{
+    GridMat g (m_crows, m_ccols);
+    
+    for (int i = 0; i < m_crows; i++) for (int j = 0; j < m_ccols; j++)
+    {
+        g.at(i,j) = this->at(i,j).clone();
+    }
+    
+    return g;
 }
 
 
@@ -676,7 +688,7 @@ GridMat GridMat::standardize()
 template<>
 GridMat GridMat::operator<(GridMat other)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::compare(at(i,j), other.at(i,j), result.at(i,j), cv::CMP_LT);
@@ -688,7 +700,7 @@ GridMat GridMat::operator<(GridMat other)
 template<>
 GridMat GridMat::operator<=(GridMat other)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::compare(at(i,j), other.at(i,j), result.at(i,j), cv::CMP_LE);
@@ -700,7 +712,7 @@ GridMat GridMat::operator<=(GridMat other)
 template<>
 GridMat GridMat::operator>(GridMat other)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::compare(at(i,j), other.at(i,j), result.at(i,j), cv::CMP_GT);
@@ -712,7 +724,7 @@ GridMat GridMat::operator>(GridMat other)
 template<>
 GridMat GridMat::operator>=(GridMat other)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::compare(at(i,j), other.at(i,j), result.at(i,j), cv::CMP_GE);
@@ -724,7 +736,7 @@ GridMat GridMat::operator>=(GridMat other)
 template<>
 GridMat GridMat::operator==(GridMat other)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::compare(at(i,j), other.at(i,j), result.at(i,j), cv::CMP_EQ);
@@ -736,7 +748,7 @@ GridMat GridMat::operator==(GridMat other)
 template<>
 GridMat GridMat::operator!=(GridMat other)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::compare(at(i,j), other.at(i,j), result.at(i,j), cv::CMP_NE);
@@ -748,7 +760,7 @@ GridMat GridMat::operator!=(GridMat other)
 template<>
 GridMat GridMat::operator+(GridMat other)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::add(at(i,j), other.at(i,j), result.at(i,j));
@@ -760,7 +772,7 @@ GridMat GridMat::operator+(GridMat other)
 template<>
 GridMat GridMat::operator-(GridMat other)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::subtract(at(i,j), other.at(i,j), result.at(i,j));
@@ -772,7 +784,7 @@ GridMat GridMat::operator-(GridMat other)
 template<>
 GridMat GridMat::operator*(GridMat other)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::multiply(at(i,j), other.at(i,j), result.at(i,j));
@@ -784,7 +796,7 @@ GridMat GridMat::operator*(GridMat other)
 template<>
 GridMat GridMat::operator/(GridMat other)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::divide(at(i,j), other.at(i,j), result.at(i,j));
@@ -796,7 +808,7 @@ GridMat GridMat::operator/(GridMat other)
 template<>
 GridMat GridMat::operator<(cv::Mat other)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::compare(at(i,j), other, result.at(i,j), cv::CMP_LT);
@@ -808,7 +820,7 @@ GridMat GridMat::operator<(cv::Mat other)
 template<>
 GridMat GridMat::operator<=(cv::Mat other)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::compare(at(i,j), other, result.at(i,j), cv::CMP_LE);
@@ -820,7 +832,7 @@ GridMat GridMat::operator<=(cv::Mat other)
 template<>
 GridMat GridMat::operator>(cv::Mat other)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::compare(at(i,j), other, result.at(i,j), cv::CMP_GT);
@@ -832,7 +844,7 @@ GridMat GridMat::operator>(cv::Mat other)
 template<>
 GridMat GridMat::operator>=(cv::Mat other)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::compare(at(i,j), other, result.at(i,j), cv::CMP_GE);
@@ -844,7 +856,7 @@ GridMat GridMat::operator>=(cv::Mat other)
 template<>
 GridMat GridMat::operator==(cv::Mat other)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::compare(at(i,j), other, result.at(i,j), cv::CMP_EQ);
@@ -856,7 +868,7 @@ GridMat GridMat::operator==(cv::Mat other)
 template<>
 GridMat GridMat::operator!=(cv::Mat other)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::compare(at(i,j), other, result.at(i,j), cv::CMP_NE);
@@ -868,7 +880,7 @@ GridMat GridMat::operator!=(cv::Mat other)
 template<>
 GridMat GridMat::operator+(cv::Mat other)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::add(at(i,j), other, result.at(i,j));
@@ -880,7 +892,7 @@ GridMat GridMat::operator+(cv::Mat other)
 template<>
 GridMat GridMat::operator-(cv::Mat other)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::subtract(at(i,j), other, result.at(i,j));
@@ -892,7 +904,7 @@ GridMat GridMat::operator-(cv::Mat other)
 template<>
 GridMat GridMat::operator*(cv::Mat other)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::multiply(at(i,j), other, result.at(i,j));
@@ -904,7 +916,7 @@ GridMat GridMat::operator*(cv::Mat other)
 template<>
 GridMat GridMat::operator/ <cv::Mat>(cv::Mat other)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::divide(at(i,j), other, result.at(i,j));
@@ -916,7 +928,7 @@ GridMat GridMat::operator/ <cv::Mat>(cv::Mat other)
 template<typename T>
 GridMat GridMat::operator<(T value)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         result.at(i,j) = (at(i,j) < value);
@@ -928,7 +940,7 @@ GridMat GridMat::operator<(T value)
 template<typename T>
 GridMat GridMat::operator<=(T value)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         result.at(i,j) = (at(i,j) <= value);
@@ -940,7 +952,7 @@ GridMat GridMat::operator<=(T value)
 template<typename T>
 GridMat GridMat::operator>(T value)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         result.at(i,j) = (at(i,j) > value);
@@ -952,7 +964,7 @@ GridMat GridMat::operator>(T value)
 template<typename T>
 GridMat GridMat::operator>=(T value)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         result.at(i,j) = (at(i,j) >= value);
@@ -964,7 +976,7 @@ GridMat GridMat::operator>=(T value)
 template<typename T>
 GridMat GridMat::operator==(T value)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         result.at(i,j) = (at(i,j) == value);
@@ -976,7 +988,7 @@ GridMat GridMat::operator==(T value)
 template<typename T>
 GridMat GridMat::operator!=(T value)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         result.at(i,j) = (at(i,j) != value);
@@ -988,7 +1000,7 @@ GridMat GridMat::operator!=(T value)
 template<typename T>
 GridMat GridMat::operator+(T value)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         result.at(i,j) = (at(i,j) + value);
@@ -1000,7 +1012,7 @@ GridMat GridMat::operator+(T value)
 template<typename T>
 GridMat GridMat::operator-(T value)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         result.at(i,j) = (at(i,j) - value);
@@ -1012,7 +1024,7 @@ GridMat GridMat::operator-(T value)
 template<typename T>
 GridMat GridMat::operator*(T value)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         result.at(i,j) = (at(i,j) * value);
@@ -1024,10 +1036,43 @@ GridMat GridMat::operator*(T value)
 template<typename T>
 GridMat GridMat::operator/ (T value)
 {
-    GridMat result;
+    GridMat result (m_crows, m_ccols);
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         result.at(i,j) = (at(i,j) / value);
+    }
+    
+    return result;
+}
+
+GridMat GridMat::operator!()
+{
+    GridMat result (m_crows, m_ccols);
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
+    {
+        cv::bitwise_not(at(i,j), result.at(i,j));
+    }
+    
+    return result;
+}
+
+GridMat GridMat::operator&(GridMat g)
+{
+    GridMat result (m_crows, m_ccols);
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
+    {
+        cv::bitwise_and(at(i,j), g.at(i,j), result.at(i,j));
+    }
+    
+    return result;
+}
+
+GridMat GridMat::operator|(GridMat g)
+{
+    GridMat result (m_crows, m_ccols);
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
+    {
+        cv::bitwise_or(at(i,j), g.at(i,j), result.at(i,j));
     }
     
     return result;
@@ -1198,7 +1243,7 @@ GridMat GridMat::abs()
     
     for (unsigned int i = 0; i < m_crows; i++) for (unsigned int j = 0; j < m_ccols; j++)
     {
-        this->at(i,j) = cv::abs(this->at(i,j));
+        abs.at(i,j) = cv::abs(this->at(i,j));
     }
     
     return abs;
@@ -1207,7 +1252,6 @@ GridMat GridMat::abs()
 cv::Mat GridMat::accumulate()
 {
     cv::Mat acc;
-    acc.create(at(0,0).rows, at(0,0).cols, at(0,0).type());
     
     this->accumulate(acc);
     
@@ -1218,7 +1262,10 @@ void GridMat::accumulate(cv::Mat& accumulation)
 {
     // Assume the cells of the grid have all the same size
     if (accumulation.empty())
-        accumulation.create(at(0,0).rows, at(0,0).cols, accumulation.type());
+    {
+        accumulation.create(at(0,0).rows, at(0,0).cols, at(0,0).type());
+        accumulation.setTo(0);
+    }
     
     for (unsigned int i = 0; i < m_crows; i++) for (unsigned int j = 0; j < m_ccols; j++)
     {
@@ -1332,12 +1379,13 @@ void GridMat::argmin(GridMat& gargmin)
 
 GridMat GridMat::historize(int nbins, double min, double max)
 {
-    GridMat gridhist;
+    GridMat gridhist(m_crows, m_ccols);
     
     for (unsigned int i = 0; i < m_crows; i++) for (unsigned int j = 0; j < m_ccols; j++)
     {
-        cv::Mat cellHist;
+        cv::Mat_<int> cellHist;
         cvx::hist(at(i,j), nbins, min, max, cellHist);
+        
         gridhist.assign(cellHist, i, j);
     }
     

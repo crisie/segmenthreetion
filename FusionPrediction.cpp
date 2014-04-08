@@ -28,66 +28,87 @@ SimpleFusionPrediction<cv::EM>::SimpleFusionPrediction()
     
 }
 
-void SimpleFusionPrediction<cv::EM>::setData(vector<ModalityGridData>& mgds, vector<GridMat> predictions, vector<GridMat> loglikelihoods, vector<GridMat> distsToMargin)
+void SimpleFusionPrediction<cv::EM>::setData(vector<ModalityGridData>& mgds)
 {
     m_mgds = mgds;
-    m_predictions = predictions;
-    m_loglikelihoods = loglikelihoods;
-    m_distsToMargin = distsToMargin;
 }
 
-void SimpleFusionPrediction<cv::EM>::compute(GridMat& gpredictions)
+void SimpleFusionPrediction<cv::EM>::compute(vector<GridMat> allPredictions, vector<GridMat> allDistsToMargin, GridMat& fusedPredictions)
 {
     // Concatenate along the horizontal direction all the modalities' predictions in a GridMat,
     // and the same for the distsToMargin
     
-    GridMat distsToMargin;
+    GridMat predictions (allPredictions[0]);
+    GridMat distsToMargin (allDistsToMargin[0]);
+    
+    for (int i = 1; i < m_mgds.size(); i++)
+    {
+        predictions.hconcat(allPredictions[i]);
+        distsToMargin.hconcat(allDistsToMargin[i]);
+    }
+    
+    int elements = predictions.at(0,0).rows;
+    for (int i = 0; i < predictions.crows(); i++) for (int j = 1; j < predictions.ccols(); j++)
+    {
+        assert (elements == predictions.at(i,j).rows);
+    }
+    
+    GridMat negMask (predictions == 0);
+    GridMat posMask (predictions == 1);
+    
+    GridMat hAccNegMask, hAccPosMask;
+    negMask.sum(hAccNegMask, 1);
+    posMask.sum(hAccPosMask, 1);
+    
+    GridMat ones (predictions.crows(), predictions.ccols(), elements, 1, 1);
+
+    int majorityVal = ceil(allPredictions.size()/2);
+    ones.copyTo(fusedPredictions, hAccPosMask > majorityVal);
+    
+    GridMat drawsMask = (hAccNegMask <= majorityVal) & (hAccPosMask <= majorityVal);
+    GridMat drawDistsToMargin (distsToMargin, drawsMask);
+    GridMat drawFusedPredictions;
+    
+    compute(drawDistsToMargin, drawFusedPredictions);
+    
+    drawFusedPredictions.set(fusedPredictions, drawsMask);
+}
+
+void SimpleFusionPrediction<cv::EM>::compute(vector<GridMat> allDistsToMargin, GridMat& fusedPredictions)
+{
+    // Concatenate along the horizontal direction all the modalities' predictions in a GridMat,
+    // and the same for the distsToMargin
+    
+    GridMat hConcatDistsToMargin;
     
     for (int i = 0; i < m_mgds.size(); i++)
     {
-        distsToMargin.hconcat(m_distsToMargin[i]);
+        hConcatDistsToMargin.hconcat(allDistsToMargin[i]);
     }
-    
-    GridMat negDists (distsToMargin < 0);
-    GridMat posDists (distsToMargin > 0);
+
+    compute(hConcatDistsToMargin, fusedPredictions);
+}
+
+void SimpleFusionPrediction<cv::EM>::compute(GridMat distsToMargin, GridMat& fusedPredictions)
+{
+    GridMat negMask (distsToMargin < 0);
+    GridMat posMask (distsToMargin > 0);
     
     GridMat negDistsToMargin, posDistsToMargin;
-    negDistsToMargin.setTo(0);
-    posDistsToMargin.setTo(0);
+    distsToMargin.copyTo(negDistsToMargin, negMask);
+    distsToMargin.copyTo(posDistsToMargin, posMask);
     
-    distsToMargin.copyTo(negDistsToMargin, negDists);
-    distsToMargin.copyTo(posDistsToMargin, posDists);
+    GridMat hAccNegMsk, hAccPosMsk, hAccNegDistsToMargin, hAccPosDistsToMargin;
+    negMask.sum(hAccNegMsk, 1);
+    posMask.sum(hAccPosMsk, 1);
+    negDistsToMargin.sum(hAccNegDistsToMargin, 1); // 1 indicates in the horizontal direction
+    posDistsToMargin.sum(hAccPosDistsToMargin, 1);
     
-    GridMat sumNegDists, sumPosDists, sumNegDistsToMargin, sumPosDistsToMargin;
-    negDists.sum(sumNegDists, 1);
-    posDists.sum(sumPosDists, 1);
-    negDistsToMargin.sum(sumNegDistsToMargin, 1); // 1 indicates in the horizontal direction
-    posDistsToMargin.sum(sumPosDistsToMargin, 1);
+    GridMat hMeanNegDistsToMargin, hMeanPosDistsToMargin;
+    hMeanNegDistsToMargin = hAccNegDistsToMargin / hAccNegMsk;
+    hMeanPosDistsToMargin = hAccPosDistsToMargin / hAccPosMsk;
     
-    GridMat meanNegDistsToMargin, meanPosDistsToMargin;
-    meanNegDistsToMargin = sumNegDistsToMargin / sumNegDists;
-    meanPosDistsToMargin = sumNegDistsToMargin / sumNegDists;
-    
-    GridMat fusedPrediction = meanPosDistsToMargin > meanNegDistsToMargin.abs();
-    
-    // Consensus in the fusedPrediction cells
-    
-//    GridMat posDistsToMargin, negDistsToMargin;
-//    posDistsToMargin.setTo(0);
-//    negDistsToMargin.setTo(0);
-//    
-//    GridMat negPredictions (individualPredictions == 0);
-//    GridMat posPredictions (individualPredictions == 1);
-//    
-//    distsToMargin.copyTo(negDistsToMargin, negPredictions);
-//    distsToMargin.copyTo(posDistsToMargin, posPredictions);
-//    
-//    cv::Mat avgNegDistsToMargin, avgPosDistsToMargin;
-//    
-//    cv::divide(negDistsToMargin.accumulate(), negPredictions.accumulate(), avgNegDistsToMargin);
-//    cv::divide(posDistsToMargin.accumulate(), posPredictions.accumulate(), avgPosDistsToMargin);
-//    
-//    consensusPredictions.setTo(avgPosDistsToMargin > cv::abs(avgNegDistsToMargin));
+    fusedPredictions = (hMeanPosDistsToMargin > hMeanNegDistsToMargin.abs()) / 255;
 }
 
 //

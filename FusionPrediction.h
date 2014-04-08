@@ -35,18 +35,18 @@ public:
     
     SimpleFusionPrediction();
     
-    void setData(vector<ModalityGridData>&, vector<GridMat> predictions, vector<GridMat> loglikelihoods, vector<GridMat> distsToMargin);
+    void setData(vector<ModalityGridData>& mgds);
     
-    void compute(GridMat& gpredictions);
+    void compute(vector<GridMat> allPredictions, vector<GridMat> allDistsToMargin, GridMat& fusedPredictions);
+    void compute(vector<GridMat> allDistsToMargin, GridMat& fusedPredictions);
     
 private:
+    
+    void compute(GridMat allDistsToMargin, GridMat& fusedPredictions);
     
     // Attributes
     
     vector<ModalityGridData> m_mgds;
-    vector<GridMat> m_predictions;
-    vector<GridMat> m_loglikelihoods;
-    vector<GridMat> m_distsToMargin;
 };
 
 

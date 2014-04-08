@@ -57,24 +57,27 @@ void ModalityPredictionBase<PredictorT>::setDimensionalityReduction(float varian
 }
 
 template<typename PredictorT>
-void ModalityPredictionBase<PredictorT>::computeGridPredictionsConsensus(GridMat individualPredictions,
+void ModalityPredictionBase<PredictorT>::computeGridPredictionsConsensus(GridMat predictions,
                                                                          GridMat distsToMargin,
                                                                          GridMat& consensusPredictions)
 {
     cv::Mat tags = m_data.getTagsMat();
+    cv::Mat consensus (tags.rows, tags.cols, tags.type(), cv::Scalar(0));
+    int ncells = m_hp * m_wp;
     
-    cv::Mat consensus (tags.rows, tags.cols, tags.type());
-    consensus.setTo(0);
+    // Assume cells in the grid of individual predictions have all the same size
+    // so it is possible to accumulate the values in an element-wise fashion
+    cv::Mat votes = predictions.accumulate(); // accumulation expresses #"cells vote for subject"
     
-    cv::Mat votes = individualPredictions.accumulate(); // accumulation expresses #"cells vote for subject"
-    consensus.setTo(1, votes > ((m_hp * m_wp) / 2)); // if majority of cells vote for subject, it is
+    consensus.setTo(1, votes > (ncells / 2)); // if majority of cells vote for subject, it is
     
     // Deal with draws
+    // that is, the same number of cells voting positively and negatively
     
     GridMat drawIndices;
-    drawIndices.setTo(votes == ((m_hp * m_wp) / 2));
+    drawIndices.setTo(votes == (ncells / 2));
     
-    GridMat drawnPredictions (individualPredictions, drawIndices); // index the subset of draws
+    GridMat drawnPredictions (predictions, drawIndices); // index the subset of draws
     GridMat drawnDists (distsToMargin, drawIndices); // and their corresponding distances to margin
     
     GridMat negPredictions = (drawnPredictions == 0) / 255;
@@ -85,12 +88,13 @@ void ModalityPredictionBase<PredictorT>::computeGridPredictionsConsensus(GridMat
     drawnDists.copyTo(posDists, posPredictions);
     
     cv::Mat_<float> avgNegDists, avgPosDists;
-    avgNegDists = negDists.accumulate() / ((m_hp * m_wp) / 2);
-    avgPosDists = posDists.accumulate() / ((m_hp * m_wp) / 2);
+    avgNegDists = negDists.accumulate() / (ncells / 2);
+    avgPosDists = posDists.accumulate() / (ncells / 2);
     
-    cv::Mat aux = (avgPosDists > cv::abs(avgNegDists)) / 255;
-    cvx::setMat(aux, consensus, votes == ((m_hp * m_wp) / 2));
+    cv::Mat aux = (avgPosDists > cv::abs(avgNegDists));
+    cvx::setMat(aux / 255, consensus, votes == (ncells / 2));
     
+    // When consensuated, all the cells in the grid of consensus are exactly the same
     consensusPredictions.setTo(consensus);
 }
 
@@ -241,6 +245,8 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
 
         predictor.setNumOfMixtures(bestParams[0]);
         predictor.setLoglikelihoodThreshold(bestParams[1]);
+        
+        predictor.setDimensionalityReduction(cv::Mat(m_hp, m_wp, cv::DataType<double>::type, cv::Scalar(m_variance)));
 
         // Training phase
         
@@ -275,6 +281,7 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
     // Grid cells' consensus
     // TODO: move this function to the fusion part
     // computeGridPredictionsConsensus(individualPredictions, distsToMargin, predictions); // predictions are consensued
+    predictions = individualPredictions;
 }
 
 template<typename T>
@@ -392,8 +399,8 @@ void ModalityPrediction<cv::EM>::computeLoglikelihoodsDistribution(int nbins, do
     
     cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
     
-    objDistribution.create(nbins, 1, cv::DataType<float>::type);
-    sbjDistribution.create(nbins, 1, cv::DataType<float>::type);
+    objDistribution.create(nbins, 1, cv::DataType<int>::type);
+    sbjDistribution.create(nbins, 1, cv::DataType<int>::type);
     objDistribution.setTo(0);
     sbjDistribution.setTo(0);
     
@@ -424,12 +431,11 @@ void ModalityPrediction<cv::EM>::computeLoglikelihoodsDistribution(int nbins, do
         GridMat validObjDescriptorsTeFold (validDescriptorsTeFold, validTagsTeFold, 0);
         GridMat validSbjDescriptorsTeFold (validDescriptorsTeFold, validTagsTeFold, 1);
         
-        
         GridPredictor<cv::EM> predictor(m_hp, m_wp);
         
         for (int m = 0; m < gridExpandedParams.size(); m++)
         {
-            cout << m << " ";
+//            cout << m << " ";
             
             cv::Mat numOfMixtures;
             numOfMixtures.setTo(gridExpandedParams[m][0]);

@@ -110,7 +110,7 @@ int main(int argc, const char* argv[])
     DepthParametrization dParam;
     dParam.thetaBins        = 8;
     dParam.phiBins          = 8;
-    dParam.normalsRadius    = 0.02;
+    dParam.normalsRadius    = 0.04;
     
     ThermalParametrization tParam;
     tParam.ibins    = 8;
@@ -118,12 +118,15 @@ int main(int argc, const char* argv[])
     
     // Classification step
     
+    vector<float> tmp;
+    
+    // all modalities, except for ramanan
 	vector<int> nmixtures;
     nmixtures += 2, 3, 4, 5, 7, 9, 11; // classification parameter (training step)
-    vector<float> likelicuts = cvx::linspace(-2, 1, 21); // -1, -0.8, -0.6, ..., 0.8
-    likelicuts.pop_back();
+    tmp = cvx::linspace(-2, 2, 22); // -1, -0.8, -0.6, ..., 0.8
+    vector<float> likelicuts (tmp.begin()+1, tmp.end()-1);
     
-    vector<float> tmp;
+    // ramanan
     tmp = cvx::linspace(0, 0.15, 20);
     vector<float> ratios (tmp.begin()+1, tmp.end()-1);
     tmp = cvx::linspace(0, 1.00, 20);
@@ -260,18 +263,16 @@ int main(int argc, const char* argv[])
     
     // Data re-loading
     
-//    ModalityGridData cMockData;
-//    reader.mockread("Color", sequences, "jpg", hp, wp, cMockData);
-//    ModalityGridData mMockData;
-//    reader.mockread("Motion", sequences, "jpg", hp, wp, mMockData);
-//    ModalityGridData dMockData;
-//    reader.mockread("Depth", sequences, "png", hp, wp, dMockData);
-    ModalityGridData tMockData;
+    ModalityGridData mMockData, dMockData, tMockData, cMockData;
+    
+    reader.mockread("Color", sequences, "jpg", hp, wp, cMockData);
+    reader.mockread("Motion", sequences, "jpg", hp, wp, mMockData);
+    reader.mockread("Depth", sequences, "png", hp, wp, dMockData);
     reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData);
-//
-//    cMockData.loadDescription(dataPath, sequences, "Color.yml");
-//    mMockData.loadDescription(dataPath, sequences, "Motion.yml");
-//    dMockData.loadDescription(dataPath, sequences, "Depth.yml");
+
+    cMockData.loadDescription(dataPath, sequences, "Color.yml");
+    mMockData.loadDescription(dataPath, sequences, "Motion.yml");
+    dMockData.loadDescription(dataPath, sequences, "Depth.yml");
     tMockData.loadDescription(dataPath, sequences, "Thermal.yml");
     
     //
@@ -279,6 +280,7 @@ int main(int argc, const char* argv[])
     //
     
 //    // Ramanan
+//    
 //    ModalityPrediction<cv::Mat> rprediction;
 //    
 //    rprediction.setPositiveClassificationRatios(ratios);
@@ -295,6 +297,12 @@ int main(int argc, const char* argv[])
 //    GridMat rPredictions, rScores, rDistsToMargin;
 //    rprediction.compute(rPredictions, rScores, rDistsToMargin);
 
+//    // Other modalitites
+    
+    GridMat mPredictions, dPredictions, tPredictions, cPredictions;
+    GridMat mLoglikelihoods, dLoglikelihoods, tLoglikelihoods, cLoglikelihoods;
+    GridMat mDistsToMargin, dDistsToMargin, tDistsToMargin, cDistsToMargin;
+    GridMat mAccuracies, dAccuracies, tAccuracies, cAccuracies;
     
     ModalityPrediction<cv::EM> prediction;
 
@@ -305,79 +313,101 @@ int main(int argc, const char* argv[])
     prediction.setModelSelection(false); // false load it from disk (see .h)
     prediction.setModelSelectionParameters(kModelSelec, true);
     
-//
-//    cPredictions.save("cPredictions.yml");
-//    cLoglikelihoods.save("cLoglikelihoods.yml");
-//    cDistsToMargin.save("cDistsToMargin.yml");
-//    
-//    // Motion
-//    prediction.setData(mMockData);
-//    
-//    GridMat mPredictions, mLoglikelihoods, mDistsToMargin;
-//    prediction.compute(mPredictions, mLoglikelihoods, mDistsToMargin);
-//
-//    mPredictions.save("mPredictions.yml");
-//    mLoglikelihoods.save("mLoglikelihoods.yml");
-//    mDistsToMargin.save("mDistsToMargin.yml");
-//    
+    // Motion
+    prediction.setData(mMockData);
+    
+    prediction.compute(mPredictions, mLoglikelihoods, mDistsToMargin, mAccuracies);
+
+    mPredictions.save("mPredictions.yml");
+    mLoglikelihoods.save("mLoglikelihoods.yml");
+    mDistsToMargin.save("mDistsToMargin.yml");
+    mAccuracies.save("mAccuracies.yml");
+    
     // Depth
-//    prediction.setData(dMockData);
-//    
-//    GridMat dPredictions, dLoglikelihoods, dDistsToMargin;
-//    prediction.compute(dPredictions, dLoglikelihoods, dDistsToMargin);
-//
-//    dPredictions.save("dPredictions.yml");
-//    dLoglikelihoods.save("dLoglikelihoods.yml");
-//    dDistsToMargin.save("dDistsToMargin.yml");
+    prediction.setData(dMockData);
+
+    prediction.compute(dPredictions, dLoglikelihoods, dDistsToMargin, dAccuracies);
+    
+    dPredictions.save("dPredictions.yml");
+    dLoglikelihoods.save("dLoglikelihoods.yml");
+    dDistsToMargin.save("dDistsToMargin.yml");
+    dAccuracies.save("dAccuracies.yml");
     
      // Thermal
     prediction.setData(tMockData);
 
-    GridMat tPredictions, tLoglikelihoods, tDistsToMargin, tAccuracies;
     prediction.compute(tPredictions, tLoglikelihoods, tDistsToMargin, tAccuracies);
-    cout << tAccuracies << endl;
-    GridMat tMeanAccs;
-    tAccuracies.mean(tMeanAccs, 0);
-    cout << tMeanAccs << endl;
 
-//    //// Color
-//    prediction.setData(cMockData);
-//    prediction.setDimensionalityReduction(colorVariance);
-//    
-//    GridMat cPredictions, cLoglikelihoods, cDistsToMargin;
-//    prediction.compute(cPredictions, cLoglikelihoods, cDistsToMargin);
+    tPredictions.save("tPredictions.yml");
+    tLoglikelihoods.save("tLoglikelihoods.yml");
+    tDistsToMargin.save("tDistsToMargin.yml");
+    tAccuracies.save("tAccuracies.yml");
     
-//    // DEBUG
+    // Color
+    prediction.setData(cMockData);
+    prediction.setDimensionalityReduction(colorVariance);
+
+    prediction.compute(cPredictions, cLoglikelihoods, cDistsToMargin, cAccuracies);
+    
+    cPredictions.save("cPredictions.yml");
+    cLoglikelihoods.save("cLoglikelihoods.yml");
+    cDistsToMargin.save("cDistsToMargin.yml");
+    cAccuracies.save("cAccuracies.yml");
+
+//
+//    // DEBUG: study the distributions of loglikelihoods in a certain modality
 //    cv::Mat l, sbjDist, objDist;
-//    prediction.computeLoglikelihoodsDistribution(60, -20, 1, sbjDist, objDist);
-//    cvx::linspace(-20, 1, 60, l);
+//    sbjDist.setTo(0);
+//    objDist.setTo(0);
+//    prediction.computeLoglikelihoodsDistribution(60, -20, 20, sbjDist, objDist);
+//    cvx::linspace(-20, 20, 60, l);
 //    cout << l << endl;
 //    cout << sbjDist << endl;
 //    cout << objDist << endl;
     
-//    cout << tPredictions << endl;
-    
-    //tPredictions.save("tPredictions.yml");
-    //tLoglikelihoods.save("tLoglikelihoods.yml");
-    //tDistsToMargin.save("tDistsToMargin.yml");
 
-//    //
-//    // Fusion
-//    //
-//    
-//    vector<GridMat> predictions, loglikelihoods; // put together all the data
-//    predictions += tPredictions, cPredictions;
-//    loglikelihoods += tLoglikelihoods, cLoglikelihoods;
-//
-//    // Simple
-//    GridMat simpleFusionPredictions;
-//    
-//    SimpleFusionPrediction<cv::EM> simpleFusion;
-//    
-//    simpleFusion.setData(loglikelihoods, predictions);
-//    
-//    simpleFusion.compute(simpleFusionPredictions);
-//    
+    //
+    // Fusion
+    //
+    
+    mPredictions.load("mPredictions.yml");
+    dPredictions.load("dPredictions.yml");
+    tPredictions.load("tPredictions.yml");
+    cPredictions.load("cPredictions.yml");
+    
+    mLoglikelihoods.load("mLoglikelihoods.yml");
+    dLoglikelihoods.load("dLoglikelihoods.yml");
+    tLoglikelihoods.load("tLoglikelihoods.yml");
+    cLoglikelihoods.load("cLoglikelihoods.yml");
+    
+    mDistsToMargin.load("mDistsToMargin.yml");
+    dDistsToMargin.load("dDistsToMargin.yml");
+    tDistsToMargin.load("tDistsToMargin.yml");
+    cDistsToMargin.load("cDistsToMargin.yml");
+    
+    vector<ModalityGridData> mgds;
+    mgds += mMockData, dMockData, tMockData, cMockData;
+    
+    vector<GridMat> predictions, loglikelihoods, distsToMargin; // put together all the data
+    predictions     += mPredictions, dPredictions, tPredictions, cPredictions;
+    loglikelihoods  += mLoglikelihoods, dLoglikelihoods, tLoglikelihoods, cLoglikelihoods;
+    distsToMargin   += mDistsToMargin, dDistsToMargin, tDistsToMargin, cDistsToMargin;
+
+    // Simple
+    GridMat simpleFusionPredictions1; // Cells' pre-consensued predictions
+    GridMat simpleFusionPredictions2; // Cells' post-consensued predictions
+    GridMat simpleFusionPredictions3; // Cells' distances to margin
+    
+    SimpleFusionPrediction<cv::EM> simpleFusion;
+    
+    simpleFusion.setData(mgds);
+    
+    simpleFusion.compute(predictions, distsToMargin, simpleFusionPredictions2);
+    cout << "// Cells' post-consensued predictions: " << accuracy(cMockData.getTagsMat(), simpleFusionPredictions2) << endl;
+    
+//    simpleFusion.compute(distsToMargin, simpleFusionPredictions3);
+//    cout << "Cells' distances to margin: " << accuracy(cMockData.getTagsMat(), simpleFusionPredictions3) << endl;
+    
 //    // SVM
 //    GridMat svmFusionPredictions;
 //    
