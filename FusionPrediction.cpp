@@ -55,6 +55,8 @@ void SimpleFusionPrediction<cv::EM>::compute(vector<GridMat> allPredictions, vec
     
     GridMat negMask (predictions == 0);
     GridMat posMask (predictions == 1);
+    negMask = negMask / 255;
+    posMask = posMask / 255;
     
     GridMat hAccNegMask, hAccPosMask;
     negMask.sum(hAccNegMask, 1);
@@ -71,7 +73,7 @@ void SimpleFusionPrediction<cv::EM>::compute(vector<GridMat> allPredictions, vec
     
     compute(drawDistsToMargin, drawFusedPredictions);
     
-    drawFusedPredictions.set(fusedPredictions, drawsMask);
+    fusedPredictions.set(drawFusedPredictions, drawsMask);
 }
 
 void SimpleFusionPrediction<cv::EM>::compute(vector<GridMat> allDistsToMargin, GridMat& fusedPredictions)

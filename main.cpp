@@ -270,10 +270,10 @@ int main(int argc, const char* argv[])
     reader.mockread("Depth", sequences, "png", hp, wp, dMockData);
     reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData);
 
-    cMockData.loadDescription(dataPath, sequences, "Color.yml");
-    mMockData.loadDescription(dataPath, sequences, "Motion.yml");
-    dMockData.loadDescription(dataPath, sequences, "Depth.yml");
-    tMockData.loadDescription(dataPath, sequences, "Thermal.yml");
+//    cMockData.loadDescription(dataPath, sequences, "Color.yml");
+//    mMockData.loadDescription(dataPath, sequences, "Motion.yml");
+//    dMockData.loadDescription(dataPath, sequences, "Depth.yml");
+//    tMockData.loadDescription(dataPath, sequences, "Thermal.yml");
     
     //
     // Individual prediction
@@ -305,54 +305,54 @@ int main(int argc, const char* argv[])
     GridMat mAccuracies, dAccuracies, tAccuracies, cAccuracies;
     
     ModalityPrediction<cv::EM> prediction;
-
-    prediction.setNumOfMixtures(nmixtures);
-    prediction.setLoglikelihoodThresholds(likelicuts);
-
-    prediction.setValidationParameters(kTest, seed);
-    prediction.setModelSelection(false); // false load it from disk (see .h)
-    prediction.setModelSelectionParameters(kModelSelec, true);
-    
-    // Motion
-    prediction.setData(mMockData);
-    
-    prediction.compute(mPredictions, mLoglikelihoods, mDistsToMargin, mAccuracies);
-
-    mPredictions.save("mPredictions.yml");
-    mLoglikelihoods.save("mLoglikelihoods.yml");
-    mDistsToMargin.save("mDistsToMargin.yml");
-    mAccuracies.save("mAccuracies.yml");
-    
-    // Depth
-    prediction.setData(dMockData);
-
-    prediction.compute(dPredictions, dLoglikelihoods, dDistsToMargin, dAccuracies);
-    
-    dPredictions.save("dPredictions.yml");
-    dLoglikelihoods.save("dLoglikelihoods.yml");
-    dDistsToMargin.save("dDistsToMargin.yml");
-    dAccuracies.save("dAccuracies.yml");
-    
-     // Thermal
-    prediction.setData(tMockData);
-
-    prediction.compute(tPredictions, tLoglikelihoods, tDistsToMargin, tAccuracies);
-
-    tPredictions.save("tPredictions.yml");
-    tLoglikelihoods.save("tLoglikelihoods.yml");
-    tDistsToMargin.save("tDistsToMargin.yml");
-    tAccuracies.save("tAccuracies.yml");
-    
-    // Color
-    prediction.setData(cMockData);
-    prediction.setDimensionalityReduction(colorVariance);
-
-    prediction.compute(cPredictions, cLoglikelihoods, cDistsToMargin, cAccuracies);
-    
-    cPredictions.save("cPredictions.yml");
-    cLoglikelihoods.save("cLoglikelihoods.yml");
-    cDistsToMargin.save("cDistsToMargin.yml");
-    cAccuracies.save("cAccuracies.yml");
+//
+//    prediction.setNumOfMixtures(nmixtures);
+//    prediction.setLoglikelihoodThresholds(likelicuts);
+//
+//    prediction.setValidationParameters(kTest, seed);
+//    prediction.setModelSelection(false); // false load it from disk (see .h)
+//    prediction.setModelSelectionParameters(kModelSelec, true);
+//    
+//    // Motion
+//    prediction.setData(mMockData);
+//    
+//    prediction.compute(mPredictions, mLoglikelihoods, mDistsToMargin, mAccuracies);
+//
+//    mPredictions.save("mPredictions.yml");
+//    mLoglikelihoods.save("mLoglikelihoods.yml");
+//    mDistsToMargin.save("mDistsToMargin.yml");
+//    mAccuracies.save("mAccuracies.yml");
+//    
+//    // Depth
+//    prediction.setData(dMockData);
+//
+//    prediction.compute(dPredictions, dLoglikelihoods, dDistsToMargin, dAccuracies);
+//    
+//    dPredictions.save("dPredictions.yml");
+//    dLoglikelihoods.save("dLoglikelihoods.yml");
+//    dDistsToMargin.save("dDistsToMargin.yml");
+//    dAccuracies.save("dAccuracies.yml");
+//    
+//     // Thermal
+//    prediction.setData(tMockData);
+//
+//    prediction.compute(tPredictions, tLoglikelihoods, tDistsToMargin, tAccuracies);
+//
+//    tPredictions.save("tPredictions.yml");
+//    tLoglikelihoods.save("tLoglikelihoods.yml");
+//    tDistsToMargin.save("tDistsToMargin.yml");
+//    tAccuracies.save("tAccuracies.yml");
+//    
+//    // Color
+//    prediction.setData(cMockData);
+//    prediction.setDimensionalityReduction(colorVariance);
+//
+//    prediction.compute(cPredictions, cLoglikelihoods, cDistsToMargin, cAccuracies);
+//    
+//    cPredictions.save("cPredictions.yml");
+//    cLoglikelihoods.save("cLoglikelihoods.yml");
+//    cDistsToMargin.save("cDistsToMargin.yml");
+//    cAccuracies.save("cAccuracies.yml");
 
 //
 //    // DEBUG: study the distributions of loglikelihoods in a certain modality
@@ -385,6 +385,25 @@ int main(int argc, const char* argv[])
     tDistsToMargin.load("tDistsToMargin.yml");
     cDistsToMargin.load("cDistsToMargin.yml");
     
+    
+    GridMat mConsensusPredictions, dConsensusPredictions, tConsensusPredictions, cConsensusPredictions;
+    
+    prediction.computeGridPredictionsConsensus(mMockData, mPredictions, mDistsToMargin, mConsensusPredictions);
+    cout << "Motion modality: " << accuracy(mMockData.getTagsMat(), mPredictions) << endl;
+    cout << "Motion modality (c): " << accuracy(mMockData.getTagsMat(), mConsensusPredictions) << endl;
+    
+    prediction.computeGridPredictionsConsensus(dMockData, dPredictions, dDistsToMargin, dConsensusPredictions);
+    cout << "Depth modality: " << accuracy(dMockData.getTagsMat(), dPredictions) << endl;
+    cout << "Depth modality (c): " << accuracy(dMockData.getTagsMat(), dConsensusPredictions) << endl;
+    
+    prediction.computeGridPredictionsConsensus(tMockData, tPredictions, tDistsToMargin, tConsensusPredictions);
+    cout << "Thermal modality: " << accuracy(tMockData.getTagsMat(), tPredictions) << endl;
+    cout << "Thermal modality (c): " << accuracy(tMockData.getTagsMat(), tConsensusPredictions) << endl;
+    
+    prediction.computeGridPredictionsConsensus(cMockData, cPredictions, cDistsToMargin, cConsensusPredictions);
+    cout << "Color modality: " << accuracy(cMockData.getTagsMat(), cPredictions) << endl;
+    cout << "Color modality (c): " << accuracy(cMockData.getTagsMat(), cConsensusPredictions) << endl;
+    
     vector<ModalityGridData> mgds;
     mgds += mMockData, dMockData, tMockData, cMockData;
     
@@ -392,7 +411,7 @@ int main(int argc, const char* argv[])
     predictions     += mPredictions, dPredictions, tPredictions, cPredictions;
     loglikelihoods  += mLoglikelihoods, dLoglikelihoods, tLoglikelihoods, cLoglikelihoods;
     distsToMargin   += mDistsToMargin, dDistsToMargin, tDistsToMargin, cDistsToMargin;
-
+    
     // Simple
     GridMat simpleFusionPredictions1; // Cells' pre-consensued predictions
     GridMat simpleFusionPredictions2; // Cells' post-consensued predictions

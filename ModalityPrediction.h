@@ -37,8 +37,9 @@ public:
     
     void setDimensionalityReduction(float variance);
     
+    void computeGridPredictionsConsensus(ModalityGridData data, GridMat predictions, GridMat distsToMargin, GridMat& consensusPredictions);
+    
 protected:
-    void computeGridPredictionsConsensus(GridMat individualPredictions, GridMat distsToMargin, GridMat& consensusPredictions);
     
     // Attributes
     

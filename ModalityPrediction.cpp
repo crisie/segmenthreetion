@@ -57,45 +57,90 @@ void ModalityPredictionBase<PredictorT>::setDimensionalityReduction(float varian
 }
 
 template<typename PredictorT>
-void ModalityPredictionBase<PredictorT>::computeGridPredictionsConsensus(GridMat predictions,
+void ModalityPredictionBase<PredictorT>::computeGridPredictionsConsensus(ModalityGridData data,
+                                                                         GridMat predictions,
                                                                          GridMat distsToMargin,
                                                                          GridMat& consensusPredictions)
 {
-    cv::Mat tags = m_data.getTagsMat();
-    cv::Mat consensus (tags.rows, tags.cols, tags.type(), cv::Scalar(0));
-    int ncells = m_hp * m_wp;
+    cv::Mat tags = data.getTagsMat();
+    cv::Mat consensus (tags.rows, 1, cv::DataType<int>::type, cv::Scalar(0));
     
-    // Assume cells in the grid of individual predictions have all the same size
-    // so it is possible to accumulate the values in an element-wise fashion
-    cv::Mat votes = predictions.accumulate(); // accumulation expresses #"cells vote for subject"
+    for (int k = 0; k < tags.rows; k++)
+    {
+        int pos = 0;
+        int neg = 0;
+        float accPosDists = 0;
+        float accNegDists = 0;
+        cv::Mat m (1,4,cv::DataType<int>::type);
+        for (int i = 0; i < data.getHp(); i++) for (int j = 0; j < data.getWp(); j++)
+        {
+            if (predictions.at<int>(i,j,k,0) == 0)
+            {
+                neg++;
+                accNegDists += distsToMargin.at<float>(i,j,k,0);
+            }
+            else if (predictions.at<int>(i,j,k,0) == 1)
+            {
+                pos++;
+                accPosDists += distsToMargin.at<float>(i,j,k,0);
+            }
+            
+//            m.at<int>(0,i * data.getWp() + j) = (predictions.at<int>(i,j,k,0) == 0);
+        }
+        
+        if (pos > neg)
+        {
+            consensus.at<int>(k,0) = 1;
+//            cout << 1 << " ";
+        }
+        else if (pos == neg)
+        {
+            consensus.at<int>(k,0) = (accPosDists > abs(accNegDists));
+//            cout << (accPosDists > abs(accNegDists)) << " ";
+        }
+//        else
+//            cout << 0 << " ";
+        
+//        cout << m << endl;
+    }
     
-    consensus.setTo(1, votes > (ncells / 2)); // if majority of cells vote for subject, it is
-    
-    // Deal with draws
-    // that is, the same number of cells voting positively and negatively
-    
-    GridMat drawIndices;
-    drawIndices.setTo(votes == (ncells / 2));
-    
-    GridMat drawnPredictions (predictions, drawIndices); // index the subset of draws
-    GridMat drawnDists (distsToMargin, drawIndices); // and their corresponding distances to margin
-    
-    GridMat negPredictions = (drawnPredictions == 0) / 255;
-    GridMat posPredictions = (drawnPredictions == 1) / 255;
-    
-    GridMat negDists, posDists;
-    drawnDists.copyTo(negDists, negPredictions);
-    drawnDists.copyTo(posDists, posPredictions);
-    
-    cv::Mat_<float> avgNegDists, avgPosDists;
-    avgNegDists = negDists.accumulate() / (ncells / 2);
-    avgPosDists = posDists.accumulate() / (ncells / 2);
-    
-    cv::Mat aux = (avgPosDists > cv::abs(avgNegDists));
-    cvx::setMat(aux / 255, consensus, votes == (ncells / 2));
-    
-    // When consensuated, all the cells in the grid of consensus are exactly the same
     consensusPredictions.setTo(consensus);
+    
+//    cv::Mat tags = m_data.getTagsMat();
+//    cv::Mat consensus (tags.rows, tags.cols, tags.type(), cv::Scalar(0));
+//    int ncells = m_hp * m_wp;
+//    
+//    // Assume cells in the grid of individual predictions have all the same size
+//    // so it is possible to accumulate the values in an element-wise fashion
+//    cv::Mat votes = predictions.accumulate(); // accumulation expresses #"cells vote for subject"
+//    
+//    consensus.setTo(1, votes > (ncells / 2)); // if majority of cells vote for subject, it is
+//    
+//    // Deal with draws
+//    // that is, the same number of cells voting positively and negatively
+//    
+//    GridMat drawIndices;
+//    drawIndices.setTo(votes == (ncells / 2));
+//    
+//    GridMat drawnPredictions (predictions, drawIndices); // index the subset of draws
+//    GridMat drawnDists (distsToMargin, drawIndices); // and their corresponding distances to margin
+//    
+//    GridMat negPredictions = (drawnPredictions == 0) / 255;
+//    GridMat posPredictions = (drawnPredictions == 1) / 255;
+//    
+//    GridMat negDists, posDists;
+//    drawnDists.copyTo(negDists, negPredictions);
+//    drawnDists.copyTo(posDists, posPredictions);
+//    
+//    cv::Mat_<float> avgNegDists, avgPosDists;
+//    avgNegDists = negDists.accumulate() / (ncells / 2);
+//    avgPosDists = posDists.accumulate() / (ncells / 2);
+//    
+//    cv::Mat aux = (avgPosDists > cv::abs(avgNegDists));
+//    cvx::setMat(aux / 255, consensus, votes == (ncells / 2));
+//    
+//    // When consensuated, all the cells in the grid of consensus are exactly the same
+//    consensusPredictions.setTo(consensus);
 }
 
 
@@ -624,7 +669,7 @@ void ModalityPrediction<cv::Mat>::compute(GridMat& predictions, GridMat& gscores
     cout << endl;
     
     // Grid cells' consensus
-    computeGridPredictionsConsensus(individualPredictions, distsToMargin, predictions); // predictions are consensued
+    //computeGridPredictionsConsensus(individualPredictions, distsToMargin, predictions); // predictions are consensued
 }
 
 template<typename T>
@@ -672,13 +717,13 @@ template void ModalityPredictionBase<cv::EM>::setModelSelection(bool flag);
 template void ModalityPredictionBase<cv::EM>::setModelSelectionParameters(int k, bool best);
 template void ModalityPredictionBase<cv::EM>::setValidationParameters(int k, int seed);
 template void ModalityPredictionBase<cv::EM>::setDimensionalityReduction(float variance);
-template void ModalityPredictionBase<cv::EM>::computeGridPredictionsConsensus(GridMat individualPredictions, GridMat distsToMargin, GridMat& consensusPredictions);
+template void ModalityPredictionBase<cv::EM>::computeGridPredictionsConsensus(ModalityGridData data, GridMat individualPredictions, GridMat distsToMargin, GridMat& consensusPredictions);
 
 template void ModalityPredictionBase<cv::Mat>::setData(ModalityGridData &data);
 template void ModalityPredictionBase<cv::Mat>::setModelSelection(bool flag);
 template void ModalityPredictionBase<cv::Mat>::setModelSelectionParameters(int k, bool best);
 template void ModalityPredictionBase<cv::Mat>::setValidationParameters(int k, int seed);
-template void ModalityPredictionBase<cv::Mat>::computeGridPredictionsConsensus(GridMat individualPredictions, GridMat distsToMargin, GridMat& consensusPredictions);
+template void ModalityPredictionBase<cv::Mat>::computeGridPredictionsConsensus(ModalityGridData data, GridMat individualPredictions, GridMat distsToMargin, GridMat& consensusPredictions);
 
 template void ModalityPrediction<cv::EM>::modelSelection<int>(GridMat descriptors, GridMat tags, vector<vector<int> > params, GridMat& goodness);
 template void ModalityPrediction<cv::EM>::modelSelection<float>(GridMat descriptors, GridMat tags, vector<vector<float> > params, GridMat& goodness);
