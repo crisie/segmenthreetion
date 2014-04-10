@@ -238,7 +238,7 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
 
 
             std::stringstream ss;
-            ss << m_data.getModality() << "_models_goodnesses_" << k << ".yml" << endl;
+            ss << m_data.getModality() << "_models_goodnesses_" << k << ".yml";
             goodnesses.save(ss.str());
         }
         cout << endl;
@@ -280,7 +280,7 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
         // Model selection information is kept on disk, reload it
         GridMat goodnesses;
         std::stringstream ss;
-        ss << m_data.getModality() << "_models_goodnesses_" << k << ".yml" << endl;
+        ss << m_data.getModality() << "_models_goodnesses_" << k << ".yml";
         goodnesses.load(ss.str());
         
         // Train with the best parameter combination in average in a model
@@ -543,7 +543,7 @@ void ModalityPrediction<cv::Mat>::setScoreThresholds(vector<float> t)
     m_scores = t;
 }
 
-void ModalityPrediction<cv::Mat>::compute(GridMat& predictions, GridMat& gscores, GridMat& distsToMargin)
+void ModalityPrediction<cv::Mat>::compute(GridMat& individualPredictions, GridMat& gscores, GridMat& distsToMargin)
 {
     cv::Mat tags = m_data.getTagsMat();
     
@@ -594,15 +594,13 @@ void ModalityPrediction<cv::Mat>::compute(GridMat& predictions, GridMat& gscores
             }
             
             std::stringstream ss;
-            ss << m_data.getModality() << "_models_goodnesses_" << k << ".yml" << endl;
+            ss << m_data.getModality() << "_models_goodnesses_" << k << ".yml";
             goodnesses.save(ss.str());
         }
         cout << endl;
     }
     
     cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
-    
-    GridMat individualPredictions;
     
     individualPredictions.setTo(cv::Mat::zeros(tags.rows, tags.cols, cv::DataType<int>::type));
     gscores.setTo(negInfinities);
@@ -620,7 +618,7 @@ void ModalityPrediction<cv::Mat>::compute(GridMat& predictions, GridMat& gscores
         // Model selection information is kept on disk, reload it
         GridMat goodnesses;
         std::stringstream ss;
-        ss << m_data.getModality() << "_models_goodnesses_" << k << ".yml" << endl;
+        ss << m_data.getModality() << "_models_goodnesses_" << k << ".yml";
         goodnesses.load(ss.str());
         
         // Train with the best parameter combination in average in a model
@@ -640,6 +638,9 @@ void ModalityPrediction<cv::Mat>::compute(GridMat& predictions, GridMat& gscores
             cv::Mat validScores      (validIndicesTe.rows, 1, cv::DataType<float>::type);
             cv::Mat validDistances   (validIndicesTe.rows, 1, cv::DataType<float>::type);
             
+            float ratio = bestParams[0].at<float>(i,j);
+            float score = bestParams[1].at<float>(i,j);
+            
             for (int k = 0; k < validIndicesTe.rows; k++)
             {
                 int idx = validIndicesTe.at<int>(k,0);
@@ -648,22 +649,29 @@ void ModalityPrediction<cv::Mat>::compute(GridMat& predictions, GridMat& gscores
                 cv::Mat cellMask = m_data.getGridMask(idx).at(i,j);
                 
                 cv::Mat_<float> aux;
-                cv::threshold(cell, aux, bestParams[0].at<float>(i,j), 1, cv::THRESH_BINARY);
+                cv::threshold(cell, aux, score, 1, cv::THRESH_BINARY);
                 CvScalar mean = cv::mean(aux, cellMask);
                 
-                validPredictions.at<int>(k,0) = (mean.val[0] > bestParams[1].at<float>(i,j));
+                validPredictions.at<int>(k,0) = (mean.val[0] > ratio);
                 validScores.at<float>(k,0) = (mean.val[0]);
-                validDistances.at<float>(k,0) = bestParams[1].at<float>(i,j) - mean.val[0];
+                validDistances.at<float>(k,0) = score - mean.val[0];
             }
             
-            cv::Mat predictions, scores, distances;
-            cvx::setMat(validPredictions, predictions, validnessesTe);
-            cvx::setMat(validScores, scores, validnessesTe);
-            cvx::setMat(validDistances, distances, validnessesTe);
+            cv::Scalar mean, stddev;
+            cv::meanStdDev(validDistances, mean, stddev);
+            cv::Mat_<float> stdValidDistances = (validDistances - mean.val[0]) / stddev.val[0];
             
-            cvx::setMat(validPredictions, individualPredictions.at(i,j), partitions == k);
-            cvx::setMat(validScores, gscores.at(i,j), partitions == k);
-            cvx::setMat(validDistances, distsToMargin.at(i,j), partitions == k);
+            cv::Mat predictions, distances;
+            cv::Mat scores (indicesTeFold.rows, 1, cv::DataType<float>::type);
+            scores.setTo(cv::mean(validScores).val[0]); // valids' mean
+            
+            cvx::setMat(validPredictions, predictions, validnessesTe); // not indexed by validnessesTe take 0
+            cvx::setMat(validScores, scores, validnessesTe); // not indexed by validnessesTe take valids' mean
+            cvx::setMat(stdValidDistances, distances, validnessesTe); // not indexed by validnessesTe take 0
+            
+            cvx::setMat(predictions, individualPredictions.at(i,j), partitions == k);
+            cvx::setMat(scores, gscores.at(i,j), partitions == k);
+            cvx::setMat(distances, distsToMargin.at(i,j), partitions == k);
         }
     }
     cout << endl;

@@ -28,6 +28,8 @@ void cvx::setMatLogically(cv::Mat src, cv::Mat& dst, cv::Mat logicals)
             dst.create(logicals.rows, src.cols, src.type());
         else
             dst.create(src.rows, logicals.rows, src.type());
+        
+        dst.setTo(0);
     }
     
     int c = 0;
@@ -161,23 +163,15 @@ cv::Mat cvx::indexMat(cv::Mat src, cv::Mat indices, bool logical)
 void cvx::hmean(cv::Mat src, cv::Mat& mean)
 {
     mean.release();
-    mean.create(src.rows, 1, cv::DataType<double>::type);
     
-    for (int i = 0; src.rows; i++)
-    {
-        mean.at<double>(i,0) = cv::mean(src.row(i)).val[0];
-    }
+    cv::reduce(src, mean, 1, CV_REDUCE_AVG);
 }
 
 void cvx::vmean(cv::Mat src, cv::Mat& mean)
 {
     mean.release();
-    mean.create(1, src.cols, cv::DataType<double>::type);
     
-    for (int i = 0; src.cols; i++)
-    {
-        mean.at<double>(0,i) = cv::mean(src.col(i)).val[0];
-    }
+    cv::reduce(src, mean, 0, CV_REDUCE_AVG);
 }
 
 void cvx::hist(cv::Mat src, int nbins, float min, float max, cv::Mat& hist)

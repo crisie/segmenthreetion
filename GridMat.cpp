@@ -621,19 +621,25 @@ void GridMat::convertToDense(GridMat indices, GridMat& denseGridMat)
 
 void GridMat::hserial(cv::Mat& serial)
 {
-    serial = this->at(0,0).clone();
-    for (int i = 0; i < crows(); i++) for (int j = 1; j < ccols(); j++)
+//    serial.create(this->at(0,0).rows, 0, this->at(0,0).type());
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
-        cv::hconcat(serial, this->at(i,j), serial);
+        if (serial.cols == 0)
+            serial = this->at(i,j).clone();
+        else
+            cv::hconcat(serial, this->at(i,j), serial);
     }
 }
 
 void GridMat::vserial(cv::Mat& serial)
 {
-    serial = this->at(0,0).clone();
-    for (int i = 0; i < crows(); i++) for (int j = 1; j < ccols(); j++)
+    //serial.create(0, this->at(0,0).cols, this->at(0,0).type());
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
-        cv::vconcat(serial, this->at(i,j), serial);
+        if (serial.rows == 0)
+            serial = this->at(i,j).clone();
+        else
+            cv::vconcat(serial, this->at(i,j), serial);
     }
 }
 

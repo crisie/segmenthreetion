@@ -35,18 +35,14 @@ public:
     
     SimpleFusionPrediction();
     
-    void setData(vector<ModalityGridData>& mgds);
-    
     void compute(vector<GridMat> allPredictions, vector<GridMat> allDistsToMargin, GridMat& fusedPredictions);
-    void compute(vector<GridMat> allDistsToMargin, GridMat& fusedPredictions);
+    void compute(vector<GridMat> allPredictions, vector<GridMat> allDistsToMargin, GridMat& fusedPredictions, GridMat& fusedDistsToMargin); // want back some kind of consensued dists to margin in the fusion prediction?
+    
+    void compute(vector<GridMat> allDistsToMargin, GridMat& fusedPredictions, GridMat& fusedDistsToMargin);
     
 private:
     
-    void compute(GridMat allDistsToMargin, GridMat& fusedPredictions);
-    
-    // Attributes
-    
-    vector<ModalityGridData> m_mgds;
+    void compute(GridMat allDistsToMargin, GridMat& fusedPredictions, GridMat& fusedDistsToMargin);
 };
 
 
@@ -69,11 +65,15 @@ public:
     
     ClassifierFusionPredictionBase();
     
-    void setData(vector<ModalityGridData>&, vector<GridMat> predictions, vector<GridMat> loglikelihoods, vector<GridMat> distsToMargin);
+    void setData(vector<GridMat> distsToMargin);
+    void setData(vector<GridMat> distsToMargin, vector<GridMat> predictions);
     void setResponses(cv::Mat responses);
     
-    void setModelSelection(int k, bool best);
-    void setModelValidation(int k, int seed);
+    void setModelSelection(bool flag);
+    void setModelSelectionParameters(int k, bool best);
+    void setValidationParameters(int k, int seed);
+    
+    void setStackedPrediction(bool flag);
     
 protected:
     
@@ -81,20 +81,22 @@ protected:
 
     // Attributes
     
-    vector<ModalityGridData> m_mgds;
     vector<GridMat> m_predictions;
-    vector<GridMat> m_loglikelihoods;
+//    vector<GridMat> m_loglikelihoods;
     vector<GridMat> m_distsToMargin;
     
     cv::Mat m_data; // input data
     cv::Mat m_responses; // output labels
     ClassifierT* m_pClassifier;
     
+    bool m_bModelSelection;
     int m_testK;
     int m_modelSelecK;
     bool m_selectBest;
     
     int m_seed;
+    
+    bool m_bStackPredictions;
 };
 
 // SVM template

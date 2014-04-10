@@ -373,7 +373,6 @@ void selectBestParameterCombination(vector<vector<T> > expandedParams, int hp, i
     
     GridMat gargmax;
     goodnesses.argmax(gargmax);
-    cout << gargmax << endl;
     
     for (int i = 0; i < hp; i++) for (int j = 0; j < wp; j++)
     {

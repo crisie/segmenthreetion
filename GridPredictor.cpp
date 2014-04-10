@@ -191,10 +191,9 @@ void GridPredictor<cv::EM>::predict(GridMat data, GridMat& predictions, GridMat&
         }
 
         // Standardized loglikelihoods
-        cv::Mat_<float> stdCellLoglikelihoods;
         cv::Scalar mean, stddev;
         cv::meanStdDev(cellLoglikelihoods, mean, stddev);
-        stdCellLoglikelihoods = (cellLoglikelihoods - mean.val[0]) / stddev.val[0];
+        cv::Mat_<float> stdCellLoglikelihoods = (cellLoglikelihoods - mean.val[0]) / stddev.val[0];
         
         // Predictions evaluation comparing the standardized loglikelihoods to a threshold,
         // loglikelihoods over threshold are considered subject (1)
