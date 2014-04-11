@@ -291,7 +291,8 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
         predictor.setNumOfMixtures(bestParams[0]);
         predictor.setLoglikelihoodThreshold(bestParams[1]);
         
-        predictor.setDimensionalityReduction(cv::Mat(m_hp, m_wp, cv::DataType<double>::type, cv::Scalar(m_variance)));
+        if (m_bDimReduction)
+            predictor.setDimensionalityReduction(cv::Mat(m_hp, m_wp, cv::DataType<double>::type, cv::Scalar(m_variance)));
 
         // Training phase
         

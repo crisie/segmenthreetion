@@ -50,9 +50,17 @@ template<typename T>
 void _variate(vector<vector<T > > list, int idx, vector<T> v, vector<vector<T > >& variations);
 
 template<typename T>
+void variate(vector<vector<T > > list, cv::Mat& variations);
+template<typename T>
+void _variate(vector<vector<T > > list, int idx, cv::Mat v, cv::Mat& variations);
+
+template<typename T>
 void expandParameters(vector<vector<T> > params, vector<vector<T> >& expandedParams);
 template<typename T>
 void expandParameters(vector<vector<T> > params, int ncells, vector<vector<T> >& expandedParams);
+
+template<typename T>
+void expandParameters(vector<vector<T> > params, cv::Mat& expandedParams);
 
 template<typename T>
 void selectParameterCombination(vector<vector<T> > expandedParams, int hp, int wp, int nparams,

@@ -13,10 +13,6 @@
 // -----------------------------------------------------------------------------
 template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setData(vector<GridMat> distsToMargin, vector<GridMat> predictions);
 
-template void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection<int>(cv::Mat data, cv::Mat responses, vector<vector<int> > params, cv::Mat& goodnesses);
-template void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection<float>(cv::Mat data, cv::Mat responses, vector<vector<float> > params, cv::Mat& goodnesses);
-template void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection<double>(cv::Mat data, cv::Mat responses, vector<vector<double> > params, cv::Mat& goodnesses);
-
 template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setResponses(cv::Mat);
 template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setModelSelection(bool flag);
 template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setModelSelectionParameters(int, bool);
@@ -314,7 +310,7 @@ void SimpleFusionPrediction<cv::EM>::compute(GridMat distsToMargin, GridMat& fus
 
 template<typename ClassifierT>
 ClassifierFusionPredictionBase<cv::EM, ClassifierT>::ClassifierFusionPredictionBase()
-: m_pClassifier(new ClassifierT), m_bModelSelection(true), m_bStackPredictions(false)
+: m_pClassifier(new ClassifierT), m_bModelSelection(true), m_bStackPredictions(false), m_narrowSearchSteps(7)
 {
     
 }
@@ -397,6 +393,7 @@ void ClassifierFusionPredictionBase<cv::EM,ClassifierT>::setStackedPrediction(bo
 //
 
 ClassifierFusionPrediction<cv::EM,CvSVM>::ClassifierFusionPrediction()
+: m_numItersSVM(5000)
 {
     
 }
@@ -421,12 +418,13 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(GridMat& gpredictions)
     formatData();
     
     // Prepare parameters' combinations
-    vector<vector<float> > params, expandedParameters;
+    vector<vector<float> > params;
     params.push_back(m_cs);
     if (m_kernelType == CvSVM::RBF)
         params.push_back(m_gammas);
     
     // create a list of parameters' variations
+    cv::Mat expandedParameters;
     expandParameters(params, expandedParameters);
     
     cv::Mat partitions;
@@ -436,21 +434,75 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(GridMat& gpredictions)
     {
         cout << "Model selection CVs [" << m_testK << "]: " << endl;
         
-        vector<cv::Mat> goodnesses(m_testK); // for instance: accuracies
+        cv::Mat goodnesses; // for instance: accuracies
         for (int k = 0; k < m_testK; k++)
         {
-            cout << k << " ";
+            cout << k << " " << endl;
             
             cv::Mat trData = cvx::indexMat(m_data, partitions != k);
             cv::Mat teData = cvx::indexMat(m_data, partitions == k);
             cv::Mat trResponses = cvx::indexMat(m_responses, partitions != k);
             cv::Mat teResponses = cvx::indexMat(m_responses, partitions == k);
             
-            modelSelection(trData, trResponses, expandedParameters, goodnesses[k]);
+            // Coarse search
+            modelSelection(trData, trResponses, expandedParameters, goodnesses);
             
-            std::stringstream ss;
-            ss << "svm_" << m_kernelType << (m_bStackPredictions ? "_s" : "") << "_goodnesses_" << k << ".yml";
-            cvx::save(ss.str(), goodnesses[k]);
+            std::stringstream coarsess;
+            coarsess << "svm_" << m_kernelType << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << ".yml";
+            cv::hconcat(expandedParameters, goodnesses, goodnesses);
+            cvx::save(coarsess.str(), goodnesses);
+            
+            // Find best parameters (using goodnesses) to train the final model
+            double minVal, maxVal;
+            cv::Point min, max;
+            cv::minMaxLoc(goodnesses.col(params.size()), &minVal, &maxVal, &min, &max);
+            
+            int idxC = max.y;
+            
+            int idxInfC = idxC;
+            int idxSupC = idxC;
+            if (idxC > 0) idxInfC = idxC - 1;
+            if (idxC < params[0].size() - 1) idxSupC = idxC + 1;
+            
+            int idxGamma, idxInfGamma, idxSupGamma;
+            if (m_kernelType == CvSVM::RBF)
+            {
+                idxC = max.y / params[1].size();
+            
+                if (idxC > 0) idxInfC = idxC - 1;
+                if (idxC < params[0].size() - 1) idxSupC = idxC + 1;
+            
+                idxGamma = max.y % params[0].size();
+            
+                idxInfGamma = idxGamma;
+                idxSupGamma = idxGamma;
+                if (idxGamma > 0) idxInfGamma = idxGamma - 1;
+                if (idxGamma < params[1].size() - 1) idxSupGamma = idxGamma + 1;
+            }
+            
+            vector<vector<float> > narrowParams;
+            vector<float> narrowCs, narrowGammas;
+            
+            int steps = (m_narrowSearchSteps % 2 == 0) ? m_narrowSearchSteps + 1 : m_narrowSearchSteps;
+            cvx::linspace(params[0][idxInfC], params[0][idxSupC], (idxInfC != idxC) && (idxSupC != idxC) ? steps : steps/2 + 1, narrowCs);
+            narrowParams.push_back(narrowCs);
+            
+            if (m_kernelType == CvSVM::RBF)
+            {
+                cvx::linspace(params[1][idxInfGamma], params[1][idxSupGamma], (idxGamma != idxInfGamma) && (idxGamma != idxSupGamma) ? steps : steps/2 + 1, narrowGammas);
+                narrowParams.push_back(narrowGammas);
+            }
+            
+            cv::Mat narrowExpandedParameters;
+            expandParameters(narrowParams, narrowExpandedParameters);
+
+            // Narrow search
+            modelSelection(trData, trResponses, narrowExpandedParameters, goodnesses);
+            
+            std::stringstream narrowss;
+            narrowss << "svm_" << m_kernelType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << ".yml";
+            cv::hconcat(narrowExpandedParameters, goodnesses, goodnesses);
+            cvx::save(narrowss.str(), goodnesses);
         }
         cout << endl;
     }
@@ -474,22 +526,22 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(GridMat& gpredictions)
         
         cv::Mat goodnesses;
         std::stringstream ss;
-        ss << "svm_" << m_kernelType << (m_bStackPredictions ? "_s" : "") << "_goodnesses_" << k << ".yml";
+        ss << "svm_" << m_kernelType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << ".yml";
         cvx::load(ss.str(), goodnesses);
         
         // Find best parameters (using goodnesses) to train the final model
         double minVal, maxVal;
         cv::Point min, max;
-        cv::minMaxLoc(goodnesses, &minVal, &maxVal, &min, &max);
+        cv::minMaxLoc(goodnesses.col(params.size()), &minVal, &maxVal, &min, &max);
         
         // Training phase
-        vector<float> bestParams = expandedParameters[max.x];
-        float bestC = bestParams[0];
-        float bestGamma = bestParams[1];
+        cv::Mat bestParams = goodnesses.row(max.y);
+        float bestC = bestParams.at<float>(0,0);
+        float bestGamma = bestParams.at<float>(0,1);
         
-        CvSVMParams params (CvSVM::C_SVC, m_kernelType, 0, bestGamma, 0, bestC, 0, 0, 0,
-                            cvTermCriteria( CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 1000, FLT_EPSILON ));
-        m_pClassifier->train(validTrData, validTrResponses, cv::Mat(), cv::Mat(), params);
+        CvSVMParams svmParams (CvSVM::C_SVC, m_kernelType, 0, bestGamma, 0, bestC, 0, 0, 0,
+                            cvTermCriteria( CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, m_numItersSVM, FLT_EPSILON ));
+        m_pClassifier->train(validTrData, validTrResponses, cv::Mat(), cv::Mat(), svmParams);
         
         // Prediction phase
         cv::Mat tePredictions;
@@ -502,14 +554,15 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(GridMat& gpredictions)
     gpredictions.setTo(predictions);
 }
 
-template<typename T>
-void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection(cv::Mat data, cv::Mat responses, vector<vector<T> > expandedParams, cv::Mat &goodnesses)
+void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection(cv::Mat data, cv::Mat responses, cv::Mat expandedParams, cv::Mat& goodnesses)
 {
+    goodnesses.release();
+    
     // Partitionate the data in folds
     cv::Mat partitions;
     cvpartition(responses, m_modelSelecK, m_seed, partitions);
     
-    cv::Mat accuracies (expandedParams.size(), 0, cv::DataType<float>::type);;
+    cv::Mat accuracies (expandedParams.rows, 0, cv::DataType<float>::type);
     
     cout << "(";
     for (int k = 0; k < m_modelSelecK; k++)
@@ -526,25 +579,28 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection(cv::Mat data, cv::
         cv::Mat trSbjObjData = cvx::indexMat(trData, trResponses >= 0); // ignore unknown category (class -1) in training
         cv::Mat trSbjObjResponses = cvx::indexMat(trResponses, trResponses >= 0);
         
-        cv::Mat foldAccs (expandedParams.size(), 1, cv::DataType<float>::type); // results
+        cv::Mat foldAccs (expandedParams.rows, 1, cv::DataType<float>::type); // results
         
-        for (int m = 0; m < expandedParams.size(); m++)
+        for (int m = 0; m < expandedParams.rows; m++)
         {
             // Training phase
-            vector<T> selectedParams = expandedParams[m];
-            T C = selectedParams[0];
-            T gamma;
-            m_kernelType == CvSVM::RBF ? gamma = selectedParams[1] : gamma = 0; // indeed, gamma not used if not RBF kernel
+            cv::Mat selectedParams = expandedParams.row(m);
             
+            float C = selectedParams.at<float>(0,0);
+            
+            float gamma = 0;
+            if (m_kernelType == CvSVM::RBF)
+                gamma = selectedParams.at<float>(0,1); // indeed, gamma not used if not RBF kernel
+                
             CvSVMParams params (CvSVM::C_SVC, m_kernelType, 0, gamma, 0, C, 0, 0, 0,
-                                cvTermCriteria( CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 1000, FLT_EPSILON ));
+                                cvTermCriteria( CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, m_numItersSVM, FLT_EPSILON ));
             
             m_pClassifier->train(trSbjObjData, trSbjObjResponses, cv::Mat(), cv::Mat(), params);
             
             // Test phase
             cv::Mat valPredictions;
             m_pClassifier->predict(valData, valPredictions);
-            
+        
             // Compute an accuracy measure
             foldAccs.at<float>(m,0) = accuracy(valResponses, valPredictions);
         }

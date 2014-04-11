@@ -97,6 +97,8 @@ protected:
     int m_seed;
     
     bool m_bStackPredictions;
+    
+    int  m_narrowSearchSteps;
 };
 
 // SVM template
@@ -119,8 +121,7 @@ public:
     void setCs(vector<float> cs);
     void setGammas(vector<float> gammas);
     
-    template<typename T>
-    void modelSelection(cv::Mat data, cv::Mat responses, vector<vector<T> > params, cv::Mat& goodnesses);
+    void modelSelection(cv::Mat data, cv::Mat responses, cv::Mat params, cv::Mat& goodnesses);
     
     void compute(GridMat& gpredictions);
 
@@ -131,6 +132,9 @@ private:
     int m_kernelType; // CvSVM::LINEAR or CvSVM::RBF
     vector<float> m_cs;
     vector<float> m_gammas;
+
+    int m_numItersSVM;
+
 };
 
 #endif /* defined(__segmenthreetion__FusionPrediction__) */

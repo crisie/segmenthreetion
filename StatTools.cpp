@@ -8,6 +8,8 @@
 
 #include "StatTools.h"
 
+#include <opencv2/opencv.hpp>
+
 #include <math.h>
 
 // Instantiation of template member functions
@@ -19,6 +21,10 @@ template void variate<double>(vector<vector<double > > list, vector<vector<doubl
 template void expandParameters<int>(vector<vector<int> > params, vector<vector<int> >& expandedParams);
 template void expandParameters<float>(vector<vector<float> > params, vector<vector<float> >& expandedParams);
 template void expandParameters<double>(vector<vector<double> > params, vector<vector<double> >& expandedParams);
+
+template void expandParameters<int>(vector<vector<int> > params, cv::Mat& expandedParams);
+template void expandParameters<float>(vector<vector<float> > params, cv::Mat& expandedParams);
+template void expandParameters<double>(vector<vector<double> > params, cv::Mat& expandedParams);
 
 template void expandParameters<int>(vector<vector<int> > params, int ncells, vector<vector<int> >& expandedParams);
 template void expandParameters<float>(vector<vector<float> > params, int ncells, vector<vector<float> >& expandedParams);
@@ -250,9 +256,46 @@ void _variate(vector<vector<T > > list, int idx, vector<T> v, vector<vector<T > 
     
 }
 
+template<typename T>
+void variate(vector<vector<T > > list, cv::Mat& variations)
+{
+    cv::Mat v(1, list.size(), cv::DataType<T>::type);
+    variations.create(0, list.size(), cv::DataType<T>::type);
+    _variate(list, 0, v, variations);
+}
+
+template<typename T>
+void _variate(vector<vector<T > > list, int idx, cv::Mat v, cv::Mat& variations)
+{
+    if (idx == list.size())
+    {
+        return;
+    }
+    else
+    {
+        for (int i = 0; i < list[idx].size(); i++)
+        {
+            v.at<T>(0,idx) = list[idx][i];
+            _variate(list, idx+1, v, variations);
+            if (idx == list.size() - 1)
+            {
+                variations.push_back(v);
+            }
+        }
+    }
+    
+}
+
+
 
 template<typename T>
 void expandParameters(vector<vector<T> > params, vector<vector<T> >& expandedParams)
+{
+    variate(params, expandedParams);
+}
+
+template<typename T>
+void expandParameters(vector<vector<T> > params, cv::Mat& expandedParams)
 {
     variate(params, expandedParams);
 }
