@@ -17,7 +17,7 @@
 
 template<typename PredictorT>
 ModalityPredictionBase<PredictorT>::ModalityPredictionBase()
-: m_bModelSelection(true), m_bDimReduction(false)
+: m_bModelSelection(true), m_bDimReduction(false), m_narrowSearchSteps(15)
 {
 }
 
@@ -71,7 +71,6 @@ void ModalityPredictionBase<PredictorT>::computeGridPredictionsConsensus(Modalit
         int neg = 0;
         float accPosDists = 0;
         float accNegDists = 0;
-        cv::Mat m (1,4,cv::DataType<int>::type);
         for (int i = 0; i < data.getHp(); i++) for (int j = 0; j < data.getWp(); j++)
         {
             if (predictions.at<int>(i,j,k,0) == 0)
@@ -84,24 +83,12 @@ void ModalityPredictionBase<PredictorT>::computeGridPredictionsConsensus(Modalit
                 pos++;
                 accPosDists += distsToMargin.at<float>(i,j,k,0);
             }
-            
-//            m.at<int>(0,i * data.getWp() + j) = (predictions.at<int>(i,j,k,0) == 0);
         }
         
         if (pos > neg)
-        {
             consensus.at<int>(k,0) = 1;
-//            cout << 1 << " ";
-        }
         else if (pos == neg)
-        {
             consensus.at<int>(k,0) = (accPosDists > abs(accNegDists));
-//            cout << (accPosDists > abs(accNegDists)) << " ";
-        }
-//        else
-//            cout << 0 << " ";
-        
-//        cout << m << endl;
     }
     
     consensusPredictions.setTo(consensus);
@@ -544,7 +531,7 @@ void ModalityPrediction<cv::Mat>::setScoreThresholds(vector<float> t)
     m_scores = t;
 }
 
-void ModalityPrediction<cv::Mat>::compute(GridMat& individualPredictions, GridMat& gscores, GridMat& distsToMargin)
+void ModalityPrediction<cv::Mat>::compute(GridMat& individualPredictions, GridMat& gscores, GridMat& distsToMargin, GridMat& accuracies)
 {
     cv::Mat tags = m_data.getTagsMat();
     
@@ -562,12 +549,14 @@ void ModalityPrediction<cv::Mat>::compute(GridMat& individualPredictions, GridMa
     GridMat gpartitions (partitions);
     
     // create a list of parameters' variations
-    vector<vector<float> > params, gridExpandedParameters;
+    vector<vector<float> > params;
     vector<float> ratios (m_ratios.begin(), m_ratios.end());
     vector<float> scoreThresholds (m_scores.begin(), m_scores.end());
     params.push_back(ratios);
     params.push_back(scoreThresholds);
-    expandParameters(params, gridExpandedParameters);
+    
+    cv::Mat coarseExpandedParameters;
+    expandParameters(params, coarseExpandedParameters);
     
     if (m_bModelSelection)
     {
@@ -577,7 +566,9 @@ void ModalityPrediction<cv::Mat>::compute(GridMat& individualPredictions, GridMa
         {
             cout << k << " ";
             
-            GridMat goodnesses (m_hp, m_wp);
+            GridMat coarseGoodnesses (m_hp, m_wp);
+            GridMat narrowGoodnesses (m_hp, m_wp);
+            
             for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
             {
                 cv::Mat validnessesTr = cvx::indexMat(gvalidnesses.at(i,j), partitions != k);
@@ -587,16 +578,33 @@ void ModalityPrediction<cv::Mat>::compute(GridMat& individualPredictions, GridMa
                 cv::Mat validIndicesTr = cvx::indexMat(indicesTr, validnessesTr);
                 cv::Mat validTagsTr = cvx::indexMat(tagsTr, validnessesTr);
 
-                cv::Mat goodness;
-                modelSelection(validIndicesTr, validTagsTr, i, j,
-                               gridExpandedParameters, goodness);
+                // Coarse search
+                cv::Mat coarseCellGoodnesses;
+                modelSelection<float>(validIndicesTr, validTagsTr, i, j,
+                                      coarseExpandedParameters, coarseCellGoodnesses);
                 
-                goodnesses.assign(goodness, i, j);
+                // Narrow search
+                cv::Mat narrowExpandedParameters;
+                narrow<float>(coarseExpandedParameters, coarseCellGoodnesses, m_narrowSearchSteps, narrowExpandedParameters);
+                
+                cv::Mat narrowCellGoodnesses;
+                modelSelection<float>(validIndicesTr, validTagsTr, i, j,
+                                      narrowExpandedParameters, narrowCellGoodnesses);
+                
+                cv::hconcat(coarseExpandedParameters, coarseCellGoodnesses, coarseCellGoodnesses);
+                cv::hconcat(narrowExpandedParameters, narrowCellGoodnesses, narrowCellGoodnesses);
+                
+                coarseGoodnesses.assign(coarseCellGoodnesses, i, j);
+                narrowGoodnesses.assign(narrowCellGoodnesses, i, j);
             }
             
-            std::stringstream ss;
-            ss << m_data.getModality() << "_models_goodnesses_" << k << ".yml";
-            goodnesses.save(ss.str());
+            std::stringstream coarsess;
+            coarsess << m_data.getModality() << "_models_coarse-goodnesses_" << k << ".yml";
+            coarseGoodnesses.save(coarsess.str());
+            
+            std::stringstream narrowss;
+            narrowss << m_data.getModality() << "_models_narrow-goodnesses_" << k << ".yml";
+            narrowGoodnesses.save(narrowss.str());
         }
         cout << endl;
     }
@@ -607,6 +615,9 @@ void ModalityPrediction<cv::Mat>::compute(GridMat& individualPredictions, GridMa
     gscores.setTo(negInfinities);
     distsToMargin.setTo(cv::Mat::zeros(tags.rows, tags.cols, cv::DataType<float>::type));
     
+    accuracies.create(m_hp, m_wp);
+    accuracies.setTo(cv::Mat(m_testK,1,cv::DataType<float>::type));
+    
     for (int k = 0; k < m_testK; k++)
     {
         cout << k << " ";
@@ -615,25 +626,37 @@ void ModalityPrediction<cv::Mat>::compute(GridMat& individualPredictions, GridMa
         cv::Mat indicesTeFold = cvx::indexMat(cvx::linspace(0, tags.rows), partitions == k);
 //        GridMat validnessesTeFold (gvalidnesses, gpartitions, k);
 //        GridMat tagsTeFold (gtags, gpartitions, k);
+        cv::Mat tagsTeFold = cvx::indexMat(tags, partitions == k);
         
         // Model selection information is kept on disk, reload it
         GridMat goodnesses;
         std::stringstream ss;
-        ss << m_data.getModality() << "_models_goodnesses_" << k << ".yml";
+        ss << m_data.getModality() << "_models_narrow-goodnesses_" << k << ".yml";
         goodnesses.load(ss.str());
         
         // Train with the best parameter combination in average in a model
         // selection procedure within the training partition
         vector<cv::Mat> bestParams;
-        selectBestParameterCombination(gridExpandedParameters, m_hp, m_wp, params.size(), goodnesses, bestParams);
+        selectBestParameterCombination<float>(goodnesses, bestParams);
+        
+//        // DEBUG
+//        for (int i = 0; i < goodnesses.at(0,0).rows; i++)
+//        {
+//            cout << goodnesses.at(0,0).row(i) << endl;
+//        }
+//        cout << bestParams[0].at<float>(0,0) << " " << bestParams[1].at<float>(0,0) << endl;
+        
         
         // Predict phase
+        
+        
         
         for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
         {
             cv::Mat validnessesTe = cvx::indexMat(gvalidnesses.at(i,j), partitions == k);
             
             cv::Mat validIndicesTe = cvx::indexMat(indicesTeFold, validnessesTe);
+            cv::Mat validTagsTe = cvx::indexMat(tagsTeFold, validnessesTe);
         
             cv::Mat validPredictions (validIndicesTe.rows, 1, cv::DataType<int>::type);
             cv::Mat validScores      (validIndicesTe.rows, 1, cv::DataType<float>::type);
@@ -642,9 +665,9 @@ void ModalityPrediction<cv::Mat>::compute(GridMat& individualPredictions, GridMa
             float ratio = bestParams[0].at<float>(i,j);
             float score = bestParams[1].at<float>(i,j);
             
-            for (int k = 0; k < validIndicesTe.rows; k++)
+            for (int d = 0; d < validIndicesTe.rows; d++)
             {
-                int idx = validIndicesTe.at<int>(k,0);
+                int idx = validIndicesTe.at<int>(d,0);
                 
                 cv::Mat_<float> cell = m_data.getGridFrame(idx).at(i,j);
                 cv::Mat cellMask = m_data.getGridMask(idx).at(i,j);
@@ -653,9 +676,9 @@ void ModalityPrediction<cv::Mat>::compute(GridMat& individualPredictions, GridMa
                 cv::threshold(cell, aux, score, 1, cv::THRESH_BINARY);
                 CvScalar mean = cv::mean(aux, cellMask);
                 
-                validPredictions.at<int>(k,0) = (mean.val[0] > ratio);
-                validScores.at<float>(k,0) = (mean.val[0]);
-                validDistances.at<float>(k,0) = score - mean.val[0];
+                validPredictions.at<int>(d,0) = (mean.val[0] > ratio);
+                validScores.at<float>(d,0) = (mean.val[0]);
+                validDistances.at<float>(d,0) = score - mean.val[0];
             }
             
             cv::Scalar mean, stddev;
@@ -665,6 +688,10 @@ void ModalityPrediction<cv::Mat>::compute(GridMat& individualPredictions, GridMa
             cv::Mat predictions, distances;
             cv::Mat scores (indicesTeFold.rows, 1, cv::DataType<float>::type);
             scores.setTo(cv::mean(validScores).val[0]); // valids' mean
+            
+            cout << validTagsTe << endl;
+            cout << validPredictions << endl;
+            accuracies.at<float>(i,j,k,0) = accuracy(validTagsTe, validPredictions);
             
             cvx::setMat(validPredictions, predictions, validnessesTe); // not indexed by validnessesTe take 0
             cvx::setMat(validScores, scores, validnessesTe); // not indexed by validnessesTe take valids' mean
@@ -684,18 +711,19 @@ void ModalityPrediction<cv::Mat>::compute(GridMat& individualPredictions, GridMa
 template<typename T>
 void ModalityPrediction<cv::Mat>::modelSelection(cv::Mat indices, cv::Mat tags,
                                                  unsigned int i, unsigned int j,
-                                                 vector<vector<T> > gridExpandedParams,
+                                                 cv::Mat expandedParams,
                                                  cv::Mat& goodness)
 {
     cv::Mat indsSubjObj  = cvx::indexMat(indices, tags >= 0);
     cv::Mat tagsSubjObj = cvx::indexMat(tags, tags >= 0);
 
-    goodness.create(gridExpandedParams.size(), 1, cv::DataType<float>::type); // results
+    goodness.release();
+    goodness.create(expandedParams.rows, 1, cv::DataType<float>::type); // results
 
-    for (int m = 0; m < gridExpandedParams.size(); m++)
+    for (int m = 0; m < expandedParams.rows; m++)
     {
-        float ratio = gridExpandedParams[m][0];
-        float score = gridExpandedParams[m][1];
+        float ratio = expandedParams.at<T>(m,0);
+        float score = expandedParams.at<T>(m,1);
         
         cv::Mat predictions (tagsSubjObj.rows, 1, cv::DataType<int>::type);
         predictions.setTo(0);
@@ -738,7 +766,16 @@ template void ModalityPrediction<cv::EM>::modelSelection<int>(GridMat descriptor
 template void ModalityPrediction<cv::EM>::modelSelection<float>(GridMat descriptors, GridMat tags, vector<vector<float> > params, GridMat& goodness);
 template void ModalityPrediction<cv::EM>::modelSelection<double>(GridMat descriptors, GridMat tags, vector<vector<double> > params, GridMat& goodness);
 
-//template void ModalityPrediction<cv::Mat>::modelSelection<int>(GridMat grids, cv::Mat tags, vector<vector<int> > params, cv::Mat& goodness);
-//template void ModalityPrediction<cv::Mat>::modelSelection<float>(GridMat grids, cv::Mat tags, vector<vector<float> > params, cv::Mat& goodness);
-//template void ModalityPrediction<cv::Mat>::modelSelection<double>(GridMat grids, cv::Mat tags, vector<vector<double> > params, cv::Mat& goodness);
+template void ModalityPrediction<cv::Mat>::modelSelection<int>(cv::Mat indices, cv::Mat tags,
+                                                               unsigned int i, unsigned int j,
+                                                               cv::Mat expandedParams,
+                                                               cv::Mat& goodness);
+template void ModalityPrediction<cv::Mat>::modelSelection<float>(cv::Mat indices, cv::Mat tags,
+                                                                 unsigned int i, unsigned int j,
+                                                                 cv::Mat expandedParams,
+                                                                 cv::Mat& goodness);
+template void ModalityPrediction<cv::Mat>::modelSelection<double>(cv::Mat indices, cv::Mat tags,
+                                                                  unsigned int i, unsigned int j,
+                                                                  cv::Mat expandedParams,
+                                                                  cv::Mat& goodness);
 // -----------------------------------------------------------------------------

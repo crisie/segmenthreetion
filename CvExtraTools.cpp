@@ -226,7 +226,7 @@ cv::Mat cvx::linspace(int start, int end)
     return l;
 }
 
-cv::Mat cvx::linspace(float start, float end, int n)
+cv::Mat cvx::linspace(double start, double end, int n)
 {
     cv::Mat l;
     
@@ -244,13 +244,13 @@ void cvx::linspace(int start, int end, cv::Mat& mat)
     memcpy(mat.data, v.data(), sizeof(int) * v.size());
 }
 
-void cvx::linspace(float start, float end, int n, cv::Mat& mat)
+void cvx::linspace(double start, double end, int n, cv::Mat& mat)
 {
-    std::vector<float> v;
+    std::vector<double> v;
     cvx::linspace(start, end, n, v);
 
-    mat.create(v.size(), 1, cv::DataType<float>::type);
-    memcpy(mat.data, v.data(), sizeof(float) * v.size());
+    mat.create(v.size(), 1, cv::DataType<double>::type);
+    memcpy(mat.data, v.data(), sizeof(double) * v.size());
 }
 
 void cvx::linspace(int start, int end, std::vector<int>& v)
@@ -261,7 +261,7 @@ void cvx::linspace(int start, int end, std::vector<int>& v)
     }
 }
 
-void cvx::linspace(float start, float end, int n, std::vector<float>& v)
+void cvx::linspace(double start, double end, int n, std::vector<double>& v)
 {
     for (int i = 0; i < n; i++)
     {

@@ -97,7 +97,12 @@ void GridMapWriter::write(ModalityGridData& mgd, GridMat& gvalues, string output
             string frameFilePath = mgd.getFramePath(idx0);
             cv::Point2d res = mgd.getFrameResolution(idx0);
             
-            cv::Mat mask = cv::imread(frameFilePath + "Masks/" + mgd.getModality() + "/" + frameFilename + ".png",
+            string modality = mgd.getModality();
+            if (modality.compare("Motion") == 0 || modality.compare("Ramanan") == 0)
+            {
+                modality = "Color";
+            }
+            cv::Mat mask = cv::imread(frameFilePath + "Masks/" + modality + "/" + frameFilename + ".png",
                                       CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
             
             cv::Mat map (res.y, res.x, cv::DataType<T>::type);

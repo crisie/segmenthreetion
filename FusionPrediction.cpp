@@ -393,7 +393,7 @@ void ClassifierFusionPredictionBase<cv::EM,ClassifierT>::setStackedPrediction(bo
 //
 
 ClassifierFusionPrediction<cv::EM,CvSVM>::ClassifierFusionPrediction()
-: m_numItersSVM(5000)
+: m_numItersSVM(10000)
 {
     
 }
@@ -424,8 +424,8 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(GridMat& gpredictions)
         params.push_back(m_gammas);
     
     // create a list of parameters' variations
-    cv::Mat expandedParameters;
-    expandParameters(params, expandedParameters);
+    cv::Mat coarseExpandedParameters;
+    expandParameters(params, coarseExpandedParameters);
     
     cv::Mat partitions;
     cvpartition(m_responses, m_testK, m_seed, partitions);
@@ -434,7 +434,6 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(GridMat& gpredictions)
     {
         cout << "Model selection CVs [" << m_testK << "]: " << endl;
         
-        cv::Mat goodnesses; // for instance: accuracies
         for (int k = 0; k < m_testK; k++)
         {
             cout << k << " " << endl;
@@ -445,64 +444,25 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(GridMat& gpredictions)
             cv::Mat teResponses = cvx::indexMat(m_responses, partitions == k);
             
             // Coarse search
-            modelSelection(trData, trResponses, expandedParameters, goodnesses);
+            cv::Mat coarseGoodnesses; // for instance: accuracies
+            modelSelection(trData, trResponses, coarseExpandedParameters, coarseGoodnesses);
+            
+            // Narrow search
+            cv::Mat narrowExpandedParameters;
+            narrow<float>(coarseExpandedParameters, coarseGoodnesses, m_narrowSearchSteps, narrowExpandedParameters);
+            
+            cv::Mat narrowGoodnesses;
+            modelSelection(trData, trResponses, narrowExpandedParameters, narrowGoodnesses);
             
             std::stringstream coarsess;
-            coarsess << "svm_" << m_kernelType << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << ".yml";
-            cv::hconcat(expandedParameters, goodnesses, goodnesses);
-            cvx::save(coarsess.str(), goodnesses);
-            
-            // Find best parameters (using goodnesses) to train the final model
-            double minVal, maxVal;
-            cv::Point min, max;
-            cv::minMaxLoc(goodnesses.col(params.size()), &minVal, &maxVal, &min, &max);
-            
-            int idxC = max.y;
-            
-            int idxInfC = idxC;
-            int idxSupC = idxC;
-            if (idxC > 0) idxInfC = idxC - 1;
-            if (idxC < params[0].size() - 1) idxSupC = idxC + 1;
-            
-            int idxGamma, idxInfGamma, idxSupGamma;
-            if (m_kernelType == CvSVM::RBF)
-            {
-                idxC = max.y / params[1].size();
-            
-                if (idxC > 0) idxInfC = idxC - 1;
-                if (idxC < params[0].size() - 1) idxSupC = idxC + 1;
-            
-                idxGamma = max.y % params[0].size();
-            
-                idxInfGamma = idxGamma;
-                idxSupGamma = idxGamma;
-                if (idxGamma > 0) idxInfGamma = idxGamma - 1;
-                if (idxGamma < params[1].size() - 1) idxSupGamma = idxGamma + 1;
-            }
-            
-            vector<vector<float> > narrowParams;
-            vector<float> narrowCs, narrowGammas;
-            
-            int steps = (m_narrowSearchSteps % 2 == 0) ? m_narrowSearchSteps + 1 : m_narrowSearchSteps;
-            cvx::linspace(params[0][idxInfC], params[0][idxSupC], (idxInfC != idxC) && (idxSupC != idxC) ? steps : steps/2 + 1, narrowCs);
-            narrowParams.push_back(narrowCs);
-            
-            if (m_kernelType == CvSVM::RBF)
-            {
-                cvx::linspace(params[1][idxInfGamma], params[1][idxSupGamma], (idxGamma != idxInfGamma) && (idxGamma != idxSupGamma) ? steps : steps/2 + 1, narrowGammas);
-                narrowParams.push_back(narrowGammas);
-            }
-            
-            cv::Mat narrowExpandedParameters;
-            expandParameters(narrowParams, narrowExpandedParameters);
-
-            // Narrow search
-            modelSelection(trData, trResponses, narrowExpandedParameters, goodnesses);
+            coarsess << "svm_" << m_distsToMargin.size() << "_" << m_kernelType << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << ".yml";
+            cv::hconcat(coarseExpandedParameters, coarseGoodnesses, coarseGoodnesses);
+            cvx::save(coarsess.str(), coarseGoodnesses);
             
             std::stringstream narrowss;
-            narrowss << "svm_" << m_kernelType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << ".yml";
-            cv::hconcat(narrowExpandedParameters, goodnesses, goodnesses);
-            cvx::save(narrowss.str(), goodnesses);
+            narrowss << "svm_" << m_distsToMargin.size() << "_" << m_kernelType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << ".yml";
+            cv::hconcat(narrowExpandedParameters, narrowGoodnesses, narrowGoodnesses);
+            cvx::save(narrowss.str(), narrowGoodnesses);
         }
         cout << endl;
     }
@@ -526,18 +486,17 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(GridMat& gpredictions)
         
         cv::Mat goodnesses;
         std::stringstream ss;
-        ss << "svm_" << m_kernelType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << ".yml";
+        ss << "svm_" << m_distsToMargin.size() << "_" << m_kernelType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << ".yml";
         cvx::load(ss.str(), goodnesses);
         
         // Find best parameters (using goodnesses) to train the final model
         double minVal, maxVal;
-        cv::Point min, max;
-        cv::minMaxLoc(goodnesses.col(params.size()), &minVal, &maxVal, &min, &max);
+        cv::Point worst, best;
+        cv::minMaxLoc(goodnesses.col(goodnesses.cols - 1), &minVal, &maxVal, &worst, &best);
         
         // Training phase
-        cv::Mat bestParams = goodnesses.row(max.y);
-        float bestC = bestParams.at<float>(0,0);
-        float bestGamma = bestParams.at<float>(0,1);
+        float bestC     = goodnesses.row(best.y).at<float>(0,0);
+        float bestGamma = goodnesses.row(best.y).at<float>(0,1);
         
         CvSVMParams svmParams (CvSVM::C_SVC, m_kernelType, 0, bestGamma, 0, bestC, 0, 0, 0,
                             cvTermCriteria( CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, m_numItersSVM, FLT_EPSILON ));

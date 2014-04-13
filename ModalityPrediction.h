@@ -58,6 +58,8 @@ protected:
     
     bool m_bDimReduction;
     float m_variance;
+    
+    int m_narrowSearchSteps;
 };
 
 
@@ -112,10 +114,10 @@ public:
     template<typename T>
     void modelSelection(cv::Mat gridsIndices, cv::Mat tags,
                         unsigned int i, unsigned int j,
-                        vector<vector<T> > params,
+                        cv::Mat params,
                         cv::Mat& goodness);
     
-    void compute(GridMat& predictions, GridMat& scores, GridMat& distsToMargin); // this
+    void compute(GridMat& predictions, GridMat& scores, GridMat& distsToMargin, GridMat& accuracies); // this
     
 private:
     

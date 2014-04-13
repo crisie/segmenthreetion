@@ -45,9 +45,9 @@ namespace cvx
     
     void cumsum(cv::Mat src, cv::Mat& dst);
     
-    void linspace(float start, float end, int n, cv::Mat& m);
-    void linspace(float start, float end, int n, std::vector<float>& v);
-    cv::Mat linspace(float start, float end, int n);
+    void linspace(double start, double end, int n, cv::Mat& m);
+    void linspace(double start, double end, int n, std::vector<double>& v);
+    cv::Mat linspace(double start, double end, int n);
     
     void linspace(int start, int end, cv::Mat& m);
     void linspace(int start, int end, std::vector<int>& v);

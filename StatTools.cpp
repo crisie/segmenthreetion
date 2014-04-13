@@ -7,6 +7,7 @@
 //
 
 #include "StatTools.h"
+#include "CvExtraTools.h"
 
 #include <opencv2/opencv.hpp>
 
@@ -37,6 +38,13 @@ template void selectParameterCombination<double>(vector<vector<double> > expande
 template void selectBestParameterCombination<int>(vector<vector<int> > expandedParams, int hp, int wp, int nparams, GridMat goodnesses, vector<cv::Mat>& selectedParams);
 template void selectBestParameterCombination<float>(vector<vector<float> > expandedParams, int hp, int wp, int nparams, GridMat goodnesses, vector<cv::Mat>& selectedParams);
 template void selectBestParameterCombination<double>(vector<vector<double> > expandedParams, int hp, int wp, int nparams, GridMat goodnesses, vector<cv::Mat>& selectedParams);
+template void selectBestParameterCombination<double>(vector<vector<double> > expandedParams, int hp, int wp, int nparams, GridMat goodnesses, vector<cv::Mat>& selectedParams);
+
+template void selectBestParameterCombination<float>(GridMat expandedParams, vector<cv::Mat>& selectedParams);
+template void selectBestParameterCombination<double>(GridMat expandedParams, vector<cv::Mat>& selectedParams);
+
+template void narrow<float>(cv::Mat coarse, cv::Mat goodnesses, int steps, cv::Mat& narrow);
+template void narrow<double>(cv::Mat coarse, cv::Mat goodnesses, int steps, cv::Mat& narrow);
 
 // -----------------------------------------------------------------------------
 
@@ -434,6 +442,51 @@ void selectBestParameterCombination(vector<vector<T> > expandedParams, int hp, i
     //        cout << selectedParams[k] << endl;
 }
 
+template<typename T>
+void selectBestParameterCombination(GridMat parameters, vector<cv::Mat>& selectedParams)
+{
+    int numOfParameters = parameters.at(0,0).cols - 1;
+    
+    selectedParams.clear();
+    for (int i = 0; i < numOfParameters; i++)
+        selectedParams.push_back(cv::Mat(parameters.crows(), parameters.ccols(), cv::DataType<T>::type));
+
+    // Find best parameters (using goodnesses)
+    double minVal, maxVal;
+    cv::Point worst, best;
+    
+    for (int i = 0; i < parameters.crows(); i++) for (int j = 0; j < parameters.ccols(); j++)
+    {
+        cv::minMaxLoc(parameters.at(i,j).col(parameters.at(i,j).cols - 1), &minVal, &maxVal, &worst, &best);
+
+        for (int p = 0; p < numOfParameters; p++)
+            selectedParams[p].at<T>(i,j) = parameters.at(i,j).row(best.y).at<T>(0,p);
+    }
+}
+
+//template<typename T>
+//void selectBestParameterCombination(GridMat goodnesses, vector<cv::Mat>& selectedParams)
+//{
+//    selectedParams.clear();
+//    
+//    for (int k = 0; k < goodnesses.at(0,0).cols - 1; k++)
+//        selectedParams.push_back(cv::Mat(goodnesses.crows(), goodnesses.ccols(), cv::DataType<T>::type));
+//    
+//    for (int i = 0; i < goodnesses.crows(); i++) for (int j = 0; j < goodnesses.ccols(); j++)
+//    {
+//        double minVal, maxVal;
+//        cv::Point min, max;
+//        cv::minMaxLoc(goodnesses.at(i,j).col(goodnesses.at(i,j).cols - 1),
+//                      &minVal, &maxVal, &min, &max);
+//        
+//        cv::Mat rowParams = goodnesses.at(i,j).row(max.y);
+//        for (int k = 0; k < rowParams.cols - 1; k++)
+//        {
+//            selectedParams[k].at<T>(i,j) = rowParams.at<T>(0,k);
+//        }
+//    }
+//}
+
 
 float accuracy(cv::Mat actuals, cv::Mat predictions)
 {
@@ -502,4 +555,53 @@ float accuracy(cv::Mat actuals, GridMat predictions)
     gactuals.setTo(actuals);
     
     return accuracy(gactuals, predictions);
+}
+
+template<typename T>
+void narrow(cv::Mat coarse, cv::Mat goodnesses, int steps, cv::Mat& narrow)
+{
+    vector<vector<T> > parameters;
+    for (int p = 0; p < coarse.cols; p++)
+    {
+        cv::Mat row = coarse.col(p).t();
+        std::set<T> set (row.ptr<T>(0), row.ptr<T>(0) + row.cols);
+        std::vector<T> parameter (set.begin(), set.end());
+        parameters.push_back(parameter);
+    }
+    
+    // Find best parameters (using goodnesses)
+    double minVal, maxVal;
+    cv::Point worst, best;
+    cv::minMaxLoc(goodnesses, &minVal, &maxVal, &worst, &best);
+    
+    // From linear index to point in the space of combinations
+    int linIdxBest = best.y; // linear idx
+    cv::Mat point (1, coarse.cols, cv::DataType<int>::type);
+    
+    float divisor = 1;
+    for (int p = coarse.cols - 1; p >= 0; p--)
+    {
+        point.at<int>(0,p) = int(floorf(linIdxBest/divisor)) % parameters[p].size();
+        divisor *= parameters[p].size();
+    }
+    
+    vector<vector<T> > nwparameters;
+    for (int i = 0; i < parameters.size(); i++)
+    {
+        int coord = point.at<int>(0,i);
+        
+        std::vector<double> aux;
+        
+        if (coord == 0)
+            cvx::linspace((double) parameters[i][coord], (double) parameters[i][coord+1], steps/2 + 1, aux);
+        else if (coord == parameters[i].size() - 1)
+            cvx::linspace((double) parameters[i][coord-1], (double) parameters[i][coord], steps/2 + 1, aux);
+        else
+            cvx::linspace((double) parameters[i][coord-1], (double) parameters[i][coord+1], steps, aux);
+        
+        std::vector<T> v (aux.begin(), aux.end());
+        nwparameters.push_back(v);
+    }
+    
+    expandParameters(nwparameters, narrow);
 }
