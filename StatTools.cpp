@@ -12,6 +12,7 @@
 #include <opencv2/opencv.hpp>
 
 #include <math.h>
+#include <set>
 
 // Instantiation of template member functions
 // -----------------------------------------------------------------------------
@@ -557,6 +558,20 @@ float accuracy(cv::Mat actuals, GridMat predictions)
     return accuracy(gactuals, predictions);
 }
 
+void accuracy(cv::Mat actuals, cv::Mat predictions, cv::Mat partitions, cv::Mat& accuracies)
+{
+    cv::Mat aux = partitions.t();
+    std::set<int> set (aux.ptr<int>(0), aux.ptr<int>(0) + aux.cols);
+    std::vector<int> labels (set.begin(), set.end());
+
+    accuracies.create(labels.size(), 1, cv::DataType<float>::type);
+    for (int k = 0; k < labels.size(); k++)
+    {        
+        accuracies.at<float>(k,0) = accuracy(cvx::indexMat(actuals, partitions == k),
+                                             cvx::indexMat(predictions, partitions == k));
+    }
+}
+
 template<typename T>
 void narrow(cv::Mat coarse, cv::Mat goodnesses, int steps, cv::Mat& narrow)
 {
@@ -604,4 +619,35 @@ void narrow(cv::Mat coarse, cv::Mat goodnesses, int steps, cv::Mat& narrow)
     }
     
     expandParameters(nwparameters, narrow);
+}
+
+void computeConfidenceInterval(cv::Mat values, float* mean, float* confidence, float alpha)
+{
+    cv::Scalar _mean, stddev;
+    cv::meanStdDev(values, _mean, stddev);
+    
+    float pval;
+    if (alpha == 0.20) pval = 1.28;
+    else if (alpha == 0.15) pval = 1.44;
+    else if (alpha == 0.10) pval = 1.65;
+    else if (alpha == 0.05) pval = 1.96;
+    else if (alpha == 0.01) pval = 2.57;
+    else pval = 1.96; // alpha == 0.05
+    
+    *mean = _mean.val[0];
+    *confidence = pval * (stddev.val[0] / sqrt(values.rows));
+}
+
+void computeConfidenceInterval(GridMat values, cv::Mat& means, cv::Mat& confidences, float alpha)
+{
+    means.create(values.crows(), values.ccols(), cv::DataType<float>::type);
+    confidences.create(values.crows(), values.ccols(), cv::DataType<float>::type);
+
+    for (int i = 0; i < values.crows(); i++) for (int j = 0; j < values.ccols(); j++)
+    {
+        float mean, confidence;
+        computeConfidenceInterval(values.at(i,j), &mean, &confidence, alpha);
+        means.at<float>(i,j) = mean;
+        confidences.at<float>(i,j) = confidence;
+    }
 }

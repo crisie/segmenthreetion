@@ -350,6 +350,7 @@ void cvx::computePCA(cv::Mat src, cv::PCA& pca, cv::Mat& dst, int flags, double 
     }
 }
 
+
 template cv::Mat cvx::matlabread<int>(std::string file);
 template cv::Mat cvx::matlabread<float>(std::string file);
 template cv::Mat cvx::matlabread<double>(std::string file);

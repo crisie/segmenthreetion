@@ -320,12 +320,12 @@ int main(int argc, const char* argv[])
     
     ModalityPrediction<cv::EM> prediction;
 
-//    prediction.setNumOfMixtures(nmixtures);
-//    prediction.setLoglikelihoodThresholds(likelicuts);
-//
-//    prediction.setValidationParameters(kTest, seed);
-//    prediction.setModelSelection(false); // false load it from disk (see .h)
-//    prediction.setModelSelectionParameters(kModelSelec, true);
+    prediction.setNumOfMixtures(nmixtures);
+    prediction.setLoglikelihoodThresholds(likelicuts);
+
+    prediction.setValidationParameters(kTest, seed);
+    prediction.setModelSelection(false); // false load it from disk (see .h)
+    prediction.setModelSelectionParameters(kModelSelec, true);
 //
 //    // Motion
 //    prediction.setData(mMockData);
@@ -401,36 +401,89 @@ int main(int argc, const char* argv[])
     tDistsToMargin.load("tDistsToMargin.yml");
     cDistsToMargin.load("cDistsToMargin.yml");
     rDistsToMargin.load("rDistsToMargin.yml");
+    
+    mAccuracies.load("mAccuracies.yml");
+    dAccuracies.load("dAccuracies.yml");
+    tAccuracies.load("tAccuracies.yml");
+    cAccuracies.load("cAccuracies.yml");
+    rAccuracies.load("rAccuracies.yml");
+    
+    cv::Mat means, confs;
+    
+    cout << "Motion modality:" << endl;
+    computeConfidenceInterval(mAccuracies, means, confs);
+    cout << means << endl;
+    cout << confs << endl;
+    
+    cout << "Depth modality:" << endl;
+    computeConfidenceInterval(dAccuracies, means, confs);
+    cout << means << endl;
+    cout << confs << endl;
+    
+    cout << "Thermal modality:" << endl;
+    computeConfidenceInterval(tAccuracies, means, confs);
+    cout << means << endl;
+    cout << confs << endl;
+    
+    cout << "Color modality:" << endl;
+    computeConfidenceInterval(cAccuracies, means, confs);
+    cout << means << endl;
+    cout << confs << endl;
+    
+    cout << "Ramanan modality:" << endl;
+    computeConfidenceInterval(rAccuracies, means, confs);
+    cout << means << endl;
+    cout << confs << endl;
 
+    
     cout << "Computing individual predictions cells consensus... " << endl;
 
-    GridMat mConsensusPredictions, dConsensusPredictions, tConsensusPredictions,
+    cv::Mat mConsensusPredictions, dConsensusPredictions, tConsensusPredictions,
             cConsensusPredictions, rConsensusPredictions;
+    cv::Mat mConsensusDistsToMargin, dConsensusDistsToMargin, tConsensusDistsToMargin,
+            cConsensusDistsToMargin, rConsensusDistsToMargin;
+    cv::Mat mConsensusAccuracies, dConsensusAccuracies, tConsensusAccuracies,
+            cConsensusAccuracies, rConsensusAccuracies;
 
+    cv::Mat partitions;
+    cvpartition(cMockData.getTagsMat(), kTest, seed, partitions);
+    cv::Mat accuracies;
+    float mean, conf;
+    
     cout << "... motion (hoof) modality" << endl;
-    prediction.computeGridPredictionsConsensus(mMockData, mPredictions, mDistsToMargin, mConsensusPredictions);
-    cout << "Motion modality: " << accuracy(mMockData.getTagsMat(), mPredictions) << endl;
-    cout << "Motion modality (c): " << accuracy(mMockData.getTagsMat(), mConsensusPredictions) << endl;
+    prediction.computeGridPredictionsConsensus(mMockData, mPredictions, mDistsToMargin,
+                                               mConsensusPredictions, mConsensusDistsToMargin);
+    accuracy(mMockData.getTagsMat(), mConsensusPredictions, partitions, mConsensusAccuracies);
+    computeConfidenceInterval(mConsensusAccuracies, &mean, &conf);
+    cout << "Motion modality (c): " << mean << " ± " << conf << endl;
     
     cout << "... color (hon) modality" << endl;
-    prediction.computeGridPredictionsConsensus(dMockData, dPredictions, dDistsToMargin, dConsensusPredictions);
-    cout << "Depth modality: " << accuracy(dMockData.getTagsMat(), dPredictions) << endl;
-    cout << "Depth modality (c): " << accuracy(dMockData.getTagsMat(), dConsensusPredictions) << endl;
+    prediction.computeGridPredictionsConsensus(dMockData, dPredictions, dDistsToMargin,
+                                               dConsensusPredictions, dConsensusDistsToMargin);
+    accuracy(dMockData.getTagsMat(), dConsensusPredictions, partitions, dConsensusAccuracies);
+    computeConfidenceInterval(dConsensusAccuracies, &mean, &conf);
+    cout << "Depth modality (c): " << mean << " ± " << conf << endl;
     
     cout << "... thermal (hiog) modality" << endl;
-    prediction.computeGridPredictionsConsensus(tMockData, tPredictions, tDistsToMargin, tConsensusPredictions);
-    cout << "Thermal modality: " << accuracy(tMockData.getTagsMat(), tPredictions) << endl;
-    cout << "Thermal modality (c): " << accuracy(tMockData.getTagsMat(), tConsensusPredictions) << endl;
+    prediction.computeGridPredictionsConsensus(tMockData, tPredictions, tDistsToMargin,
+                                               tConsensusPredictions, tConsensusDistsToMargin);
+    accuracy(tMockData.getTagsMat(), tConsensusPredictions, partitions, tConsensusAccuracies);
+    computeConfidenceInterval(tConsensusAccuracies, &mean, &conf);
+    cout << "Thermal modality (c): " << mean << " ± " << conf << endl;
     
     cout << "... color (hog) modality" << endl;
-    prediction.computeGridPredictionsConsensus(cMockData, cPredictions, cDistsToMargin, cConsensusPredictions);
-    cout << "Color modality: " << accuracy(cMockData.getTagsMat(), cPredictions) << endl;
-    cout << "Color modality (c): " << accuracy(cMockData.getTagsMat(), cConsensusPredictions) << endl;
+    prediction.computeGridPredictionsConsensus(cMockData, cPredictions, cDistsToMargin,
+                                               cConsensusPredictions, cConsensusDistsToMargin);
+    accuracy(cMockData.getTagsMat(), cConsensusPredictions, partitions, cConsensusAccuracies);
+    computeConfidenceInterval(cConsensusAccuracies, &mean, &conf);
+    cout << "Color modality (c): " << mean << " ± " << conf << endl;
 
     cout << "... ramanan (ramanan scores) modality" << endl;
-    prediction.computeGridPredictionsConsensus(cMockData, rPredictions, rDistsToMargin, rConsensusPredictions);
-    cout << "Ramanan modality: " << accuracy(cMockData.getTagsMat(), rPredictions) << endl;
-    cout << "Ramanan modality (c): " << accuracy(cMockData.getTagsMat(), rConsensusPredictions) << endl;
+    prediction.computeGridPredictionsConsensus(cMockData, rPredictions, rDistsToMargin,
+                                               rConsensusPredictions, rConsensusDistsToMargin);
+    accuracy(cMockData.getTagsMat(), rConsensusPredictions, partitions, rConsensusAccuracies);
+    computeConfidenceInterval(rConsensusAccuracies, &mean, &conf);
+    cout << "Ramanan modality (c): " << mean << " ± " << conf << endl;
 
     
     cout << "Computing fusion predictions (no ramanan) ... " << endl;
@@ -440,36 +493,63 @@ int main(int argc, const char* argv[])
     loglikelihoods  += mLoglikelihoods, dLoglikelihoods, tLoglikelihoods, cLoglikelihoods, rScores;
     distsToMargin   += mDistsToMargin, dDistsToMargin, tDistsToMargin, cDistsToMargin, rDistsToMargin;
     
-    vector<GridMat> consensuedPredictions;
+    vector<cv::Mat> consensuedPredictions, consensuedDistsToMargin;
     consensuedPredictions += mConsensusPredictions, dConsensusPredictions, tConsensusPredictions,
     cConsensusPredictions, rConsensusPredictions;
+    consensuedDistsToMargin += mConsensusDistsToMargin, dConsensusDistsToMargin, tConsensusDistsToMargin,
+                            cConsensusDistsToMargin, rConsensusDistsToMargin;
  
     // Simple fusion
     
     cout << "... naive approach" << endl;
     
-    GridMat simpleFusionPredictions1; // Cells' pre-consensued predictions
-    GridMat simpleFusionPredictions2; // Cells' post-consensued predictions
-    GridMat simpleFusionPredictions3; // Cells' distances to margin
-    
     SimpleFusionPrediction<cv::EM> simpleFusion;
     
-    // Indiviual modalities' grid consensus first, then fusion
+    cv::Mat accuracies1, accuracies2, accuracies3;
+    
+    // Approach 1: Indiviual modalities' grid consensus first, then fusion
+    cv::Mat simpleFusionPredictions1;
+    cv::Mat simpleFusionDistsToMargin1; // (not used)
+    
+    simpleFusion.compute(consensuedPredictions, consensuedDistsToMargin, simpleFusionPredictions1, simpleFusionDistsToMargin1);
+    accuracy(cMockData.getTagsMat(), simpleFusionPredictions1, partitions, accuracies1);
+    computeConfidenceInterval(accuracies1, &mean, &conf);
+    cout << "Cells' pre-consensued predictions: " << mean << " ± " << conf << endl;
+    
+    // Approach 2: Prediction-based fusion, and then grid consensus
+    GridMat gSimpleFusionPredictions2; // Cells' non-consensued predictions
+    GridMat gSimpleFusionDistsToMargin2;
+    
+    cv::Mat consensuedSimpleFusionPredictions2, consensuedSimpleFusionDistsToMargin2;
+    
+    simpleFusion.compute(predictions, distsToMargin,
+                         gSimpleFusionPredictions2, gSimpleFusionDistsToMargin2);
+    prediction.computeGridPredictionsConsensus(cMockData, gSimpleFusionPredictions2, gSimpleFusionDistsToMargin2, consensuedSimpleFusionPredictions2, consensuedSimpleFusionDistsToMargin2); // post-consensus
+    accuracy(cMockData.getTagsMat(), consensuedSimpleFusionPredictions2, partitions, accuracies2);
+    computeConfidenceInterval(accuracies2, &mean, &conf);
+    cout << "Cells' post-consensued predictions: " << mean << " ± " << conf << endl;
 
-    simpleFusion.compute(consensuedPredictions, distsToMargin, simpleFusionPredictions1);
-    cout << "Cells' pre-consensued predictions: " << accuracy(cMockData.getTagsMat(), simpleFusionPredictions1) << endl;
     
-    // Fusion, and then grid consensus
-    GridMat simpleFusionDistsToMargin2;
-    simpleFusion.compute(predictions, distsToMargin, simpleFusionPredictions2, simpleFusionDistsToMargin2);
-    prediction.computeGridPredictionsConsensus(cMockData, simpleFusionPredictions2, simpleFusionDistsToMargin2, simpleFusionPredictions2);
-    cout << "Cells' post-consensued predictions: " << accuracy(cMockData.getTagsMat(), simpleFusionPredictions2) << endl;
+    // Approach 3: Raw distance to margin-based fusion, and then grid consensus
+    GridMat gSimpleFusionPredictions3; // Cells' distances to margin
+    GridMat gSimpleFusionDistsToMargin3;
     
+    cv::Mat consensuedSimpleFusionPredictions3, consensuedSimpleFusionDistsToMargin3;
+    
+    simpleFusion.compute(distsToMargin, gSimpleFusionPredictions3, gSimpleFusionDistsToMargin3);
+    prediction.computeGridPredictionsConsensus(cMockData, gSimpleFusionPredictions3, gSimpleFusionDistsToMargin3, consensuedSimpleFusionPredictions3, consensuedSimpleFusionDistsToMargin3); // post-consensus
+    accuracy(cMockData.getTagsMat(), consensuedSimpleFusionPredictions3, partitions, accuracies3);
+    computeConfidenceInterval(accuracies3, &mean, &conf);
+    cout << "Distance-based and cells' post-consensued predictions: " << mean << " ± " << conf << endl;
+    
+    
+    /*
     GridMat simpleFusionDistsToMargin3;
     simpleFusion.compute(distsToMargin, simpleFusionPredictions3, simpleFusionDistsToMargin3);
     prediction.computeGridPredictionsConsensus(cMockData, simpleFusionPredictions3, simpleFusionDistsToMargin3, simpleFusionPredictions3);
     cout << "Cells' distances to margin: " << accuracy(cMockData.getTagsMat(), simpleFusionPredictions3) << endl;
     
+    /*
     // SVM fusion
 
     cout << "... SVM approach" << endl;
@@ -482,7 +562,7 @@ int main(int argc, const char* argv[])
     svmFusion.setData(distsToMargin, consensuedPredictions);
     svmFusion.setResponses(cMockData.getTagsMat());
 
-    svmFusion.setModelSelection(true);
+    svmFusion.setModelSelection(false);
     svmFusion.setValidationParameters(kTest, seed);
     svmFusion.setModelSelectionParameters(kModelSelec, true);
 
@@ -579,7 +659,7 @@ int main(int argc, const char* argv[])
     svmFusion.compute(svmFusionPredictions4);
     cout << "SVM fusion rbf /w preds: " << accuracy(cMockData.getTagsMat(), svmFusionPredictions4) << endl;
 
-    
+    */
     //
     // Map writing
     //

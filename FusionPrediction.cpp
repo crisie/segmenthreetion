@@ -8,6 +8,9 @@
 
 #include "FusionPrediction.h"
 #include "StatTools.h"
+#include <boost/assign/std/vector.hpp>
+
+using namespace boost::assign;
 
 // Instantiation of template member functions
 // -----------------------------------------------------------------------------
@@ -26,145 +29,105 @@ SimpleFusionPrediction<cv::EM>::SimpleFusionPrediction()
     
 }
 
-void SimpleFusionPrediction<cv::EM>::compute(vector<GridMat> allPredictions, vector<GridMat> allDistsToMargin, GridMat& fusedPredictions)
+void SimpleFusionPrediction<cv::EM>::compute(vector<cv::Mat> allPredictions, vector<cv::Mat> allDistsToMargin,
+                                             cv::Mat& fusedPredictions, cv::Mat& fusedDistsToMargin)
 {
     // Concatenate along the horizontal direction all the modalities' predictions in a GridMat,
     // and the same for the distsToMargin
     
-    GridMat predictions (allPredictions[0]);
-    GridMat distsToMargin (allDistsToMargin[0]);
+    cv::Mat predictions = allPredictions[0];
+    cv::Mat distsToMargin = allDistsToMargin[0];
     
     for (int i = 1; i < allPredictions.size(); i++)
     {
-        predictions.hconcat(allPredictions[i]);
-        distsToMargin.hconcat(allDistsToMargin[i]);
+        cv::hconcat(predictions,   allPredictions[i],   predictions);
+        cv::hconcat(distsToMargin, allDistsToMargin[i], distsToMargin);
     }
     
-    int hp = predictions.crows();
-    int wp = predictions.ccols();
-    int n = predictions.at(0,0).rows;
+    int n = predictions.rows;
     
-    for (int i = 0; i < hp; i++) for (int j = 0; j < wp; j++)
-    {
-        assert (n == predictions.at(i,j).rows);
-    }
-    
-    fusedPredictions.create<int>(hp, wp, n, 1);
+    fusedPredictions.create(predictions.rows, 1, predictions.type());
+    fusedDistsToMargin.create(distsToMargin.rows, 1, distsToMargin.type());
     
     for (int k = 0; k < n; k++)
     {
-        for (int i = 0; i < hp; i++) for (int j = 0; j < wp; j++)
+        int pos = 0;
+        int neg = 0;
+        float accPosDists = 0;
+        float accNegDists = 0;
+        for (int m = 0; m < predictions.cols; m++)
         {
-            int pos = 0;
-            int neg = 0;
-            float accPosDists = 0;
-            float accNegDists = 0;
-            for (int m = 0; m < predictions.at(i,j).cols; m++)
+            float dist = distsToMargin.at<float>(k,m);
+            if (predictions.at<int>(k,m) == 0)
             {
-                float dist = distsToMargin.at<float>(i,j,k,m);
-                if (predictions.at<int>(i,j,k,m) == 0)
-                {
-                    neg++;
-                    accNegDists += dist;
-                }
-                else
-                {
-                    pos++;
-                    accPosDists += dist;
-                }
+                neg++;
+                accNegDists += dist;
             }
-            
-            if (pos < neg)
-                fusedPredictions.at<int>(i,j,k,0) = 0;
-            else if (pos > neg)
-                fusedPredictions.at<int>(i,j,k,0) = 1;
             else
-                fusedPredictions.at<int>(i,j,k,0) = accPosDists/pos > abs(accNegDists/pos);
-
+            {
+                pos++;
+                accPosDists += dist;
+            }
         }
         
+        if (pos < neg)
+        {
+            fusedPredictions.at<int>(k,0) = 0;
+            fusedDistsToMargin.at<float>(k,0) = accNegDists/neg;
+        }
+        else if (pos > neg)
+        {
+            fusedPredictions.at<int>(k,0) = 1;
+            fusedDistsToMargin.at<float>(k,0) = accPosDists/pos;
+        }
+        else
+        {
+            if (accPosDists/pos < abs(accNegDists/neg))
+            {
+                fusedPredictions.at<int>(k,0) = 0;
+                fusedDistsToMargin.at<float>(k,0) = accNegDists/neg;
+            }
+            else
+            {
+                fusedPredictions.at<int>(k,0) = 1;
+                fusedDistsToMargin.at<float>(k,0) = accPosDists/pos;
+            }
+                
+        }
     }
 }
 
-
 void SimpleFusionPrediction<cv::EM>::compute(vector<GridMat> allPredictions, vector<GridMat> allDistsToMargin, GridMat& fusedPredictions, GridMat& fusedDistsToMargin)
 {
-    // Concatenate along the horizontal direction all the modalities' predictions in a GridMat,
-    // and the same for the distsToMargin
-    
-    GridMat predictions (allPredictions[0]);
-    GridMat distsToMargin (allDistsToMargin[0]);
-    
-    for (int i = 1; i < allPredictions.size(); i++)
+    int hp = allPredictions[0].crows();
+    int wp = allPredictions[0].ccols();
+    for (int m = 1; m < allPredictions.size(); m++)
     {
-        predictions.hconcat(allPredictions[i]);
-        distsToMargin.hconcat(allDistsToMargin[i]);
+        assert (allPredictions[m].crows() == hp || allPredictions[m].ccols() == wp);
+        assert (allDistsToMargin[m].crows() == hp || allDistsToMargin[m].ccols() == wp);
     }
     
-    int hp = predictions.crows();
-    int wp = predictions.ccols();
-    int n = predictions.at(0,0).rows;
+    fusedPredictions.create(hp, wp);
+    fusedDistsToMargin.create(hp, wp);
     
     for (int i = 0; i < hp; i++) for (int j = 0; j < wp; j++)
     {
-        assert (n == predictions.at(i,j).rows);
-    }
-    
-    fusedPredictions.create<int>(hp, wp, n, 1);
-    fusedDistsToMargin.create<float>(hp, wp, n, 1);
-    
-    for (int k = 0; k < n; k++)
-    {
-        for (int i = 0; i < hp; i++) for (int j = 0; j < wp; j++)
+        vector<cv::Mat> predictions, distsToMargin;
+        for (int m = 0; m < allPredictions.size(); m++)
         {
-            int pos = 0;
-            int neg = 0;
-            float accPosDists = 0;
-            float accNegDists = 0;
-            for (int m = 0; m < predictions.at(i,j).cols; m++)
-            {
-                float dist = distsToMargin.at<float>(i,j,k,m);
-                if (predictions.at<int>(i,j,k,m) == 0)
-                {
-                    neg++;
-                    accNegDists += dist;
-                }
-                else
-                {
-                    pos++;
-                    accPosDists += dist;
-                }
-            }
-            
-            if (pos < neg)
-            {
-                fusedPredictions.at<int>(i,j,k,0) = 0;
-                fusedDistsToMargin.at<float>(i,j,k,0) = accNegDists/neg;
-            }
-            else if (pos > neg)
-            {
-                fusedPredictions.at<int>(i,j,k,0) = 1;
-                fusedDistsToMargin.at<float>(i,j,k,0) = accPosDists/pos;
-            }
-            else
-            {
-                float meanNeg = accNegDists/neg;
-                float meanPos = accPosDists/pos;
-                if (meanPos > abs(meanNeg))
-                {
-                    fusedPredictions.at<int>(i,j,k,0) = 1;
-                    fusedDistsToMargin.at<float>(i,j,k,0) = accPosDists/pos;
-                }
-                else
-                {
-                    fusedPredictions.at<int>(i,j,k,0) = 0;
-                    fusedDistsToMargin.at<float>(i,j,k,0) = accNegDists/neg;
-                }
-            }
+            predictions += allPredictions[m].at(i,j);
+            distsToMargin += allDistsToMargin[m].at(i,j);
         }
-        
+
+        compute(predictions, distsToMargin, fusedPredictions.at(i,j), fusedDistsToMargin.at(i,j));
     }
-    
+}
+
+//void SimpleFusionPrediction<cv::EM>::compute(vector<GridMat> allPredictions, vector<GridMat> allDistsToMargin, GridMat& fusedPredictions, GridMat& fusedDistsToMargin)
+//{
+//    // Concatenate along the horizontal direction all the modalities' predictions in a GridMat,
+//    // and the same for the distsToMargin
+//    
 //    GridMat predictions (allPredictions[0]);
 //    GridMat distsToMargin (allDistsToMargin[0]);
 //    
@@ -174,34 +137,107 @@ void SimpleFusionPrediction<cv::EM>::compute(vector<GridMat> allPredictions, vec
 //        distsToMargin.hconcat(allDistsToMargin[i]);
 //    }
 //    
-//    int elements = predictions.at(0,0).rows;
-//    for (int i = 0; i < predictions.crows(); i++) for (int j = 1; j < predictions.ccols(); j++)
+//    int hp = predictions.crows();
+//    int wp = predictions.ccols();
+//    int n = predictions.at(0,0).rows;
+//    
+//    for (int i = 0; i < hp; i++) for (int j = 0; j < wp; j++)
 //    {
-//        assert (elements == predictions.at(i,j).rows);
+//        assert (n == predictions.at(i,j).rows);
 //    }
 //    
-//    GridMat negMask (predictions == 0);
-//    GridMat posMask (predictions == 1);
-//    negMask = negMask / 255;
-//    posMask = posMask / 255;
+//    fusedPredictions.create<int>(hp, wp, n, 1);
+//    fusedDistsToMargin.create<float>(hp, wp, n, 1);
 //    
-//    GridMat hAccNegMask, hAccPosMask;
-//    negMask.sum(hAccNegMask, 1);
-//    posMask.sum(hAccPosMask, 1);
+//    for (int k = 0; k < n; k++)
+//    {
+//        for (int i = 0; i < hp; i++) for (int j = 0; j < wp; j++)
+//        {
+//            int pos = 0;
+//            int neg = 0;
+//            float accPosDists = 0;
+//            float accNegDists = 0;
+//            for (int m = 0; m < predictions.at(i,j).cols; m++)
+//            {
+//                float dist = distsToMargin.at<float>(i,j,k,m);
+//                if (predictions.at<int>(i,j,k,m) == 0)
+//                {
+//                    neg++;
+//                    accNegDists += dist;
+//                }
+//                else
+//                {
+//                    pos++;
+//                    accPosDists += dist;
+//                }
+//            }
+//            
+//            if (pos < neg)
+//            {
+//                fusedPredictions.at<int>(i,j,k,0) = 0;
+//                fusedDistsToMargin.at<float>(i,j,k,0) = accNegDists/neg;
+//            }
+//            else if (pos > neg)
+//            {
+//                fusedPredictions.at<int>(i,j,k,0) = 1;
+//                fusedDistsToMargin.at<float>(i,j,k,0) = accPosDists/pos;
+//            }
+//            else
+//            {
+//                float meanNeg = accNegDists/neg;
+//                float meanPos = accPosDists/pos;
+//                if (meanPos > abs(meanNeg))
+//                {
+//                    fusedPredictions.at<int>(i,j,k,0) = 1;
+//                    fusedDistsToMargin.at<float>(i,j,k,0) = accPosDists/pos;
+//                }
+//                else
+//                {
+//                    fusedPredictions.at<int>(i,j,k,0) = 0;
+//                    fusedDistsToMargin.at<float>(i,j,k,0) = accNegDists/neg;
+//                }
+//            }
+//        }
+//        
+//    }
 //    
-//    GridMat ones (predictions.crows(), predictions.ccols(), elements, 1, 1);
-//
-//    int majorityVal = ceil(allPredictions.size()/2);
-//    ones.copyTo(fusedPredictions, hAccPosMask > majorityVal);
-//    
-//    GridMat drawsMask = (hAccNegMask <= majorityVal) & (hAccPosMask <= majorityVal);
-//    GridMat drawDistsToMargin (distsToMargin, drawsMask);
-//    
-//    GridMat drawFusedPredictions;
-//    compute(drawDistsToMargin, drawFusedPredictions);
-//    
-//    fusedPredictions.set(drawFusedPredictions, drawsMask);
-}
+////    GridMat predictions (allPredictions[0]);
+////    GridMat distsToMargin (allDistsToMargin[0]);
+////    
+////    for (int i = 1; i < allPredictions.size(); i++)
+////    {
+////        predictions.hconcat(allPredictions[i]);
+////        distsToMargin.hconcat(allDistsToMargin[i]);
+////    }
+////    
+////    int elements = predictions.at(0,0).rows;
+////    for (int i = 0; i < predictions.crows(); i++) for (int j = 1; j < predictions.ccols(); j++)
+////    {
+////        assert (elements == predictions.at(i,j).rows);
+////    }
+////    
+////    GridMat negMask (predictions == 0);
+////    GridMat posMask (predictions == 1);
+////    negMask = negMask / 255;
+////    posMask = posMask / 255;
+////    
+////    GridMat hAccNegMask, hAccPosMask;
+////    negMask.sum(hAccNegMask, 1);
+////    posMask.sum(hAccPosMask, 1);
+////    
+////    GridMat ones (predictions.crows(), predictions.ccols(), elements, 1, 1);
+////
+////    int majorityVal = ceil(allPredictions.size()/2);
+////    ones.copyTo(fusedPredictions, hAccPosMask > majorityVal);
+////    
+////    GridMat drawsMask = (hAccNegMask <= majorityVal) & (hAccPosMask <= majorityVal);
+////    GridMat drawDistsToMargin (distsToMargin, drawsMask);
+////    
+////    GridMat drawFusedPredictions;
+////    compute(drawDistsToMargin, drawFusedPredictions);
+////    
+////    fusedPredictions.set(drawFusedPredictions, drawsMask);
+//}
 
 void SimpleFusionPrediction<cv::EM>::compute(vector<GridMat> allDistsToMargin, GridMat& fusedPredictions, GridMat& fusedDistsToMargin)
 {
@@ -374,8 +410,10 @@ void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::formatData()
         
         if (m_bStackPredictions)
         {
+            GridMat stdPredictions = m_predictions[i].standardize();
+            
             cv::Mat aux;
-            m_predictions[i].at(0,0).convertTo(aux, m_data.type());
+            stdPredictions.at(0,0).convertTo(aux, m_data.type());
             cv::hconcat(m_data, aux, m_data);
         }
     }

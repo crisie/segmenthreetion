@@ -60,12 +60,18 @@ template<typename PredictorT>
 void ModalityPredictionBase<PredictorT>::computeGridPredictionsConsensus(ModalityGridData data,
                                                                          GridMat predictions,
                                                                          GridMat distsToMargin,
-                                                                         GridMat& consensusPredictions)
+                                                                         cv::Mat& consensusPredictions,
+                                                                         cv::Mat& consensusDistsToMargin)
 {
     cv::Mat tags = data.getTagsMat();
-    cv::Mat consensus (tags.rows, 1, cv::DataType<int>::type, cv::Scalar(0));
     
-    for (int k = 0; k < tags.rows; k++)
+    consensusPredictions.create(tags.rows, 1, cv::DataType<int>::type);
+    consensusDistsToMargin.create(tags.rows, 1, cv::DataType<float>::type);
+    
+    cv::Mat partitions;
+    cvpartition(tags, m_testK, m_seed, partitions);
+    
+    for (int r = 0; r < tags.rows; r++)
     {
         int pos = 0;
         int neg = 0;
@@ -73,25 +79,42 @@ void ModalityPredictionBase<PredictorT>::computeGridPredictionsConsensus(Modalit
         float accNegDists = 0;
         for (int i = 0; i < data.getHp(); i++) for (int j = 0; j < data.getWp(); j++)
         {
-            if (predictions.at<int>(i,j,k,0) == 0)
+            if (predictions.at<int>(i,j,r,0) == 0)
             {
                 neg++;
-                accNegDists += distsToMargin.at<float>(i,j,k,0);
+                accNegDists += distsToMargin.at<float>(i,j,r,0);
             }
-            else if (predictions.at<int>(i,j,k,0) == 1)
+            else if (predictions.at<int>(i,j,r,0) == 1)
             {
                 pos++;
-                accPosDists += distsToMargin.at<float>(i,j,k,0);
+                accPosDists += distsToMargin.at<float>(i,j,r,0);
             }
         }
         
         if (pos > neg)
-            consensus.at<int>(k,0) = 1;
-        else if (pos == neg)
-            consensus.at<int>(k,0) = (accPosDists > abs(accNegDists));
+        {
+            consensusPredictions.at<int>(r,0) = 1;
+            consensusDistsToMargin.at<float>(r,0) = accPosDists / pos;
+        }
+        else if (pos < neg)
+        {
+            consensusPredictions.at<int>(r,0) = 0;
+            consensusDistsToMargin.at<float>(r,0) = accNegDists / neg;
+        }
+        else // pos == neg
+        {
+            if (accPosDists > abs(accNegDists)) // most confident towards positive classification
+            {
+                consensusPredictions.at<int>(r,0) = 1;
+                consensusDistsToMargin.at<float>(r,0) = accPosDists / pos;
+            }
+            else
+            {
+                consensusPredictions.at<int>(r,0) = 0;
+                consensusDistsToMargin.at<float>(r,0) = accNegDists / neg;
+            }
+        }
     }
-    
-    consensusPredictions.setTo(consensus);
     
 //    cv::Mat tags = m_data.getTagsMat();
 //    cv::Mat consensus (tags.rows, tags.cols, tags.type(), cv::Scalar(0));
@@ -754,13 +777,21 @@ template void ModalityPredictionBase<cv::EM>::setModelSelection(bool flag);
 template void ModalityPredictionBase<cv::EM>::setModelSelectionParameters(int k, bool best);
 template void ModalityPredictionBase<cv::EM>::setValidationParameters(int k, int seed);
 template void ModalityPredictionBase<cv::EM>::setDimensionalityReduction(float variance);
-template void ModalityPredictionBase<cv::EM>::computeGridPredictionsConsensus(ModalityGridData data, GridMat individualPredictions, GridMat distsToMargin, GridMat& consensusPredictions);
+template void ModalityPredictionBase<cv::EM>::computeGridPredictionsConsensus(ModalityGridData data,
+                                                                              GridMat predictions,
+                                                                              GridMat distsToMargin,
+                                                                              cv::Mat& consensusPredictions,
+                                                                              cv::Mat& consensusDistsToMargin);
 
 template void ModalityPredictionBase<cv::Mat>::setData(ModalityGridData &data);
 template void ModalityPredictionBase<cv::Mat>::setModelSelection(bool flag);
 template void ModalityPredictionBase<cv::Mat>::setModelSelectionParameters(int k, bool best);
 template void ModalityPredictionBase<cv::Mat>::setValidationParameters(int k, int seed);
-template void ModalityPredictionBase<cv::Mat>::computeGridPredictionsConsensus(ModalityGridData data, GridMat individualPredictions, GridMat distsToMargin, GridMat& consensusPredictions);
+template void ModalityPredictionBase<cv::Mat>::computeGridPredictionsConsensus(ModalityGridData data,
+                                                                               GridMat predictions,
+                                                                               GridMat distsToMargin,
+                                                                               cv::Mat& consensusPredictions,
+                                                                               cv::Mat& consensusDistsToMargin);
 
 template void ModalityPrediction<cv::EM>::modelSelection<int>(GridMat descriptors, GridMat tags, vector<vector<int> > params, GridMat& goodness);
 template void ModalityPrediction<cv::EM>::modelSelection<float>(GridMat descriptors, GridMat tags, vector<vector<float> > params, GridMat& goodness);

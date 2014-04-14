@@ -35,7 +35,10 @@ public:
     
     SimpleFusionPrediction();
     
-    void compute(vector<GridMat> allPredictions, vector<GridMat> allDistsToMargin, GridMat& fusedPredictions);
+    // Cells' preconsensus
+    void compute(vector<cv::Mat> allPredictions, vector<cv::Mat> allDistsToMargin,
+                 cv::Mat& fusedPredictions, cv::Mat& fusedDistsToMargin);
+    
     void compute(vector<GridMat> allPredictions, vector<GridMat> allDistsToMargin, GridMat& fusedPredictions, GridMat& fusedDistsToMargin); // want back some kind of consensued dists to margin in the fusion prediction?
     
     void compute(vector<GridMat> allDistsToMargin, GridMat& fusedPredictions, GridMat& fusedDistsToMargin);
