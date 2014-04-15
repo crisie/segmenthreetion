@@ -498,7 +498,7 @@ int main(int argc, const char* argv[])
     computeConfidenceInterval(accuracies, &mean, &conf);
     cout << "Ramanan modality (c): " << mean << " ± " << conf << endl;
 
-    
+    /*
     cout << "Computing fusion predictions ... " << endl;
     
     vector<GridMat> predictions, loglikelihoods, distsToMargin; // put together all the data
@@ -699,14 +699,20 @@ int main(int argc, const char* argv[])
     accuracy(cMockData.getTagsMat(), svmFusionPredictions4, partitions, accuracies);
     computeConfidenceInterval(accuracies, &mean, &conf);
     cout << "SVM rbf fusion /w preds: " << mean << " ± " << conf << endl;
+    */
     
-//    //
-//    // Map writing
-//    //
-//    
-//    GridMapWriter mapWriter;
-//    
-//    mapWriter.write<unsigned char>(mMockData, mConsensusPredictions, "Predictions/");
+    //
+    // Map writing
+    //
+    
+    GridMapWriter mapWriter;
+    
+    GridMat m; // create an empty GridMat
+    m.setTo(mConsensusPredictions); // set all the cells to same cv::Mat
+    
+    cout << mConsensusPredictions << endl;
+    mapWriter.write<unsigned char>(mMockData, m, "Predictions/");
+    
 //    mapWriter.write<unsigned char>(dMockData, dConsensusPredictions, "Predictions/");
     
     return 0;

@@ -110,6 +110,7 @@ void GridMapWriter::write(ModalityGridData& mgd, GridMat& gvalues, string output
             
             for (int k = 0; k < gridsInFrameIndices.rows; k++)
             {
+                cout << frameFilename << ", " << k << "/" << gridsInFrameIndices.rows << endl;
                 int idx = gridsInFrameIndices.at<int>(k,1);
                 
                 cv::Rect r = mgd.getGridBoundingRect(idx);
@@ -118,29 +119,22 @@ void GridMapWriter::write(ModalityGridData& mgd, GridMat& gvalues, string output
                 cv::Mat roiMap (map, r);
                 GridMat gRoiMap (roiMap, mgd.getHp(), mgd.getWp());
 
-                cv::Mat roiMask (mask, mgd.getGridBoundingRect(idx));
+                cv::Mat roiMask (mask, r);
                 cv::Mat indexedmaskroi;
                 roiMask.copyTo(indexedmaskroi, roiMask == mgd.getGridMaskOffset(idx));
                 GridMat gRoiMask (indexedmaskroi, mgd.getHp(), mgd.getWp());
 
                 for (int i = 0; i < mgd.getHp(); i++) for (int j = 0; j < mgd.getWp(); j++)
                 {
-                    if (validnesses.at<unsigned char>(i,j))
-                    {
-                        gRoiMap.setTo(gvalues.at<T>(i, j, counts.at<int>(i,j), 0), i, j, gRoiMask.at(i,j));
-                        counts.at<int>(i,j) ++;
-                    }
+                    T value = gvalues.at<T>(i, j, counts.at<int>(i,j)++, 0) * 255;
+                    gRoiMap.setTo(value, i, j, gRoiMask.at(i,j));
                 }
                 
-                gRoiMap.convertToMat<T>().copyTo(roiMap);
+                gRoiMap.convertToMat<T>().copyTo(roiMap, roiMask);
             }
             
-            stringstream ss;
-            ss << fid;
-            string fStr = ss.str();
-            
             string mapPath = frameFilePath + "Maps/" + mgd.getModality() + "/"
-            + outputDir + std::string(frameFilename.size() - fStr.size(), '0').append(fStr) + ".png";
+            + outputDir + frameFilename + ".png";
             
             cv::imwrite(mapPath, map);
         }

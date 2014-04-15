@@ -42,12 +42,18 @@ GridMat::GridMat(cv::Mat mat, unsigned int crows, unsigned int ccols)
     
     int a = floorf(((float) m_rows) / m_crows);     // + (m_rows % m_crows)/m_crows;
     int b = floorf(((float) m_cols) / m_ccols);     // + (m_cols % m_ccols)/m_ccols;
+    int ra = m_rows - a * m_crows;
+    int rb = m_cols - b * m_ccols;
+    
     //unsigned int cellh, cellw;
     for (unsigned int i = 0; i < m_crows; i++) for (unsigned int j = 0; j < m_ccols; j++)
     {
         //cellh = ((j+1) * b - 1) - (j * b);
         //cellw = ((i+1) * a - 1) - (i * a);
-        cv::Rect cell = cv::Rect((j * b), (i * a), b, a);// cellh, cellw);
+        cv::Rect cell = cv::Rect((j * b),
+                                 (i * a),
+                                 (i < rb) ? b+1 : b,
+                                 (j < ra) ? a+1 : a);// cellh, cellw);
         cv::Mat roi(mat,cell);
         //copyMakeBorder(roi, roi, margin, margin, margin, margin, BORDER_CONSTANT, 0);
         //cv::namedWindow("grid");
@@ -527,15 +533,22 @@ void GridMat::convertToMat(cv::Mat& mat)
     
     int a = floorf(((float) m_rows) / m_crows);     // + (m_rows % m_crows)/m_crows;
     int b = floorf(((float) m_cols) / m_ccols);     // + (m_cols % m_ccols)/m_ccols;
+    int ra = m_rows - a * m_crows;
+    int rb = m_cols - b * m_ccols;
     
-    mat.create(a * crows(), b * crows(), cv::DataType<T>::type);
+    mat.create(m_rows, m_cols, cv::DataType<T>::type);
     
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
         cv::Mat cell;
         this->at(i,j).convertTo(cell, cv::DataType<T>::type);
         
-        cv::Mat roi (mat, cv::Rect((j * b), (i * a), b, a));
+        cv::Rect r = cv::Rect((j * b),
+                              (i * a),
+                              (i < rb) ? b+1 : b,
+                              (j < ra) ? a+1 : a);
+        
+        cv::Mat roi (mat, r);
         cell.copyTo(roi);
     }
 }
