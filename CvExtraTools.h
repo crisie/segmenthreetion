@@ -63,6 +63,8 @@ namespace cvx
     void matlabread(std::string file, cv::Mat& mat);
     
     void computePCA(cv::Mat src, cv::PCA& pca, cv::Mat& dst, int flags = CV_PCA_DATA_AS_ROW, double variance = 1);
+    
+    cv::Mat standardize(cv::Mat m, int dim = 0);
 }
 
 

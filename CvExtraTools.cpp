@@ -350,6 +350,24 @@ void cvx::computePCA(cv::Mat src, cv::PCA& pca, cv::Mat& dst, int flags, double 
     }
 }
 
+cv::Mat cvx::standardize(cv::Mat m, int dim)
+{
+    cv::Mat s (m.rows, m.cols, cv::DataType<float>::type);
+    
+    // iterate over variable dimension: rows-wise (0) or column-wise (1)
+    for (int i = 0; i < (dim == 0 ? m.rows : m.cols); i++)
+    {
+        cv::Mat rowcol (dim == 0 ? m.row(i) : m.col(i));
+        
+        cv::Scalar mean, stddev;
+        cv::meanStdDev(rowcol, mean, stddev);
+        cv::Mat stdrowcol = (rowcol - mean.val[0]) / stddev.val[0];
+        rowcol.copyTo(dim == 0 ? s.row(i) : s.col(i));
+    }
+    
+    return s;
+}
+
 
 template cv::Mat cvx::matlabread<int>(std::string file);
 template cv::Mat cvx::matlabread<float>(std::string file);

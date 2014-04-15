@@ -133,10 +133,25 @@ int main(int argc, const char* argv[])
     double colorVariance = 0.99; // variance to keep in PCA's dim reduction in ColorModality
     
     // fusion strategies
-    
+
+    // ... svm params
     vector<float> cs, gammas;
     cs += 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3, 1e4;
     gammas += 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2;
+    
+    // ... boost params
+    
+    vector<float> numOfWeaks, weightTrimRates;
+    numOfWeaks += 10, 20, 50, 100, 200, 500, 1000;
+    weightTrimRates += 0, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 0.99;
+    
+    // ... mlp params
+    
+    vector<float> hiddenLayerSizes; //, decayWeights, momentWeights;
+    hiddenLayerSizes += 2, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50;
+    //numOfWeaks += 10, 20, 50, 100, 200, 500, 1000;
+    //weightTrimRates += 0, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 0.99;
+    
     
     // Validation procedure
     
@@ -442,8 +457,6 @@ int main(int argc, const char* argv[])
             cConsensusPredictions, rConsensusPredictions;
     cv::Mat mConsensusDistsToMargin, dConsensusDistsToMargin, tConsensusDistsToMargin,
             cConsensusDistsToMargin, rConsensusDistsToMargin;
-    cv::Mat mConsensusAccuracies, dConsensusAccuracies, tConsensusAccuracies,
-            cConsensusAccuracies, rConsensusAccuracies;
 
     cv::Mat partitions;
     cvpartition(cMockData.getTagsMat(), kTest, seed, partitions);
@@ -453,51 +466,58 @@ int main(int argc, const char* argv[])
     cout << "... motion (hoof) modality" << endl;
     prediction.computeGridPredictionsConsensus(mMockData, mPredictions, mDistsToMargin,
                                                mConsensusPredictions, mConsensusDistsToMargin);
-    accuracy(mMockData.getTagsMat(), mConsensusPredictions, partitions, mConsensusAccuracies);
-    computeConfidenceInterval(mConsensusAccuracies, &mean, &conf);
+    accuracy(mMockData.getTagsMat(), mConsensusPredictions, partitions, accuracies);
+    computeConfidenceInterval(accuracies, &mean, &conf);
     cout << "Motion modality (c): " << mean << " ± " << conf << endl;
     
     cout << "... color (hon) modality" << endl;
     prediction.computeGridPredictionsConsensus(dMockData, dPredictions, dDistsToMargin,
                                                dConsensusPredictions, dConsensusDistsToMargin);
-    accuracy(dMockData.getTagsMat(), dConsensusPredictions, partitions, dConsensusAccuracies);
-    computeConfidenceInterval(dConsensusAccuracies, &mean, &conf);
+    accuracy(dMockData.getTagsMat(), dConsensusPredictions, partitions, accuracies);
+    computeConfidenceInterval(accuracies, &mean, &conf);
     cout << "Depth modality (c): " << mean << " ± " << conf << endl;
     
     cout << "... thermal (hiog) modality" << endl;
     prediction.computeGridPredictionsConsensus(tMockData, tPredictions, tDistsToMargin,
                                                tConsensusPredictions, tConsensusDistsToMargin);
-    accuracy(tMockData.getTagsMat(), tConsensusPredictions, partitions, tConsensusAccuracies);
-    computeConfidenceInterval(tConsensusAccuracies, &mean, &conf);
+    accuracy(tMockData.getTagsMat(), tConsensusPredictions, partitions, accuracies);
+    computeConfidenceInterval(accuracies, &mean, &conf);
     cout << "Thermal modality (c): " << mean << " ± " << conf << endl;
     
     cout << "... color (hog) modality" << endl;
     prediction.computeGridPredictionsConsensus(cMockData, cPredictions, cDistsToMargin,
                                                cConsensusPredictions, cConsensusDistsToMargin);
-    accuracy(cMockData.getTagsMat(), cConsensusPredictions, partitions, cConsensusAccuracies);
-    computeConfidenceInterval(cConsensusAccuracies, &mean, &conf);
+    accuracy(cMockData.getTagsMat(), cConsensusPredictions, partitions, accuracies);
+    computeConfidenceInterval(accuracies, &mean, &conf);
     cout << "Color modality (c): " << mean << " ± " << conf << endl;
 
     cout << "... ramanan (ramanan scores) modality" << endl;
     prediction.computeGridPredictionsConsensus(cMockData, rPredictions, rDistsToMargin,
                                                rConsensusPredictions, rConsensusDistsToMargin);
-    accuracy(cMockData.getTagsMat(), rConsensusPredictions, partitions, rConsensusAccuracies);
-    computeConfidenceInterval(rConsensusAccuracies, &mean, &conf);
+    accuracy(cMockData.getTagsMat(), rConsensusPredictions, partitions, accuracies);
+    computeConfidenceInterval(accuracies, &mean, &conf);
     cout << "Ramanan modality (c): " << mean << " ± " << conf << endl;
 
     
-    cout << "Computing fusion predictions (no ramanan) ... " << endl;
+    cout << "Computing fusion predictions ... " << endl;
     
     vector<GridMat> predictions, loglikelihoods, distsToMargin; // put together all the data
-    predictions     += mPredictions, dPredictions, tPredictions, cPredictions, rPredictions;
-    loglikelihoods  += mLoglikelihoods, dLoglikelihoods, tLoglikelihoods, cLoglikelihoods, rScores;
-    distsToMargin   += mDistsToMargin, dDistsToMargin, tDistsToMargin, cDistsToMargin, rDistsToMargin;
+    predictions     += mPredictions, dPredictions, tPredictions, cPredictions;
+    loglikelihoods  += mLoglikelihoods, dLoglikelihoods, tLoglikelihoods, cLoglikelihoods;
+    distsToMargin   += mDistsToMargin, dDistsToMargin, tDistsToMargin, cDistsToMargin;
     
     vector<cv::Mat> consensuedPredictions, consensuedDistsToMargin;
     consensuedPredictions += mConsensusPredictions, dConsensusPredictions, tConsensusPredictions,
-    cConsensusPredictions, rConsensusPredictions;
+    cConsensusPredictions;
     consensuedDistsToMargin += mConsensusDistsToMargin, dConsensusDistsToMargin, tConsensusDistsToMargin,
-                            cConsensusDistsToMargin, rConsensusDistsToMargin;
+                            cConsensusDistsToMargin;
+
+//    predictions     += rPredictions;
+//    loglikelihoods  += rScores;
+//    distsToMargin   += rDistsToMargin;
+//    
+//    consensuedPredictions += rConsensusPredictions;
+//    consensuedDistsToMargin += rConsensusDistsToMargin;
  
     // Simple fusion
     
@@ -505,15 +525,14 @@ int main(int argc, const char* argv[])
     
     SimpleFusionPrediction<cv::EM> simpleFusion;
     
-    cv::Mat accuracies1, accuracies2, accuracies3;
-    
     // Approach 1: Indiviual modalities' grid consensus first, then fusion
     cv::Mat simpleFusionPredictions1;
     cv::Mat simpleFusionDistsToMargin1; // (not used)
     
     simpleFusion.compute(consensuedPredictions, consensuedDistsToMargin, simpleFusionPredictions1, simpleFusionDistsToMargin1);
-    accuracy(cMockData.getTagsMat(), simpleFusionPredictions1, partitions, accuracies1);
-    computeConfidenceInterval(accuracies1, &mean, &conf);
+    
+    accuracy(cMockData.getTagsMat(), simpleFusionPredictions1, partitions, accuracies);
+    computeConfidenceInterval(accuracies, &mean, &conf);
     cout << "Cells' pre-consensued predictions: " << mean << " ± " << conf << endl;
     
     // Approach 2: Prediction-based fusion, and then grid consensus
@@ -525,11 +544,11 @@ int main(int argc, const char* argv[])
     simpleFusion.compute(predictions, distsToMargin,
                          gSimpleFusionPredictions2, gSimpleFusionDistsToMargin2);
     prediction.computeGridPredictionsConsensus(cMockData, gSimpleFusionPredictions2, gSimpleFusionDistsToMargin2, consensuedSimpleFusionPredictions2, consensuedSimpleFusionDistsToMargin2); // post-consensus
-    accuracy(cMockData.getTagsMat(), consensuedSimpleFusionPredictions2, partitions, accuracies2);
-    computeConfidenceInterval(accuracies2, &mean, &conf);
+    
+    accuracy(cMockData.getTagsMat(), consensuedSimpleFusionPredictions2, partitions, accuracies);
+    computeConfidenceInterval(accuracies, &mean, &conf);
     cout << "Cells' post-consensued predictions: " << mean << " ± " << conf << endl;
 
-    
     // Approach 3: Raw distance to margin-based fusion, and then grid consensus
     GridMat gSimpleFusionPredictions3; // Cells' distances to margin
     GridMat gSimpleFusionDistsToMargin3;
@@ -538,31 +557,106 @@ int main(int argc, const char* argv[])
     
     simpleFusion.compute(distsToMargin, gSimpleFusionPredictions3, gSimpleFusionDistsToMargin3);
     prediction.computeGridPredictionsConsensus(cMockData, gSimpleFusionPredictions3, gSimpleFusionDistsToMargin3, consensuedSimpleFusionPredictions3, consensuedSimpleFusionDistsToMargin3); // post-consensus
-    accuracy(cMockData.getTagsMat(), consensuedSimpleFusionPredictions3, partitions, accuracies3);
-    computeConfidenceInterval(accuracies3, &mean, &conf);
+    
+    accuracy(cMockData.getTagsMat(), consensuedSimpleFusionPredictions3, partitions, accuracies);
+    computeConfidenceInterval(accuracies, &mean, &conf);
     cout << "Distance-based and cells' post-consensued predictions: " << mean << " ± " << conf << endl;
     
     
-    /*
-    GridMat simpleFusionDistsToMargin3;
-    simpleFusion.compute(distsToMargin, simpleFusionPredictions3, simpleFusionDistsToMargin3);
-    prediction.computeGridPredictionsConsensus(cMockData, simpleFusionPredictions3, simpleFusionDistsToMargin3, simpleFusionPredictions3);
-    cout << "Cells' distances to margin: " << accuracy(cMockData.getTagsMat(), simpleFusionPredictions3) << endl;
+    // Boost
     
-    /*
-    // SVM fusion
+    cout << "... Boost approach" << endl;
+    
+    cv::Mat boostFusionPredictions1, boostFusionPredictions2;
+    
+    ClassifierFusionPrediction<cv::EM,CvBoost> boostFusion;
+    
+    boostFusion.setData(distsToMargin, consensuedPredictions);
+    boostFusion.setResponses(cMockData.getTagsMat());
+    
+    boostFusion.setValidationParameters(kTest, seed);
+    boostFusion.setModelSelectionParameters(kModelSelec, true);
+    
+    boostFusion.setBoostType(CvBoost::GENTLE);
+    boostFusion.setNumOfWeaks(numOfWeaks);
+    boostFusion.setWeightTrimRate(weightTrimRates);
+    
+    boostFusion.setModelSelection(true);
+    boostFusion.setStackedPrediction(false);
+    boostFusion.compute(boostFusionPredictions1);
+    accuracy(cMockData.getTagsMat(), boostFusionPredictions1, partitions, accuracies);
+    computeConfidenceInterval(accuracies, &mean, &conf);
+    cout << "Boost fusion: " << mean << " ± " << conf << endl;
+    
+    boostFusion.setModelSelection(true);
+    boostFusion.setStackedPrediction(true);
+    boostFusion.compute(boostFusionPredictions2);
+    accuracy(cMockData.getTagsMat(), boostFusionPredictions2, partitions, accuracies);
+    computeConfidenceInterval(accuracies, &mean, &conf);
+    cout << "Boost fusion /w preds: " << mean << " ± " << conf << endl;
+    
+    
+    // MLP
+    
+    cout << "... MLP approach" << endl;
+    
+    cv::Mat mlpFusionPredictions1, mlpFusionPredictions2,
+            mlpFusionPredictions3, mlpFusionPredictions4;
+    
+    ClassifierFusionPrediction<cv::EM,CvANN_MLP> mlpFusion;
+    
+    mlpFusion.setData(distsToMargin, consensuedPredictions);
+    mlpFusion.setResponses(cMockData.getTagsMat());
+    
+    mlpFusion.setValidationParameters(kTest, seed);
+    mlpFusion.setModelSelectionParameters(kModelSelec, true);
+    
+    mlpFusion.setActivationFunctionType(CvANN_MLP::SIGMOID_SYM);
+    mlpFusion.setHiddenLayerSizes(hiddenLayerSizes);
+    
+    mlpFusion.setModelSelection(true);
+    mlpFusion.setStackedPrediction(false);
+    mlpFusion.compute(mlpFusionPredictions1);
+    accuracy(cMockData.getTagsMat(), mlpFusionPredictions1, partitions, accuracies);
+    computeConfidenceInterval(accuracies, &mean, &conf);
+    cout << "MLP sigmoid fusion: " << mean << " ± " << conf << endl;
+    
+    mlpFusion.setModelSelection(true);
+    mlpFusion.setStackedPrediction(true);
+    mlpFusion.compute(mlpFusionPredictions2);
+    accuracy(cMockData.getTagsMat(), mlpFusionPredictions2, partitions, accuracies);
+    computeConfidenceInterval(accuracies, &mean, &conf);
+    cout << "MLP sigmoid fusion /w preds: " << mean << " ± " << conf << endl;
+    
+    mlpFusion.setActivationFunctionType(CvANN_MLP::GAUSSIAN);
+    
+    mlpFusion.setModelSelection(true);
+    mlpFusion.setStackedPrediction(false);
+    mlpFusion.compute(mlpFusionPredictions3);
+    accuracy(cMockData.getTagsMat(), mlpFusionPredictions3, partitions, accuracies);
+    computeConfidenceInterval(accuracies, &mean, &conf);
+    cout << "MLP gaussian fusion: " << mean << " ± " << conf << endl;
+    
+    mlpFusion.setModelSelection(true);
+    mlpFusion.setStackedPrediction(true);
+    mlpFusion.compute(mlpFusionPredictions4);
+    accuracy(cMockData.getTagsMat(), mlpFusionPredictions4, partitions, accuracies);
+    computeConfidenceInterval(accuracies, &mean, &conf);
+    cout << "MLP gaussian fusion /w preds: " << mean << " ± " << conf << endl;
+    
+
+    // SVM
 
     cout << "... SVM approach" << endl;
 
-    GridMat svmFusionPredictions1, svmFusionPredictions2,
+    cv::Mat svmFusionPredictions1, svmFusionPredictions2,
             svmFusionPredictions3, svmFusionPredictions4;
 
     ClassifierFusionPrediction<cv::EM,CvSVM> svmFusion;
 
     svmFusion.setData(distsToMargin, consensuedPredictions);
     svmFusion.setResponses(cMockData.getTagsMat());
-
-    svmFusion.setModelSelection(false);
+    
     svmFusion.setValidationParameters(kTest, seed);
     svmFusion.setModelSelectionParameters(kModelSelec, true);
 
@@ -572,78 +666,19 @@ int main(int argc, const char* argv[])
 
     svmFusion.setKernelType(CvSVM::LINEAR);
 
+    svmFusion.setModelSelection(true);
     svmFusion.setStackedPrediction(false);
     svmFusion.compute(svmFusionPredictions1);
-    cout << "SVM fusion linear: " << accuracy(cMockData.getTagsMat(), svmFusionPredictions1) << endl;
+    accuracy(cMockData.getTagsMat(), svmFusionPredictions1, partitions, accuracies);
+    computeConfidenceInterval(accuracies, &mean, &conf);
+    cout << "SVM linear fusion: " << mean << " ± " << conf << endl;
 
+    svmFusion.setModelSelection(true);
     svmFusion.setStackedPrediction(true);
     svmFusion.compute(svmFusionPredictions2);
-    cout << "SVM fusion linear /w preds: " << accuracy(cMockData.getTagsMat(), svmFusionPredictions2) << endl;
-
-    // RBF-kernel SVM
-    
-    svmFusion.setKernelType(CvSVM::RBF);
-    
-    svmFusion.setGammas(gammas);
-    
-    svmFusion.setStackedPrediction(false);
-    svmFusion.compute(svmFusionPredictions3);
-    cout << "SVM fusion rbf: " << accuracy(cMockData.getTagsMat(), svmFusionPredictions3) << endl;
-    
-    svmFusion.setStackedPrediction(true);
-    svmFusion.compute(svmFusionPredictions4);
-    cout << "SVM fusion rbf /w preds: " << accuracy(cMockData.getTagsMat(), svmFusionPredictions4) << endl;
-    
-    
-    cout << "Computing fusion predictions (ramanan) ... " << endl;
-    
-    predictions     += rPredictions;
-    loglikelihoods  += rScores;
-    distsToMargin   += rDistsToMargin;
-    
-    consensuedPredictions += rConsensusPredictions;
-    
-    simpleFusion.compute(consensuedPredictions, distsToMargin, simpleFusionPredictions1);
-    cout << "Cells' pre-consensued predictions: " << accuracy(cMockData.getTagsMat(), simpleFusionPredictions1) << endl;
-    
-    // Fusion, and then grid consensus
-    simpleFusion.compute(predictions, distsToMargin, simpleFusionPredictions2, simpleFusionDistsToMargin2);
-    prediction.computeGridPredictionsConsensus(cMockData, simpleFusionPredictions2, simpleFusionDistsToMargin2, simpleFusionPredictions2);
-    cout << "Cells' post-consensued predictions: " << accuracy(cMockData.getTagsMat(), simpleFusionPredictions2) << endl;
-    
-    simpleFusion.compute(distsToMargin, simpleFusionPredictions3, simpleFusionDistsToMargin3);
-    prediction.computeGridPredictionsConsensus(cMockData, simpleFusionPredictions3, simpleFusionDistsToMargin3, simpleFusionPredictions3);
-    cout << "Cells' distances to margin: " << accuracy(cMockData.getTagsMat(), simpleFusionPredictions3) << endl;
-    
-//    // SVM fusion
-//    
-//    cout << "... SVM approach" << endl;
-//    
-//    GridMat svmFusionPredictions1, svmFusionPredictions2,
-//            svmFusionPredictions3, svmFusionPredictions4;
-//    
-//    ClassifierFusionPrediction<cv::EM,CvSVM> svmFusion;
-//    
-    svmFusion.setData(distsToMargin, consensuedPredictions);
-//    svmFusion.setResponses(cMockData.getTagsMat());
-//    
-//    svmFusion.setModelSelection(false);
-//    svmFusion.setValidationParameters(kTest, seed);
-//    svmFusion.setModelSelectionParameters(kModelSelec, true);
-//
-//    svmFusion.setCs(cs);
-    
-    // Linear-kernel SVM
-    
-    svmFusion.setKernelType(CvSVM::LINEAR);
-    
-    svmFusion.setStackedPrediction(false);
-    svmFusion.compute(svmFusionPredictions1);
-    cout << "SVM fusion linear: " << accuracy(cMockData.getTagsMat(), svmFusionPredictions1) << endl;
-
-    svmFusion.setStackedPrediction(true);
-    svmFusion.compute(svmFusionPredictions2);
-    cout << "SVM fusion linear /w preds: " << accuracy(cMockData.getTagsMat(), svmFusionPredictions2) << endl;
+    accuracy(cMockData.getTagsMat(), svmFusionPredictions2, partitions, accuracies);
+    computeConfidenceInterval(accuracies, &mean, &conf);
+    cout << "SVM linear fusion /w preds: " << mean << " ± " << conf << endl;
     
     // RBF-kernel SVM
     
@@ -651,19 +686,24 @@ int main(int argc, const char* argv[])
     
     svmFusion.setGammas(gammas);
     
+    svmFusion.setModelSelection(true);
     svmFusion.setStackedPrediction(false);
     svmFusion.compute(svmFusionPredictions3);
-    cout << "SVM fusion rbf: " << accuracy(cMockData.getTagsMat(), svmFusionPredictions3) << endl;
+    accuracy(cMockData.getTagsMat(), svmFusionPredictions3, partitions, accuracies);
+    computeConfidenceInterval(accuracies, &mean, &conf);
+    cout << "SVM rbf fusion: " << mean << " ± " << conf << endl;
     
+    svmFusion.setModelSelection(true);
     svmFusion.setStackedPrediction(true);
     svmFusion.compute(svmFusionPredictions4);
-    cout << "SVM fusion rbf /w preds: " << accuracy(cMockData.getTagsMat(), svmFusionPredictions4) << endl;
-
-    */
-    //
-    // Map writing
-    //
+    accuracy(cMockData.getTagsMat(), svmFusionPredictions4, partitions, accuracies);
+    computeConfidenceInterval(accuracies, &mean, &conf);
+    cout << "SVM rbf fusion /w preds: " << mean << " ± " << conf << endl;
     
+//    //
+//    // Map writing
+//    //
+//    
 //    GridMapWriter mapWriter;
 //    
 //    mapWriter.write<unsigned char>(mMockData, mConsensusPredictions, "Predictions/");

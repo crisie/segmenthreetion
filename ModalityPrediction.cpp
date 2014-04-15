@@ -608,7 +608,8 @@ void ModalityPrediction<cv::Mat>::compute(GridMat& individualPredictions, GridMa
                 
                 // Narrow search
                 cv::Mat narrowExpandedParameters;
-                narrow<float>(coarseExpandedParameters, coarseCellGoodnesses, m_narrowSearchSteps, narrowExpandedParameters);
+                int discretes[] = {0,0};
+                narrow<float>(coarseExpandedParameters, coarseCellGoodnesses, m_narrowSearchSteps, discretes, narrowExpandedParameters);
                 
                 cv::Mat narrowCellGoodnesses;
                 modelSelection<float>(validIndicesTr, validTagsTr, i, j,

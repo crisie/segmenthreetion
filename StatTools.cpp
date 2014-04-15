@@ -44,8 +44,8 @@ template void selectBestParameterCombination<double>(vector<vector<double> > exp
 template void selectBestParameterCombination<float>(GridMat expandedParams, vector<cv::Mat>& selectedParams);
 template void selectBestParameterCombination<double>(GridMat expandedParams, vector<cv::Mat>& selectedParams);
 
-template void narrow<float>(cv::Mat coarse, cv::Mat goodnesses, int steps, cv::Mat& narrow);
-template void narrow<double>(cv::Mat coarse, cv::Mat goodnesses, int steps, cv::Mat& narrow);
+template void narrow<float>(cv::Mat coarse, cv::Mat goodnesses, int steps, int* discretes, cv::Mat& narrow);
+template void narrow<double>(cv::Mat coarse, cv::Mat goodnesses, int steps, int* discretes, cv::Mat& narrow);
 
 // -----------------------------------------------------------------------------
 
@@ -573,7 +573,7 @@ void accuracy(cv::Mat actuals, cv::Mat predictions, cv::Mat partitions, cv::Mat&
 }
 
 template<typename T>
-void narrow(cv::Mat coarse, cv::Mat goodnesses, int steps, cv::Mat& narrow)
+void narrow(cv::Mat coarse, cv::Mat goodnesses, int steps, int* discretes, cv::Mat& narrow)
 {
     vector<vector<T> > parameters;
     for (int p = 0; p < coarse.cols; p++)
@@ -587,7 +587,7 @@ void narrow(cv::Mat coarse, cv::Mat goodnesses, int steps, cv::Mat& narrow)
     // Find best parameters (using goodnesses)
     double minVal, maxVal;
     cv::Point worst, best;
-    cv::minMaxLoc(goodnesses, &minVal, &maxVal, &worst, &best);
+    cv::minMaxLoc(goodnesses.col(goodnesses.cols-1), &minVal, &maxVal, &worst, &best);
     
     // From linear index to point in the space of combinations
     int linIdxBest = best.y; // linear idx
@@ -614,8 +614,19 @@ void narrow(cv::Mat coarse, cv::Mat goodnesses, int steps, cv::Mat& narrow)
         else
             cvx::linspace((double) parameters[i][coord-1], (double) parameters[i][coord+1], steps, aux);
         
-        std::vector<T> v (aux.begin(), aux.end());
-        nwparameters.push_back(v);
+        if (discretes[i])
+        {
+            std::vector<int> iaux (aux.begin(), aux.end()); // keep unique values
+            std::set<int> s (iaux.begin(), iaux.end());
+            
+            std::vector<T> v (s.begin(), s.end());
+            nwparameters.push_back(v);
+        }
+        else
+        {
+            std::vector<T> v (aux.begin(), aux.end());
+            nwparameters.push_back(v);
+        }
     }
     
     expandParameters(nwparameters, narrow);

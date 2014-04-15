@@ -69,7 +69,7 @@ public:
     ClassifierFusionPredictionBase();
     
     void setData(vector<GridMat> distsToMargin);
-    void setData(vector<GridMat> distsToMargin, vector<GridMat> predictions);
+    void setData(vector<GridMat> distsToMargin, vector<cv::Mat> predictions);
     void setResponses(cv::Mat responses);
     
     void setModelSelection(bool flag);
@@ -84,7 +84,7 @@ protected:
 
     // Attributes
     
-    vector<GridMat> m_predictions;
+    vector<cv::Mat> m_predictions;
 //    vector<GridMat> m_loglikelihoods;
     vector<GridMat> m_distsToMargin;
     
@@ -126,7 +126,7 @@ public:
     
     void modelSelection(cv::Mat data, cv::Mat responses, cv::Mat params, cv::Mat& goodnesses);
     
-    void compute(GridMat& gpredictions);
+    void compute(cv::Mat& fusionPredictions);
 
 private:
     
@@ -137,7 +137,67 @@ private:
     vector<float> m_gammas;
 
     int m_numItersSVM;
-
 };
+
+// <cv::EM,CvBoost> template instantiation
+template<>
+class ClassifierFusionPrediction<cv::EM,CvBoost> : public ClassifierFusionPredictionBase<cv::EM,CvBoost>
+{
+public:
+    
+    ClassifierFusionPrediction();
+    
+    void setBoostType(int type);
+    
+    void setNumOfWeaks(vector<float> numOfWeaks);
+    void setWeightTrimRate(vector<float> weightTrimRates);
+    
+    void modelSelection(cv::Mat data, cv::Mat responses, cv::Mat params, cv::Mat& goodnesses);
+    
+    void compute(cv::Mat& fusionPredictions);
+    
+private:
+    
+    // Attributes
+    
+    int m_BoostType;
+    vector<float> m_NumOfWeaks;
+    vector<float> m_WeightTrimRate;
+};
+
+// <cv::EM,CvANN_MLP> template instantiation
+template<>
+class ClassifierFusionPrediction<cv::EM,CvANN_MLP> : public ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>
+{
+public:
+    
+    ClassifierFusionPrediction();
+    
+    void setActivationFunctionType(int type);
+    
+    void setHiddenLayerSizes(vector<float> hiddenSizes);
+    
+    //void setBackpropDecayWeightScales(vector<float> dwScales);
+    //void setBackpropMomentScales(vector<float> momScales);
+    
+    void modelSelection(cv::Mat data, cv::Mat responses, cv::Mat params, cv::Mat& goodnesses);
+    
+    void compute(cv::Mat& fusionPredictions);
+    
+private:
+    
+    // Attributes
+    
+    int m_ActFcnType; // activation function type
+    
+    int m_NumOfEpochs;
+    int m_NumOfRepetitions; // deal with stochasticity introduced by the random weights initialization
+    
+    vector<float> m_HiddenLayerSizes;
+    //vector<float> m_bpDwScales; // decay in weight (dw)
+    //vector<float> m_bpMomentScales;
+};
+
+
 
 #endif /* defined(__segmenthreetion__FusionPrediction__) */
