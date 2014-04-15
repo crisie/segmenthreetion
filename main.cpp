@@ -581,7 +581,7 @@ int main(int argc, const char* argv[])
     boostFusion.setNumOfWeaks(numOfWeaks);
     boostFusion.setWeightTrimRate(weightTrimRates);
     
-    boostFusion.setModelSelection(true);
+    boostFusion.setModelSelection(false);
     boostFusion.setStackedPrediction(false);
     boostFusion.compute(boostFusionPredictions1);
     accuracy(cMockData.getTagsMat(), boostFusionPredictions1, partitions, accuracies);

@@ -420,7 +420,7 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(cv::Mat& fusionPrediction
         float bestGamma = goodnesses.row(best.y).at<float>(0,1);
         
         CvSVMParams svmParams (CvSVM::C_SVC, m_kernelType, 0, bestGamma, 0, bestC, 0, 0, 0,
-                               cvTermCriteria( CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, m_numItersSVM, 0.001 ));
+                               cvTermCriteria( CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, m_numItersSVM, 1e-2 ));
         m_pClassifier->train(validTrData, validTrResponses, cv::Mat(), cv::Mat(), svmParams);
         
         // Prediction phase
@@ -429,6 +429,7 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(cv::Mat& fusionPrediction
         
         cvx::setMat(tePredictions, predictions, partitions == k);
     }
+    cout << endl;
     
     // Mat to GridMat
     fusionPredictions = predictions;
@@ -444,10 +445,10 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection(cv::Mat data, cv::
     
     cv::Mat accuracies (expandedParams.rows, 0, cv::DataType<float>::type);
     
-    cout << "(";
+    //cout << "(";
     for (int k = 0; k < m_modelSelecK; k++)
     {
-        cout << k << " ";
+        //cout << k << " ";
         
         // Get fold's data
         
@@ -473,7 +474,7 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection(cv::Mat data, cv::
                 gamma = selectedParams.at<float>(0,1); // indeed, gamma not used if not RBF kernel
             
             CvSVMParams params (CvSVM::C_SVC, m_kernelType, 0, gamma, 0, C, 0, 0, 0,
-                                cvTermCriteria( CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, m_numItersSVM, 0.001 ));
+                                cvTermCriteria( CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, m_numItersSVM, 1e-2 ));
             
             m_pClassifier->train(trSbjObjData, trSbjObjResponses, cv::Mat(), cv::Mat(), params);
             
@@ -490,7 +491,7 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection(cv::Mat data, cv::
         else
             cv::hconcat(accuracies, foldAccs, accuracies); // concatenate along the horizontal direction
     }
-    cout << ") " << endl;
+    //cout << ") " << endl;
     
     // mean along the horizontal direction
     cvx::hmean(accuracies, goodnesses); // one column of m accuracies evaluation the m combinations is left
@@ -615,12 +616,14 @@ void ClassifierFusionPrediction<cv::EM,CvBoost>::compute(cv::Mat& fusionPredicti
                              cv::Mat(), cv::Mat(), cv::Mat(), cv::Mat(),
                              boostParams);
         
-        // Prediction phase
-        cv::Mat tePredictions;
-        m_pClassifier->predict(teData, tePredictions);
+        // Test phase
+        cv::Mat tePredictions (teResponses.rows, teResponses.cols, teResponses.type());
+        for (int d = 0; d < teData.rows; d++)
+            tePredictions.at<int>(d,0) = (int) m_pClassifier->predict(teData.row(d));
         
         cvx::setMat(tePredictions, predictions, partitions == k);
     }
+    cout << endl;
     
     // Mat to GridMat
     fusionPredictions = predictions;
@@ -636,10 +639,10 @@ void ClassifierFusionPrediction<cv::EM,CvBoost>::modelSelection(cv::Mat data, cv
     
     cv::Mat accuracies (expandedParams.rows, 0, cv::DataType<float>::type);
     
-    cout << "(";
+    //cout << "(";
     for (int k = 0; k < m_modelSelecK; k++)
     {
-        cout << k << " ";
+        //cout << k << " ";
         
         // Get fold's data
         
@@ -681,7 +684,7 @@ void ClassifierFusionPrediction<cv::EM,CvBoost>::modelSelection(cv::Mat data, cv
         else
             cv::hconcat(accuracies, foldAccs, accuracies); // concatenate along the horizontal direction
     }
-    cout << ") " << endl;
+    //cout << ") " << endl;
     
     // mean along the horizontal direction
     cvx::hmean(accuracies, goodnesses); // one column of m accuracies evaluation the m combinations is left
@@ -853,6 +856,7 @@ void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::compute(cv::Mat& fusionPredic
 
         cvx::setMat(tePredictions, predictions, partitions == k);
     }
+    cout << endl;
     
     // Mat to GridMat
     fusionPredictions = predictions;
@@ -868,10 +872,10 @@ void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::modelSelection(cv::Mat data, 
     
     cv::Mat accuracies (expandedParams.rows, 0, cv::DataType<float>::type);
     
-    cout << "(";
+    //cout << "(";
     for (int k = 0; k < m_modelSelecK; k++)
     {
-        cout << k << " ";
+        //cout << k << " ";
         
         // Get fold's data
         
@@ -950,7 +954,7 @@ void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::modelSelection(cv::Mat data, 
         else
             cv::hconcat(accuracies, tmp, accuracies); // concatenate along the horizontal direction
     }
-    cout << ") " << endl;
+    //cout << ") " << endl;
     
     // mean along the horizontal direction
     cvx::hmean(accuracies, goodnesses); // one column of m accuracies evaluation the m combinations is left
