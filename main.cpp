@@ -710,10 +710,7 @@ int main(int argc, const char* argv[])
     GridMat m; // create an empty GridMat
     m.setTo(mConsensusPredictions); // set all the cells to same cv::Mat
     
-    cout << mConsensusPredictions << endl;
     mapWriter.write<unsigned char>(mMockData, m, "Predictions/");
-    
-//    mapWriter.write<unsigned char>(dMockData, dConsensusPredictions, "Predictions/");
-    
+        
     return 0;
 }
