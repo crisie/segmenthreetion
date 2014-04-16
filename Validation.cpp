@@ -10,14 +10,24 @@
 #include "StatTools.h"
 
 
+
+
 using namespace std;
 
 Validation::Validation()
 { }
 
-void Validation::getOverlap(vector<cv::Mat> predictedMasks, vector<cv::Mat> gtMasks, vector<int> dcRange, cv::Mat& overlapIDs) {
+void Validation::getOverlap(ModalityData& md, vector<float> dcRange, cv::Mat& overlapIDs) {
     
-    cv::resize(overlapIDs, overlapIDs, cvSize(predictedMasks.size(), dcRange.size()+1));
+    cv::Mat newOverlapIDs(cvSize(md.getPredictedMasks().size(), dcRange.size()+1), CV_8UC1);
+    this->getOverlap(md.getPredictedMasks(), md.getGroundTruthMasks(), dcRange, newOverlapIDs);
+    cv::hconcat(overlapIDs, newOverlapIDs, overlapIDs);
+    
+}
+
+void Validation::getOverlap(vector<cv::Mat> predictedMasks, vector<cv::Mat> gtMasks, vector<float> dcRange, cv::Mat& overlapIDs) {
+    
+    //cv::resize(overlapIDs, overlapIDs, cvSize(predictedMasks.size(), dcRange.size()+1));
     int idx = 0;
     for(int f = 0; f < predictedMasks.size(); f++)
     {
@@ -283,4 +293,10 @@ void Validation::createDontCareRegion(cv::Mat inputMask, cv::Mat& outputMask, fl
     subtract(mask1, mask2, outputMask);
     
     threshold(outputMask, outputMask, 128, 255, CV_THRESH_BINARY_INV);
+    
+    //debug
+    cv::imshow("dontCareRegion", outputMask);
+    cv::waitKey(10);
+
 }
+
