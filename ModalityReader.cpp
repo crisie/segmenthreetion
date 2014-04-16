@@ -368,6 +368,14 @@ void ModalityReader::mockreadScene(string modality, string scenePath, const char
         loadBoundingRects(scenePath + "/Masks/" + modality + ".yml", rects, tags);
     }
     
+    cv::Mat_<int> counts (100, 1);
+    counts.setTo(0);
+    for (int i = 0; i < rects.size(); i++)
+    {
+        counts.at<int>(rects[i].size(),0)++;
+    }
+    cout << counts << endl;
+    
     assert (framesFilenames.size() == masksFilenames.size());
     
     // Load frame-wise (Mat), extract the roi represented by the bounding boxes,
