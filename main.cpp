@@ -754,15 +754,14 @@ int main(int argc, const char* argv[])
     //m.setTo(mConsensusPredictions); // set all the cells to same cv::Mat
     
     //mapWriter.write<unsigned char>(mMockData, m, "Predictions/");
-   
-    GridMat g;
     
+    GridMat g;
     g.load("mGridConsensusPredictions.yml");
     mapWriter.write<unsigned char>(mMockData, g, "Motion/Predictions/");
-           
+    
     g.load("dGridConsensusPredictions.yml");
     mapWriter.write<unsigned char>(dMockData, g, "Depth/Predictions/");
-   /*
+ /*
     g.load("tGridConsensusPredictions.yml");
     mapWriter.write<unsigned char>(tMockData, g, "Thermal/Predictions/");
                          

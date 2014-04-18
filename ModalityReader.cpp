@@ -486,25 +486,38 @@ void ModalityReader::overlapreadScene(string predictionType, string modality, st
         {
             //cout << predictionFilenames[predictionsIndex] << endl; //debug
             
-            vector<int> un;
+            threshold(predictions[predictionsIndex],predictions[predictionsIndex],1,255,CV_THRESH_BINARY);
+            
+           /* vector<int> un;
             findUniqueValues(predictions[predictionsIndex], un);
-            cout << "Before: ";
+            cout << "Before1: ";
             for(int a = 0; a < un.size(); a++)
             {
                 cout << un[a] << " ";
             }
             cout << endl;
             
-            predictionMasks.push_back(bsMasks[i].mul(predictions[predictionsIndex]));
+            vector<int> tres;
+            findUniqueValues(bsMasks[i], tres);
+            cout << "Before2: ";
+            for(int a = 0; a < tres.size(); a++)
+            {
+                cout << tres[a] << " ";
+            }
+            cout << endl;*/
             
-            vector<int> dos;
-            findUniqueValues(bsMasks[i].mul(predictions[predictionsIndex]), dos);
+            cv::Mat auxMask;
+            bsMasks[i].copyTo(auxMask, predictions[predictionsIndex]);
+            predictionMasks.push_back(auxMask);
+            
+           /* vector<int> dos;
+            findUniqueValues(auxMask, dos);
             cout << "After: ";
             for(int a = 0; a < dos.size(); a++)
             {
                 cout << dos[a] << " ";
             }
-            cout << endl;
+            cout << endl;*/
             
             predictionsIndex++;
         }
@@ -515,6 +528,7 @@ void ModalityReader::overlapreadScene(string predictionType, string modality, st
     }
     
     //debug
+    /*
     for(int i = 0; i < predictionMasks.size(); i++)
     {
         imshow("predictedMasks", predictionMasks[i]);
@@ -522,7 +536,7 @@ void ModalityReader::overlapreadScene(string predictionType, string modality, st
         cv::waitKey(10);
     }
     cv::destroyAllWindows();
-    
+    */
     
     md.setPredictedMasks(predictionMasks);
     md.setGroundTruthMasks(groundTruthMasks);
@@ -608,7 +622,7 @@ void ModalityReader::loadDataToMats(string dir, const char* filetype, vector<cv:
 		{
 			if ( !is_directory( *iter ) && (iter->path().extension().string().compare(filetype) == 0) )
 			{
-                cout << iter->path().string() << endl; //debug
+                //cout << iter->path().string() << endl; //debug
 				cv::Mat img = cv::imread( iter->path().string(), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
 				frames.push_back(img);
                 

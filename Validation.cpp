@@ -69,6 +69,10 @@ void Validation::getOverlap(vector<cv::Mat> predictedMasks, vector<cv::Mat> gtMa
  */
 float Validation::getMaskOverlap(cv::Mat predictedMask, cv::Mat gtMask, cv::Mat dontCareRegion)
 {
+    
+    imshow("gtMask", gtMask);
+    imshow("predictedMask", predictedMask);
+    
     bool useDontCare = false;
     if(!dontCareRegion.empty()) useDontCare = true;
     
@@ -85,16 +89,18 @@ float Validation::getMaskOverlap(cv::Mat predictedMask, cv::Mat gtMask, cv::Mat 
     findUniqueValues(predictedMask, predictedMaskPersonID);
     predictedMaskPersonID.erase(std::remove(predictedMaskPersonID.begin(), predictedMaskPersonID.end(), 0), predictedMaskPersonID.end());
         
-    cv::Mat labeledGtMask = cv::Mat::zeros(gtMask.size(), CV_8UC1); //TOCHECK: gtMask is already labeled?
+   /* cv::Mat labeledGtMask = cv::Mat::zeros(gtMask.size(), CV_8UC1); //TOCHECK: gtMask is already labeled?
     vector<vector<cv::Point> > contours;
     cv::Mat auxGtMask;
     gtMask.copyTo(auxGtMask);
-    findContours(auxGtMask, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+    imshow("auxGtMask", auxGtMask);
+    findContours(auxGtMask, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
     for(int c = 0; c < contours.size(); c++)
     {
         drawContours(labeledGtMask, contours, c, c, CV_FILLED, 8, vector<cv::Vec4i>());
     }
-    
+    imshow("labeledGtMask", labeledGtMask);*/
+    cv::waitKey(1);
     vector<bool> gtMaskUsedIDs;
     for(int g = 0; g < gtMaskPersonID.size(); g++) gtMaskUsedIDs.push_back(false);
     
@@ -132,13 +138,14 @@ float Validation::getMaskOverlap(cv::Mat predictedMask, cv::Mat gtMask, cv::Mat 
                 {
                     vector<int> regionIDs;
                     cv::Mat maskedLabeledGtMask;
-                    labeledGtMask.copyTo(maskedLabeledGtMask, person);
+                    gtMask.copyTo(maskedLabeledGtMask, person);
                     findUniqueValues(maskedLabeledGtMask, regionIDs);
+                    regionIDs.erase(std::remove(regionIDs.begin(), regionIDs.end(), 0), regionIDs.end());
                     
                     for(int i = 0 ; i < regionIDs.size(); i++)
                     {
                         vector<int> uniqueIDs;
-                        findUniqueValues(labeledGtMask == regionIDs[i], uniqueIDs);
+                        findUniqueValues(gtMask == regionIDs[i], uniqueIDs);
                         personsInBlob.insert(personsInBlob.end(), uniqueIDs.begin(), uniqueIDs.end());
                     }
                     
@@ -147,6 +154,7 @@ float Validation::getMaskOverlap(cv::Mat predictedMask, cv::Mat gtMask, cv::Mat 
                     if(personsGt.size() != personsInBlob.size())
                     {
                         person.release();
+                        person = cv::Mat::zeros(gtMask.rows, gtMask.cols, CV_8UC1);
                         for(int i = 0; i < personsInBlob.size(); i++)
                         {
                             add(person, gtMask == personsInBlob[i], person);
