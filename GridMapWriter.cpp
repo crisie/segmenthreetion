@@ -133,8 +133,7 @@ void GridMapWriter::write(ModalityGridData& mgd, GridMat& gvalues, string output
                 gRoiMap.convertToMat<T>().copyTo(roiMap, roiMask);
             }
             
-            string mapPath = frameFilePath + "Maps/" + mgd.getModality() + "/"
-            + outputDir + frameFilename + ".png";
+            string mapPath = frameFilePath + "Maps/" + outputDir + frameFilename + ".png";
             
             cv::imwrite(mapPath, map);
         }

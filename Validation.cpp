@@ -29,17 +29,30 @@ void Validation::getOverlap(vector<cv::Mat> predictedMasks, vector<cv::Mat> gtMa
     
     //cv::resize(overlapIDs, overlapIDs, cvSize(predictedMasks.size(), dcRange.size()+1));
     int idx = 0;
+    
     for(int f = 0; f < predictedMasks.size(); f++)
     {
+        //debug
+        //cout << "predicted mask " << predictedMasks[f].channels() << " " << predictedMasks[f].type() << endl;
+        //cout << "gt mask " << gtMasks[f].channels() << " " << gtMasks[f].type() << endl;
         if(cv::countNonZero(predictedMasks[f]) > 0 || cv::countNonZero(gtMasks[f]) > 0)
         {
+            //debug
+            vector<int> un;
+            findUniqueValues(predictedMasks[f], un);
+            for(int a = 0; a < un.size(); a++)
+            {
+                cout << un[a] << " ";
+            }
+            cout << endl;
+            
             overlapIDs.at<float>(0, idx) = getMaskOverlap(predictedMasks[f], gtMasks[f], cv::Mat());
             
             for(int dc = 0; dc < dcRange.size(); dc++)
             {
                 cv::Mat dontCare;
                 createDontCareRegion(gtMasks[f], dontCare, dcRange[dc]);
-                threshold(dontCare, dontCare, 128, 255, CV_THRESH_BINARY);
+                //threshold(dontCare, dontCare, 128, 255, CV_THRESH_BINARY);
                 
                 overlapIDs.at<float>(dc+1, idx) = getMaskOverlap(predictedMasks[f], gtMasks[f], dontCare);
             }
@@ -71,20 +84,22 @@ float Validation::getMaskOverlap(cv::Mat predictedMask, cv::Mat gtMask, cv::Mat 
     vector<int> predictedMaskPersonID;
     findUniqueValues(predictedMask, predictedMaskPersonID);
     predictedMaskPersonID.erase(std::remove(predictedMaskPersonID.begin(), predictedMaskPersonID.end(), 0), predictedMaskPersonID.end());
-    
-    cv::Mat labeledGtMask = cv::Mat::zeros(gtMask.size(), CV_8UC1);
+        
+    cv::Mat labeledGtMask = cv::Mat::zeros(gtMask.size(), CV_8UC1); //TOCHECK: gtMask is already labeled?
     vector<vector<cv::Point> > contours;
-    findContours(gtMask, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+    cv::Mat auxGtMask;
+    gtMask.copyTo(auxGtMask);
+    findContours(auxGtMask, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
     for(int c = 0; c < contours.size(); c++)
     {
         drawContours(labeledGtMask, contours, c, c, CV_FILLED, 8, vector<cv::Vec4i>());
     }
     
-    vector<bool> gtMaskUsedIDs(gtMaskPersonID.size());
-    std::fill(gtMaskPersonID.begin(), gtMaskPersonID.end(), false);
+    vector<bool> gtMaskUsedIDs;
+    for(int g = 0; g < gtMaskPersonID.size(); g++) gtMaskUsedIDs.push_back(false);
     
-    vector<bool> prMaskUsedIDs(predictedMaskPersonID.size());
-    std::fill(prMaskUsedIDs.begin(), prMaskUsedIDs.end(), false);
+    vector<bool> prMaskUsedIDs;
+    for(int g = 0; g < predictedMaskPersonID.size(); g++) prMaskUsedIDs.push_back(false);
     
     if(!predictedMaskPersonID.empty())
     {
@@ -94,6 +109,7 @@ float Validation::getMaskOverlap(cv::Mat predictedMask, cv::Mat gtMask, cv::Mat 
             int id  = *gtID;
             cv::Mat person = (gtMask == id);
             threshold(person, person, 128, 255, CV_THRESH_BINARY);
+            imshow("person", person);
             
             vector<int> personsInBlob;
             personsInBlob.push_back(id);
@@ -278,8 +294,10 @@ float Validation::getMaskOverlap(cv::Mat predictedMask, cv::Mat gtMask, cv::Mat 
 
 void Validation::createDontCareRegion(cv::Mat inputMask, cv::Mat& outputMask, float size)
 {
-    cv::Mat mask1 (inputMask);
-    cv::Mat mask2 (inputMask);
+    cv::imshow("input", inputMask);
+    cv::Mat mask1, mask2;
+    inputMask.copyTo(mask1);
+    inputMask.copyTo(mask2);
     
     if(size < 1) {
         size = 1;
@@ -288,15 +306,19 @@ void Validation::createDontCareRegion(cv::Mat inputMask, cv::Mat& outputMask, fl
     cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2*size, 2*size));
     
     cv::morphologyEx(mask1, mask1, cv::MORPH_DILATE, element);
+    
     cv::morphologyEx(mask2, mask2, cv::MORPH_ERODE, element);
+    cv::imshow("2", mask2);
+    cv::imshow("1", mask1);
     
     subtract(mask1, mask2, outputMask);
+    cv::imshow("subtracted", outputMask);
     
     threshold(outputMask, outputMask, 128, 255, CV_THRESH_BINARY_INV);
     
     //debug
     cv::imshow("dontCareRegion", outputMask);
-    cv::waitKey(10);
+    cv::destroyAllWindows();
 
 }
 

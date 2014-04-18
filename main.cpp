@@ -34,6 +34,8 @@
 
 #include "GridMapWriter.h"
 
+#include "Validation.h"
+
 #include "StatTools.h"
 
 #include <opencv2/opencv.hpp>
@@ -159,6 +161,9 @@ int main(int argc, const char* argv[])
     int kModelSelec = 3;
     int seed = 74;
  
+    // Overlap params
+    vector<float> dontCareRange;
+    dontCareRange += 1, 3, 5, 7, 9, 11, 13, 15, 17;
     
 // =============================================================================
 //  Execution
@@ -322,14 +327,14 @@ int main(int argc, const char* argv[])
 //    rGridData.clear();
 
     // Other modalitites
-    
+
     ModalityGridData mMockData, dMockData, tMockData, cMockData;
     
     reader.mockread("Color", sequences, "jpg", hp, wp, cMockData);
     reader.mockread("Motion", sequences, "jpg", hp, wp, mMockData);
     reader.mockread("Depth", sequences, "png", hp, wp, dMockData);
     reader.mockread("Thermal", sequences, "jpg", hp, wp, tMockData);
-    
+/*
     cMockData.loadDescription(dataPath, sequences, "Color.yml");
     mMockData.loadDescription(dataPath, sequences, "Motion.yml");
     dMockData.loadDescription(dataPath, sequences, "Depth.yml");
@@ -341,6 +346,7 @@ int main(int argc, const char* argv[])
     prediction.setLoglikelihoodThresholds(likelicuts);
 
     prediction.setValidationParameters(kTest, seed);
+
 //    prediction.setModelSelection(false); // false load it from disk (see .h)
 //    prediction.setModelSelectionParameters(kModelSelec, true);
 //
@@ -400,7 +406,7 @@ int main(int argc, const char* argv[])
     //
     // Fusion
     //
-    
+/*
     mPredictions.load("mPredictions.yml");
     dPredictions.load("dPredictions.yml");
     tPredictions.load("tPredictions.yml");
@@ -452,7 +458,7 @@ int main(int argc, const char* argv[])
     cout << means << endl;
     cout << confs << endl;
 
-    
+*/
     cout << "Computing individual predictions cells consensus... " << endl;
 
     cv::Mat mConsensusPredictions, dConsensusPredictions, tConsensusPredictions,
@@ -461,7 +467,8 @@ int main(int argc, const char* argv[])
             cConsensusDistsToMargin, rConsensusDistsToMargin;
 
     cv::Mat partitions;
-    cvpartition(cMockData.getTagsMat(), kTest, seed, partitions);
+  /*
+   cvpartition(cMockData.getTagsMat(), kTest, seed, partitions);
     cv::Mat accuracies;
     float mean, conf;
     
@@ -500,6 +507,7 @@ int main(int argc, const char* argv[])
     computeConfidenceInterval(accuracies, &mean, &conf);
     cout << "Ramanan modality (c): " << mean << " ± " << conf << endl;
 
+
     // Save the results for the later prediction map generation
     aux.setTo(mConsensusPredictions);
     aux.save("mGridConsensusPredictions.yml");
@@ -512,7 +520,7 @@ int main(int argc, const char* argv[])
     aux.setTo(rConsensusPredictions);
     aux.save("rGridConsensusPredictions.yml");
     
-    
+   
     cout << "Computing fusion predictions ... " << endl;
     
     vector<GridMat> predictions, loglikelihoods, distsToMargin; // put together all the data
@@ -733,18 +741,76 @@ int main(int argc, const char* argv[])
 //    cout << "SVM rbf fusion /w preds: " << mean << " ± " << conf << endl;
     
 
-
+*/
     
     //
     // Map writing
     //
     
-//    GridMapWriter mapWriter;
-//    
-//    GridMat m; // create an empty GridMat
-//    m.setTo(mConsensusPredictions); // set all the cells to same cv::Mat
-//    
-//    mapWriter.write<unsigned char>(mMockData, m, "Predictions/");
+
+    GridMapWriter mapWriter;
+    
+    //GridMat m; // create an empty GridMat
+    //m.setTo(mConsensusPredictions); // set all the cells to same cv::Mat
+    
+    //mapWriter.write<unsigned char>(mMockData, m, "Predictions/");
+   
+    GridMat g;
+    
+    g.load("mGridConsensusPredictions.yml");
+    mapWriter.write<unsigned char>(mMockData, g, "Motion/Predictions/");
+           
+    g.load("dGridConsensusPredictions.yml");
+    mapWriter.write<unsigned char>(dMockData, g, "Depth/Predictions/");
+   /*
+    g.load("tGridConsensusPredictions.yml");
+    mapWriter.write<unsigned char>(tMockData, g, "Thermal/Predictions/");
+                         
+    g.load("cGridConsensusPredictions.yml");
+    mapWriter.write<unsigned char>(cMockData, g, "Color/Predictions/");
+                                
+    g.load("simpleFusionPredictions1.yml");
+    mapWriter.write<unsigned char>(cMockData, g, "Simple_1_fusion/Predictions/");
+                                       
+    g.load("simpleFusionPredictions2.yml");
+    mapWriter.write<unsigned char>(cMockData, g, "Simple_2_fusion/Predictions/");
+                                              
+    g.load("simpleFusionPredictions3.yml");
+    mapWriter.write<unsigned char>(cMockData, g, "Simple_3_fusion/Predictions/");
+    
+    g.load("boostFusionPredictions.yml");
+    mapWriter.write<unsigned char>(cMockData, g, "Boost_fusion/Predictions/");
+           
+    g.load("mlpSigmoidFusionPredictions.yml");
+    mapWriter.write<unsigned char>(cMockData, g, "MLP_sigmoid_fusion/Predictions/");
+                  
+    g.load("mlpGaussianFusionPredictions.yml");
+    mapWriter.write<unsigned char>(cMockData, g, "MLP_gaussian_fusion/Predictions/");
+                         
+    g.load("svmLinearFusionPredictions.yml");
+    mapWriter.write<unsigned char>(cMockData, g, "SVM_linear_fusion/Predictions/");
+                                
+    g.load("svmRBFFusionPredictions.yml");
+    mapWriter.write<unsigned char>(cMockData, g, "SVM_rbf_fusion/Predictions/");
+    */
+    
+    //
+    // Overlap
+    //
+    
+    Validation validate;
+    
+    //Individual..
+    
+    //Depth
+    cv::Mat overlapIDs;
+    for (int s = 0; s < sequences.size(); s++)
+    {
+        ModalityData depthData;
+        cout << "Reading depth data in scene " << s << ".." << endl;
+        reader.overlapreadScene("Depth", "Depth", sequences[s], ".png", depthData);
+        validate.getOverlap(depthData, dontCareRange, overlapIDs);
+    }
     
     return 0;
 }

@@ -21,6 +21,7 @@ using namespace std;
 
 #include "GridMat.h"
 #include "MotionFeatureExtractor.h"
+#include "StatTools.h"
 
 
 ModalityReader::ModalityReader() : m_MasksOffset(200)
@@ -462,16 +463,49 @@ void ModalityReader::overlapreadScene(string predictionType, string modality, st
     loadDataToMats   (dataPath +  scenePath + "Masks/" + modality + "/", ".png", bsMasks, bsMasksFilenames);
     loadDataToMats   (dataPath + scenePath + "GroundTruth/" + modality + "/", ".png", gtMasks, gtMasksFilenames);
     
+    assert(bsMasks.size() == gtMasks.size() && bsMasksFilenames.size() == gtMasksFilenames.size());
+    
     vector<cv::Mat> predictionMasks;
+    vector<cv::Mat> groundTruthMasks;
     
     int predictionsIndex = 0;
     for(int i = 0; i < bsMasksFilenames.size(); i++)
     {
-        cout << bsMasksFilenames[i] << endl; //debug
+        
+        if(gtMasks[i].channels() > 1)
+        {
+            vector<cv::Mat> auxGt;
+            split(gtMasks[i], auxGt);
+            groundTruthMasks.push_back(auxGt[0]);
+        } else {
+            groundTruthMasks.push_back(gtMasks[i]);
+        }
+        
+        //cout << bsMasksFilenames[i] << endl; //debug
         if(bsMasksFilenames[i].compare(predictionFilenames[predictionsIndex]) == 0)
         {
-            cout << predictionFilenames[predictionsIndex] << endl; //debug
+            //cout << predictionFilenames[predictionsIndex] << endl; //debug
+            
+            vector<int> un;
+            findUniqueValues(predictions[predictionsIndex], un);
+            cout << "Before: ";
+            for(int a = 0; a < un.size(); a++)
+            {
+                cout << un[a] << " ";
+            }
+            cout << endl;
+            
             predictionMasks.push_back(bsMasks[i].mul(predictions[predictionsIndex]));
+            
+            vector<int> dos;
+            findUniqueValues(bsMasks[i].mul(predictions[predictionsIndex]), dos);
+            cout << "After: ";
+            for(int a = 0; a < dos.size(); a++)
+            {
+                cout << dos[a] << " ";
+            }
+            cout << endl;
+            
             predictionsIndex++;
         }
         else
@@ -484,47 +518,19 @@ void ModalityReader::overlapreadScene(string predictionType, string modality, st
     for(int i = 0; i < predictionMasks.size(); i++)
     {
         imshow("predictedMasks", predictionMasks[i]);
+        imshow("gtMasks", groundTruthMasks[i]);
         cv::waitKey(10);
     }
-    
-    
-    //TODO: change this! - or erase it -
-    //vector<cv::Mat> masks(2); //1. bsmasks, 2.predictions
-    //split(md.getPredictedMasks(), masks);
-    
-    //vector<cv::Mat> output;
-    
-    
-    //int predictionIndex = 0;
-    //for(int i = 0; i < bsMasks.size(); i++)
-    //{
-    //cv::Mat aux;
-    //cv::Mat mask(predictions[0].rows, predictions[0].cols, CV_8UC2);
-    //if(cv::countNonZero(predictions[predictionIndex]) > 0)
-    //{
-    //    aux = predictions[predictionIndex];
-    //    predictionIndex++;
-    //}
-    //else
-    //{
-    //    aux = cv::Mat::zeros(predictions[0].rows, predictions[0].cols, CV_8UC1);
-    //}
-    
-    //cv::Mat in[] = {bsMasks[i], aux};
-    //int from_to[] = {0,0, 1,1};
-    //cv::mixChannels(in, 2, &mask, 1, from_to, 2);
-    
-    //predictedMasks.push_back(mask);
-    //}
+    cv::destroyAllWindows();
     
     
     md.setPredictedMasks(predictionMasks);
-    md.setGroundTruthMasks(gtMasks);
+    md.setGroundTruthMasks(groundTruthMasks);
     
-    predictions.clear();
-    bsMasks.clear();
-    gtMasks.clear();
-    predictionMasks.clear();
+    //predictions.clear();
+    //bsMasks.clear();
+    //gtMasks.clear();
+    //predictionMasks.clear();
 }
 
 void ModalityReader::overlapreadScene(string predictionType, string modality, string scenePath, const char* filetype, ModalityData& md)
