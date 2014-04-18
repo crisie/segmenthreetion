@@ -81,7 +81,23 @@ cv::Mat shuffledVector(int a, int b, cv::RNG randGen)
         vec.at<int>(i-a, 0) = i;
     }
     
-    randShuffle(vec, 1, &randGen);
+    randShuffle(vec, 10*(b-a+1), &randGen);
+    
+    return vec;
+}
+
+/**
+ * Create a column vector containing the numbers in the interval [a,b] shuffled randomly
+ */
+cv::Mat shuffledVector(int a, int b)
+{
+    cv::Mat vec (b-a+1, 1, cv::DataType<int>::type);
+    for (int i = a; i <= b; i++)
+    {
+        vec.at<int>(i-a, 0) = i;
+    }
+    
+    randShuffle(vec, 10*(b-a+1), NULL);
     
     return vec;
 }
@@ -92,6 +108,11 @@ cv::Mat shuffledVector(int a, int b, cv::RNG randGen)
 cv::Mat shuffledVector(int n, cv::RNG randGen)
 {
     return shuffledVector(0, n-1, randGen);
+}
+
+cv::Mat shuffledVector(int n)
+{
+    return shuffledVector(0, n-1);
 }
 
 /**
@@ -107,14 +128,22 @@ void cvpartition(int n, int k, int seed, cv::Mat& partitions)
     partitions.release();
     partitions.create(indices.rows, indices.cols, cv::DataType<int>::type);
 
+    cv::Mat tmp = shuffledVector(k);
+    cv::Mat tmp2 = tmp(cv::Range(0, extraElems), cv::Range::all());
+
     unsigned int c = 0;
     unsigned int i, j;
     for (i = 0; i < k; i++)
     {
-        int ifoldElems = (i < extraElems) ? (foldElems + 1) : foldElems;
+        int ifoldElems;
+        if (cv::sum(tmp2 == i).val[0] > 0)
+            ifoldElems = (foldElems + 1);
+        else
+            ifoldElems = foldElems;
+        
         for (j = 0; j < ifoldElems; j++)
         {
-            partitions.at<int>(indices.at<int>(c+j)) = i;
+            partitions.at<int>(indices.at<int>(c+j,0),0) = i;
         }
         
         c += ifoldElems;

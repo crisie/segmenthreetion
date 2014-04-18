@@ -68,8 +68,8 @@ void ModalityPredictionBase<PredictorT>::computeGridPredictionsConsensus(Modalit
     consensusPredictions.create(tags.rows, 1, cv::DataType<int>::type);
     consensusDistsToMargin.create(tags.rows, 1, cv::DataType<float>::type);
     
-    cv::Mat partitions;
-    cvpartition(tags, m_testK, m_seed, partitions);
+//    cv::Mat partitions;
+//    cvpartition(tags, m_testK, m_seed, partitions);
     
     for (int r = 0; r < tags.rows; r++)
     {
@@ -214,7 +214,10 @@ void ModalityPrediction<cv::EM>::compute(GridMat& predictions, GridMat& loglikel
     GridMat gvalidnesses = m_data.getValidnesses();
     
     GridMat gpartitions;
-    cvpartition(gtags, m_testK, m_seed, gpartitions);
+    //cvpartition(gtags, m_testK, m_seed, gpartitions);
+    
+    cv::Mat partitions = m_data.getPartitionIndicesMat();
+    gpartitions.setTo(partitions);
     
     // create a list of parameters' variations
     vector<vector<float> > params, gridExpandedParameters;

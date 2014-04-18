@@ -64,9 +64,9 @@ public:
     //void setTo(GridMat& m);
     
     template<typename T>
-    void convertToMat(cv::Mat& mat);
+    void convertToMat(cv::Mat& mat, bool imshow = false);
     template<typename T>
-    cv::Mat convertToMat();
+    cv::Mat convertToMat(bool imshow = false);
     
     GridMat convertToSparse(GridMat indices);
     void convertToSparse(GridMat indices, GridMat& sparseGridMat);

@@ -52,8 +52,8 @@ GridMat::GridMat(cv::Mat mat, unsigned int crows, unsigned int ccols)
         //cellw = ((i+1) * a - 1) - (i * a);
         cv::Rect cell = cv::Rect((j * b),
                                  (i * a),
-                                 (i < rb) ? b+1 : b,
-                                 (j < ra) ? a+1 : a);// cellh, cellw);
+                                 (j < rb) ? b+1 : b,
+                                 (i < ra) ? a+1 : a);// cellh, cellw);
         cv::Mat roi(mat,cell);
         //copyMakeBorder(roi, roi, margin, margin, margin, margin, BORDER_CONSTANT, 0);
         //cv::namedWindow("grid");
@@ -522,21 +522,19 @@ void GridMat::setTo(T value, unsigned int i, unsigned int j, cv::Mat mask)
     cv::Mat tmp (this->at(i,j).rows, this->at(i,j).cols, cv::DataType<T>::type);
     tmp.setTo(value);
     
-    this->at(i,j).release();
+    //this->at(i,j).release();
     tmp.copyTo(this->at(i,j), mask);
 }
 
 template<typename T>
-void GridMat::convertToMat(cv::Mat& mat)
+void GridMat::convertToMat(cv::Mat& mat, bool imshow)
 {
-    mat.release();
-    
     int a = floorf(((float) m_rows) / m_crows);     // + (m_rows % m_crows)/m_crows;
     int b = floorf(((float) m_cols) / m_ccols);     // + (m_cols % m_ccols)/m_ccols;
     int ra = m_rows - a * m_crows;
     int rb = m_cols - b * m_ccols;
     
-    mat.create(m_rows, m_cols, cv::DataType<T>::type);
+    cv::Mat tmp (m_rows, m_cols, cv::DataType<T>::type, cv::Scalar(0));
     
     for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
     {
@@ -545,19 +543,39 @@ void GridMat::convertToMat(cv::Mat& mat)
         
         cv::Rect r = cv::Rect((j * b),
                               (i * a),
-                              (i < rb) ? b+1 : b,
-                              (j < ra) ? a+1 : a);
+                              (j < rb) ? b+1 : b,
+                              (i < ra) ? a+1 : a);
         
-        cv::Mat roi (mat, r);
-        cell.copyTo(roi);
+        assert(cell.rows == r.height && cell.cols == r.width);
+        
+        cv::Mat roiTmp (tmp, r);
+//        if (imshow)
+//        {
+//            cv::namedWindow("a");
+//            cv::namedWindow("b");
+//            cv::namedWindow("c");
+//            cv::imshow("a", roi);
+//            cv::imshow("b", cell);
+//            cv::imshow("c", mat);
+//        }
+        cell.copyTo(roiTmp);
+//        
+//        if (imshow)
+//        {
+//            cv::namedWindow("d");
+//            cv::imshow("d", roi);
+//            cv::waitKey();
+//        }
     }
+    
+    mat = tmp;
 }
 
 template<typename T>
-cv::Mat GridMat::convertToMat()
+cv::Mat GridMat::convertToMat(bool imshow)
 {
     cv::Mat tmp;
-    this->convertToMat<T>(tmp);
+    this->convertToMat<T>(tmp, imshow);
     
     return tmp;
 }
@@ -1545,15 +1563,15 @@ template void GridMat::setTo<int>(int value, unsigned int i, unsigned int j, cv:
 template void GridMat::setTo<float>(float value, unsigned int i, unsigned int j, cv::Mat mask);
 template void GridMat::setTo<double>(double value, unsigned int i, unsigned int j, cv::Mat mask);
 
-template void GridMat::convertToMat<unsigned char>(cv::Mat& mat);
-template void GridMat::convertToMat<int>(cv::Mat& mat);
-template void GridMat::convertToMat<float>(cv::Mat& mat);
-template void GridMat::convertToMat<double>(cv::Mat& mat);
+template void GridMat::convertToMat<unsigned char>(cv::Mat& mat, bool imshow);
+template void GridMat::convertToMat<int>(cv::Mat& mat, bool imshow);
+template void GridMat::convertToMat<float>(cv::Mat& mat, bool imshow);
+template void GridMat::convertToMat<double>(cv::Mat& mat, bool imshow);
 
-template cv::Mat GridMat::convertToMat<unsigned char>();
-template cv::Mat GridMat::convertToMat<int>();
-template cv::Mat GridMat::convertToMat<float>();
-template cv::Mat GridMat::convertToMat<double>();
+template cv::Mat GridMat::convertToMat<unsigned char>(bool imshow);
+template cv::Mat GridMat::convertToMat<int>(bool imshow);
+template cv::Mat GridMat::convertToMat<float>(bool imshow);
+template cv::Mat GridMat::convertToMat<double>(bool imshow);
 
 template GridMat GridMat::operator< <unsigned char>(unsigned char value);
 template GridMat GridMat::operator< <int>(int value);

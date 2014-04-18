@@ -62,6 +62,7 @@ void GridMapWriter::write(std::string outputDir)
     write<T>(m_mgd, m_values, outputDir);
 }
 
+unsigned char colors[][3] = {{255,0,0},{0,255,0},{0,0,255},{255,255,0},{255,0,255},{0,255,255}};
 template<typename T>
 void GridMapWriter::write(ModalityGridData& mgd, GridMat& gvalues, string outputDir)
 {
@@ -105,16 +106,32 @@ void GridMapWriter::write(ModalityGridData& mgd, GridMat& gvalues, string output
             cv::Mat mask = cv::imread(frameFilePath + "Masks/" + modality + "/" + frameFilename + ".png",
                                       CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
             
+//            // DEBUG
+//            // +----------------------------------------------------------------
+//            cv::Mat drawableMask;
+//            cv::cvtColor(mask.clone(), drawableMask, CV_GRAY2BGR);
+//            // +----------------------------------------------------------------
+            
             cv::Mat map (res.y, res.x, cv::DataType<T>::type);
             map.setTo(0);
             
             for (int k = 0; k < gridsInFrameIndices.rows; k++)
             {
-                cout << frameFilename << ", " << k << "/" << gridsInFrameIndices.rows << endl;
+                cout << "scene " << s << ", filename " << frameFilename << ", rect " << k << "/" << gridsInFrameIndices.rows << endl;
                 int idx = gridsInFrameIndices.at<int>(k,1);
                 
                 cv::Rect r = mgd.getGridBoundingRect(idx);
                 cv::Mat validnesses = mgd.getValidnesses(idx).clone();
+                
+//                // DEBUG
+//                // +----------------------------------------------------------------
+//                unsigned char red, green, blue;
+//                red = colors[k][0];
+//                green = colors[k][1];
+//                blue = colors[k][2];
+//                cv::rectangle(drawableMask, cv::Point(r.x, r.y), cv::Point(r.x+r.width, r.y+r.height),
+//                              cv::Scalar(red,green,blue,0),1,8,0);
+//                // +----------------------------------------------------------------
                 
                 cv::Mat roiMap (map, r);
                 GridMat gRoiMap (roiMap, mgd.getHp(), mgd.getWp());
@@ -133,10 +150,32 @@ void GridMapWriter::write(ModalityGridData& mgd, GridMat& gvalues, string output
                 gRoiMap.convertToMat<T>().copyTo(roiMap, roiMask);
             }
             
-            string mapPath = frameFilePath + "Maps/" + mgd.getModality() + "/"
-            + outputDir + frameFilename + ".png";
-            
+            string mapPath = frameFilePath + "Maps/" + outputDir + frameFilename + ".png";
             cv::imwrite(mapPath, map);
+            
+//            // DEBUG
+//            // +----------------------------------------------------------------
+//            cv::Mat drawableMap;
+//            cv::cvtColor(map, drawableMap, CV_GRAY2BGR);
+//            for (int k = 0; k < gridsInFrameIndices.rows; k++)
+//            {
+//                cout << frameFilename << ", " << k << "/" << gridsInFrameIndices.rows << endl;
+//                int idx = gridsInFrameIndices.at<int>(k,1);
+//                
+//                cv::Rect r = mgd.getGridBoundingRect(idx);
+//                unsigned char red, green, blue;
+//                red = colors[k][0];
+//                green = colors[k][1];
+//                blue = colors[k][2];
+//                cv::rectangle(drawableMap, cv::Point(r.x, r.y), cv::Point(r.x+r.width, r.y+r.height),
+//                              cv::Scalar(red,green,blue,0),1,8,0);
+//            }
+//            
+//            cv::namedWindow("a");
+//            cv::imshow("a", drawableMap);
+//            cv::waitKey();
+//            // +----------------------------------------------------------------
+            
         }
     }
 }

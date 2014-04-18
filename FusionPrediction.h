@@ -73,8 +73,9 @@ public:
     void setResponses(cv::Mat responses);
     
     void setModelSelection(bool flag);
-    void setModelSelectionParameters(int k, bool best);
+    void setModelSelectionParameters(int k, int seed, bool best);
     void setValidationParameters(int k, int seed);
+    void setPartitions(cv::Mat partitions);
     
     void setStackedPrediction(bool flag);
     
@@ -98,6 +99,7 @@ protected:
     bool m_selectBest;
     
     int m_seed;
+    cv::Mat m_partitions;
     
     bool m_bStackPredictions;
     

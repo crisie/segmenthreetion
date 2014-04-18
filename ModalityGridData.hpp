@@ -60,6 +60,7 @@ public:
                 {
                     addDescriptor(other.getDescriptor(i, j, k), i, j);
                 }
+                addPartitionIndex(other.getPartitionIndex(k));
             }
         }
     }
@@ -77,6 +78,7 @@ public:
 		m_Tags.clear();
         m_Validnesses.release();
         m_Descriptors.release();
+        m_PartitionIndices.clear();
 	}
     
     void operator=(const ModalityGridData& other)
@@ -97,6 +99,7 @@ public:
         m_Descriptors = other.m_Descriptors;
         m_MinVal = other.m_MinVal;
         m_MaxVal = other.m_MaxVal;
+        m_PartitionIndices = other.m_PartitionIndices;
     }
     
     // Getters
@@ -190,6 +193,11 @@ public:
         return GridMat(m_Descriptors, m_Validnesses);
     }
 
+    int getPartitionIndex(int k)
+    {
+        return m_PartitionIndices[k];
+    }
+    
     int getNumOfScenes()
     {
         return m_ScenesPaths.size();
@@ -290,6 +298,12 @@ public:
         
         return gValidTags;
     }
+    
+    cv::Mat getPartitionIndicesMat()
+    {
+		return cv::Mat(m_PartitionIndices.size(), 1, cv::DataType<int>::type, m_PartitionIndices.data());
+    }
+    
     
     int getHp()
     {
@@ -522,6 +536,11 @@ public:
         m_Validnesses.vconcat(g);
     }
     
+    void addPartitionIndex(int index)
+    {
+        m_PartitionIndices.push_back(index);
+    }
+    
     void addDescriptor(cv::Mat descriptor, unsigned int i, unsigned int j)
     {
         setValidness(cv::checkRange(descriptor), i, j, m_Descriptors.at(i,j).rows);
@@ -579,6 +598,7 @@ private:
     vector<cv::Point2d> m_FramesResolutions;
     vector<cv::Rect> m_GBoundingRects;
     vector<int> m_Tags;
+    vector<int> m_PartitionIndices;
     
     GridMat m_Validnesses; // whether cells in the grids are valid to be described
     GridMat m_Descriptors;

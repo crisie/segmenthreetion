@@ -52,10 +52,15 @@ public:
     
     void agreement(vector<ModalityGridData*> mgds);
     
+    
+    void getBoundingBoxesFromGroundtruthMasks(string modality, vector<string> sceneDirs, vector<vector<cv::Rect> >& boxes);
+    void getBoundingBoxesFromGroundtruthMasks(string modality, string sceneDir, vector<vector<cv::Rect> >& boxes);
+    
 private:
     string m_DataPath;
     vector<string> m_ScenesPaths;
     unsigned char m_MasksOffset;
+    unsigned char m_MaxOffset;
     double m_MinVal, m_MaxVal;
     
     // TODO:
@@ -70,8 +75,12 @@ private:
     void loadDataToMats(string dir, const char* format, vector<cv::Mat> & frames, vector<string>& indices);
     // Load people bounding boxes (rects)
     void loadBoundingRects(string file, vector<vector<cv::Rect> >& rects, vector< vector<int> >& tags);
+    // Load people bounding boxes (rects)
+    void loadBoundingRects(string file, vector<vector<cv::Rect> >& rects);
     // Save calibVars files directories
     void loadCalibVarsDir(string dir, vector<string>& calibVarsDirs);
+    
+    void getBoundingBoxesInMask(cv::Mat mask, vector<cv::Rect>& boxes);
 };
 
 #endif /* defined(__segmenthreetion__ModalityReader__) */

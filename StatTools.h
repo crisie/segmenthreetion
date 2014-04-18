@@ -22,9 +22,11 @@ void histogram(cv::Mat mat, int nbins, cv::Mat & hist);
 
 // Create a column vector containing the numbers in the interval [a,b] shuffled randomly
 cv::Mat shuffledVector(int a, int b, cv::RNG randGen);
+cv::Mat shuffledVector(int a, int b);
 
 // Create a column vector containing the numbers in the interval [0,n) shuffled randomly
 cv::Mat shuffledVector(int n, cv::RNG randGen);
+cv::Mat shuffledVector(int n);
 
 // Create a vector of labels representing the k folds of n elements
 void cvpartition(int n, int k, int seed, cv::Mat& partitions);

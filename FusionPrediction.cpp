@@ -18,23 +18,29 @@ using namespace boost::assign;
 template void ClassifierFusionPredictionBase<cv::EM,CvBoost>::setData(vector<GridMat> distsToMargin, vector<cv::Mat> predictions);
 template void ClassifierFusionPredictionBase<cv::EM,CvBoost>::setResponses(cv::Mat);
 template void ClassifierFusionPredictionBase<cv::EM,CvBoost>::setModelSelection(bool flag);
-template void ClassifierFusionPredictionBase<cv::EM,CvBoost>::setModelSelectionParameters(int, bool);
+template void ClassifierFusionPredictionBase<cv::EM,CvBoost>::setModelSelectionParameters(int, int, bool);
 template void ClassifierFusionPredictionBase<cv::EM,CvBoost>::setValidationParameters(int, int);
 template void ClassifierFusionPredictionBase<cv::EM,CvBoost>::setStackedPrediction(bool flag);
+template void ClassifierFusionPredictionBase<cv::EM,CvBoost>::setPartitions(cv::Mat partitions);
+
 
 template void ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>::setData(vector<GridMat> distsToMargin, vector<cv::Mat> predictions);
 template void ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>::setResponses(cv::Mat);
 template void ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>::setModelSelection(bool flag);
-template void ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>::setModelSelectionParameters(int, bool);
+template void ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>::setModelSelectionParameters(int, int, bool);
 template void ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>::setValidationParameters(int, int);
 template void ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>::setStackedPrediction(bool flag);
+template void ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>::setPartitions(cv::Mat partitions);
+
 
 template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setData(vector<GridMat> distsToMargin, vector<cv::Mat> predictions);
 template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setResponses(cv::Mat);
 template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setModelSelection(bool flag);
-template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setModelSelectionParameters(int, bool);
+template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setModelSelectionParameters(int, int, bool);
 template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setValidationParameters(int, int);
 template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setStackedPrediction(bool flag);
+template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setPartitions(cv::Mat partitions);
+
 // -----------------------------------------------------------------------------
 
 
@@ -256,9 +262,10 @@ void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setModelSelection(bool
 }
 
 template<typename ClassifierT>
-void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setModelSelectionParameters(int k, bool best)
+void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setModelSelectionParameters(int k, int seed, bool best)
 {
     m_modelSelecK = k;
+    m_seed = seed;
     m_selectBest = best;
 }
 
@@ -267,6 +274,12 @@ void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setValidationParameter
 {
     m_testK = k;
     m_seed = seed;
+}
+
+template<typename ClassifierT>
+void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setPartitions(cv::Mat partitions)
+{
+    m_partitions = partitions;
 }
 
 template<typename ClassifierT>
@@ -343,8 +356,8 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(cv::Mat& fusionPrediction
     cv::Mat coarseExpandedParameters;
     expandParameters(params, coarseExpandedParameters);
     
-    cv::Mat partitions;
-    cvpartition(m_responses, m_testK, m_seed, partitions);
+//    cv::Mat partitions;
+//    cvpartition(m_responses, m_testK, m_seed, partitions);
     
     if (m_bModelSelection)
     {
@@ -354,12 +367,12 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(cv::Mat& fusionPrediction
         {
             cout << k << " " << endl;
             
-            cv::Mat trData = cvx::indexMat(m_data, (partitions != k) & (partitions != ((k+1) % m_testK)));
-            cv::Mat teData = cvx::indexMat(m_data, partitions == k);
-            cv::Mat valData = cvx::indexMat(m_data, partitions == ((k+1) % m_testK));
-            cv::Mat trResponses = cvx::indexMat(m_responses, (partitions != k) & (partitions != ((k+1) % m_testK)));
-            cv::Mat teResponses = cvx::indexMat(m_responses, partitions == k);
-            cv::Mat valResponses = cvx::indexMat(m_responses, partitions == ((k+1) % m_testK));
+            cv::Mat trData = cvx::indexMat(m_data, (m_partitions != k) & (m_partitions != ((k+1) % m_testK)));
+            cv::Mat teData = cvx::indexMat(m_data, m_partitions == k);
+            cv::Mat valData = cvx::indexMat(m_data, m_partitions == ((k+1) % m_testK));
+            cv::Mat trResponses = cvx::indexMat(m_responses, (m_partitions != k) & (m_partitions != ((k+1) % m_testK)));
+            cv::Mat teResponses = cvx::indexMat(m_responses, m_partitions == k);
+            cv::Mat valResponses = cvx::indexMat(m_responses, m_partitions == ((k+1) % m_testK));
             
             // Coarse search
             cv::Mat coarseGoodnesses; // for instance: accuracies
@@ -395,12 +408,12 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(cv::Mat& fusionPrediction
     {
         cout << k << " ";
         
-        cv::Mat trData = cvx::indexMat(m_data, (partitions != k) & (partitions != ((k+1) % m_testK)));
-        cv::Mat teData = cvx::indexMat(m_data, partitions == k);
-        cv::Mat valData = cvx::indexMat(m_data, partitions == ((k+1) % m_testK));
-        cv::Mat trResponses = cvx::indexMat(m_responses, (partitions != k) & (partitions != ((k+1) % m_testK)));
-        cv::Mat teResponses = cvx::indexMat(m_responses, partitions == k);
-        cv::Mat valResponses = cvx::indexMat(m_responses, partitions == ((k+1) % m_testK));
+        cv::Mat trData = cvx::indexMat(m_data, (m_partitions != k) & (m_partitions != ((k+1) % m_testK)));
+        cv::Mat teData = cvx::indexMat(m_data, m_partitions == k);
+        cv::Mat valData = cvx::indexMat(m_data, m_partitions == ((k+1) % m_testK));
+        cv::Mat trResponses = cvx::indexMat(m_responses, (m_partitions != k) & (m_partitions != ((k+1) % m_testK)));
+        cv::Mat teResponses = cvx::indexMat(m_responses, m_partitions == k);
+        cv::Mat valResponses = cvx::indexMat(m_responses, m_partitions == ((k+1) % m_testK));
         
         cv::Mat validTrData = cvx::indexMat(trData, trResponses >= 0); // -1 labels not used in training
         cv::Mat validTrResponses = cvx::indexMat(trResponses, trResponses >= 0);
@@ -427,7 +440,7 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(cv::Mat& fusionPrediction
         cv::Mat tePredictions;
         m_pClassifier->predict(teData, tePredictions);
         
-        cvx::setMat(tePredictions, predictions, partitions == k);
+        cvx::setMat(tePredictions, predictions, m_partitions == k);
     }
     cout << endl;
     
@@ -534,8 +547,8 @@ void ClassifierFusionPrediction<cv::EM,CvBoost>::compute(cv::Mat& fusionPredicti
     cv::Mat coarseExpandedParameters;
     expandParameters(params, coarseExpandedParameters);
     
-    cv::Mat partitions;
-    cvpartition(m_responses, m_testK, m_seed, partitions);
+//    cv::Mat partitions;
+//    cvpartition(m_responses, m_testK, m_seed, partitions);
     
     if (m_bModelSelection)
     {
@@ -545,12 +558,12 @@ void ClassifierFusionPrediction<cv::EM,CvBoost>::compute(cv::Mat& fusionPredicti
         {
             cout << k << " " << endl;
             
-            cv::Mat trData = cvx::indexMat(m_data, (partitions != k) & (partitions != ((k+1) % m_testK)));
-            cv::Mat teData = cvx::indexMat(m_data, partitions == k);
-            cv::Mat valData = cvx::indexMat(m_data, partitions == ((k+1) % m_testK));
-            cv::Mat trResponses = cvx::indexMat(m_responses, (partitions != k) & (partitions != ((k+1) % m_testK)));
-            cv::Mat teResponses = cvx::indexMat(m_responses, partitions == k);
-            cv::Mat valResponses = cvx::indexMat(m_responses, partitions == ((k+1) % m_testK));
+            cv::Mat trData = cvx::indexMat(m_data, (m_partitions != k) & (m_partitions != ((k+1) % m_testK)));
+            cv::Mat teData = cvx::indexMat(m_data, m_partitions == k);
+            cv::Mat valData = cvx::indexMat(m_data, m_partitions == ((k+1) % m_testK));
+            cv::Mat trResponses = cvx::indexMat(m_responses, (m_partitions != k) & (m_partitions != ((k+1) % m_testK)));
+            cv::Mat teResponses = cvx::indexMat(m_responses, m_partitions == k);
+            cv::Mat valResponses = cvx::indexMat(m_responses, m_partitions == ((k+1) % m_testK));
             
             // Coarse search
             cv::Mat coarseGoodnesses; // for instance: accuracies
@@ -586,12 +599,12 @@ void ClassifierFusionPrediction<cv::EM,CvBoost>::compute(cv::Mat& fusionPredicti
     {
         cout << k << " ";
         
-        cv::Mat trData = cvx::indexMat(m_data, (partitions != k) & (partitions != ((k+1) % m_testK)));
-        cv::Mat teData = cvx::indexMat(m_data, partitions == k);
-        cv::Mat valData = cvx::indexMat(m_data, partitions == ((k+1) % m_testK));
-        cv::Mat trResponses = cvx::indexMat(m_responses, (partitions != k) & (partitions != ((k+1) % m_testK)));
-        cv::Mat teResponses = cvx::indexMat(m_responses, partitions == k);
-        cv::Mat valResponses = cvx::indexMat(m_responses, partitions == ((k+1) % m_testK));
+        cv::Mat trData = cvx::indexMat(m_data, (m_partitions != k) & (m_partitions != ((k+1) % m_testK)));
+        cv::Mat teData = cvx::indexMat(m_data, m_partitions == k);
+        cv::Mat valData = cvx::indexMat(m_data, m_partitions == ((k+1) % m_testK));
+        cv::Mat trResponses = cvx::indexMat(m_responses, (m_partitions != k) & (m_partitions != ((k+1) % m_testK)));
+        cv::Mat teResponses = cvx::indexMat(m_responses, m_partitions == k);
+        cv::Mat valResponses = cvx::indexMat(m_responses, m_partitions == ((k+1) % m_testK));
         
         cv::Mat validTrData = cvx::indexMat(trData, trResponses >= 0); // -1 labels not used in training
         cv::Mat validTrResponses = cvx::indexMat(trResponses, trResponses >= 0);
@@ -621,7 +634,7 @@ void ClassifierFusionPrediction<cv::EM,CvBoost>::compute(cv::Mat& fusionPredicti
         for (int d = 0; d < teData.rows; d++)
             tePredictions.at<int>(d,0) = (int) m_pClassifier->predict(teData.row(d));
         
-        cvx::setMat(tePredictions, predictions, partitions == k);
+        cvx::setMat(tePredictions, predictions, m_partitions == k);
     }
     cout << endl;
     
@@ -730,8 +743,8 @@ void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::compute(cv::Mat& fusionPredic
     cv::Mat coarseExpandedParameters;
     expandParameters(params, coarseExpandedParameters);
     
-    cv::Mat partitions;
-    cvpartition(m_responses, m_testK, m_seed, partitions);
+//    cv::Mat partitions;
+//    cvpartition(m_responses, m_testK, m_seed, partitions);
     
     if (m_bModelSelection)
     {
@@ -741,12 +754,12 @@ void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::compute(cv::Mat& fusionPredic
         {
             cout << k << " " << endl;
             
-            cv::Mat trData = cvx::indexMat(m_data, (partitions != k) & (partitions != ((k+1) % m_testK)));
-            cv::Mat teData = cvx::indexMat(m_data, partitions == k);
-            cv::Mat valData = cvx::indexMat(m_data, partitions == ((k+1) % m_testK));
-            cv::Mat trResponses = cvx::indexMat(m_responses, (partitions != k) & (partitions != ((k+1) % m_testK)));
-            cv::Mat teResponses = cvx::indexMat(m_responses, partitions == k);
-            cv::Mat valResponses = cvx::indexMat(m_responses, partitions == ((k+1) % m_testK));
+            cv::Mat trData = cvx::indexMat(m_data, (m_partitions != k) & (m_partitions != ((k+1) % m_testK)));
+            cv::Mat teData = cvx::indexMat(m_data, m_partitions == k);
+            cv::Mat valData = cvx::indexMat(m_data, m_partitions == ((k+1) % m_testK));
+            cv::Mat trResponses = cvx::indexMat(m_responses, (m_partitions != k) & (m_partitions != ((k+1) % m_testK)));
+            cv::Mat teResponses = cvx::indexMat(m_responses, m_partitions == k);
+            cv::Mat valResponses = cvx::indexMat(m_responses, m_partitions == ((k+1) % m_testK));
             
             // Coarse search
             cv::Mat coarseGoodnesses; // for instance: accuracies
@@ -782,12 +795,12 @@ void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::compute(cv::Mat& fusionPredic
     {
         cout << k << " ";
         
-        cv::Mat trData = cvx::indexMat(m_data, (partitions != k) & (partitions != ((k+1) % m_testK)));
-        cv::Mat teData = cvx::indexMat(m_data, partitions == k);
-        cv::Mat valData = cvx::indexMat(m_data, partitions == ((k+1) % m_testK));
-        cv::Mat trResponses = cvx::indexMat(m_responses, (partitions != k) & (partitions != ((k+1) % m_testK)));
-        cv::Mat teResponses = cvx::indexMat(m_responses, partitions == k);
-        cv::Mat valResponses = cvx::indexMat(m_responses, partitions == ((k+1) % m_testK));
+        cv::Mat trData = cvx::indexMat(m_data, (m_partitions != k) & (m_partitions != ((k+1) % m_testK)));
+        cv::Mat teData = cvx::indexMat(m_data, m_partitions == k);
+        cv::Mat valData = cvx::indexMat(m_data, m_partitions == ((k+1) % m_testK));
+        cv::Mat trResponses = cvx::indexMat(m_responses, (m_partitions != k) & (m_partitions != ((k+1) % m_testK)));
+        cv::Mat teResponses = cvx::indexMat(m_responses, m_partitions == k);
+        cv::Mat valResponses = cvx::indexMat(m_responses, m_partitions == ((k+1) % m_testK));
         
         cv::Mat validTrData = cvx::indexMat(trData, trResponses >= 0); // -1 labels not used in training
         cv::Mat validTrResponses = cvx::indexMat(trResponses, trResponses >= 0);
@@ -854,7 +867,7 @@ void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::compute(cv::Mat& fusionPredic
             prevAcc = acc;
         }
 
-        cvx::setMat(tePredictions, predictions, partitions == k);
+        cvx::setMat(tePredictions, predictions, m_partitions == k);
     }
     cout << endl;
     

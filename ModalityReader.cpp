@@ -21,9 +21,10 @@ using namespace std;
 
 #include "GridMat.h"
 #include "MotionFeatureExtractor.h"
+#include "StatTools.h"
 
 
-ModalityReader::ModalityReader() : m_MasksOffset(200)
+ModalityReader::ModalityReader() : m_MasksOffset(200), m_MaxOffset(8)
 {
     
 }
@@ -192,8 +193,13 @@ void ModalityReader::readScene(string modality, string scenePath, const char* fi
         
         loadBoundingRects(scenePath + "/Masks/" + modality + ".yml", rects, tags);
     }
-
+    
     assert (framesFilenames.size() == masksFilenames.size());
+    
+    cv::Mat partition;
+    cv::FileStorage fs (scenePath + "Partition.yml", cv::FileStorage::READ);
+    fs["partition"] >> partition;
+    fs.release();
     
     // Load frame-wise (Mat), extract the roi represented by the bounding boxes,
     // grid the rois (GridMat), and store in GridModalityData object
@@ -229,7 +235,6 @@ void ModalityReader::readScene(string modality, string scenePath, const char* fi
             frame = cvx::matlabread<double>(framePath); // ramanan maps are matlab matrices of doubles
         
 		cv::Mat mask  = cv::imread(maskPath, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
-        
 
         // (Motion modality) load also a second color frame to compute the actual motion frame
         // --------------------------------------------------------------------------------------
@@ -302,6 +307,9 @@ void ModalityReader::readScene(string modality, string scenePath, const char* fi
                 // Cells' validness
                 cv::Mat validnesses = gmask.findNonZero<unsigned char>();
                 mgd.addValidnesses(validnesses);
+                
+                // Partition idx
+                mgd.addPartitionIndex(partition.at<int>(f,0));
 			}
 		}
 	}
@@ -368,15 +376,12 @@ void ModalityReader::mockreadScene(string modality, string scenePath, const char
         loadBoundingRects(scenePath + "/Masks/" + modality + ".yml", rects, tags);
     }
     
-    cv::Mat_<int> counts (100, 1);
-    counts.setTo(0);
-    for (int i = 0; i < rects.size(); i++)
-    {
-        counts.at<int>(rects[i].size(),0)++;
-    }
-    cout << counts << endl;
-    
     assert (framesFilenames.size() == masksFilenames.size());
+    
+    cv::Mat partition;
+    cv::FileStorage fs (scenePath + "Partition.yml", cv::FileStorage::READ);
+    fs["partition"] >> partition;
+    fs.release();
     
     // Load frame-wise (Mat), extract the roi represented by the bounding boxes,
     // grid the rois (GridMat), and store in GridModalityData object
@@ -439,6 +444,9 @@ void ModalityReader::mockreadScene(string modality, string scenePath, const char
 				GridMat gmask (indexedmaskroi, hp, wp);
                 cv::Mat validnesses = gmask.findNonZero<unsigned char>();
                 mgd.addValidnesses(validnesses);
+                
+                // Partition idx
+                mgd.addPartitionIndex(partition.at<int>(f,0));
 			}
 		}
 	}
@@ -642,7 +650,7 @@ void ModalityReader::loadBoundingRects(string file, vector< vector<cv::Rect> > &
             int x1 = v[j*4+2];
             int y1 = v[j*4+3];
             
-            frame_rects.push_back( cv::Rect(x0, y0, x1 - x0, y1 - y0) );
+            frame_rects.push_back( cv::Rect(x0, y0, x1 - x0 + 1, y1 - y0 + 1) );
         }
 
         rects.push_back(frame_rects);
@@ -651,6 +659,43 @@ void ModalityReader::loadBoundingRects(string file, vector< vector<cv::Rect> > &
     
     fs.release();
 }
+
+/*
+ * Load the people data (bounding boxes coordinates)
+ */
+void ModalityReader::loadBoundingRects(string file, vector< vector<cv::Rect> > & rects)
+{
+    cv::FileStorage fs;
+    fs.open(file.c_str(), cv::FileStorage::READ);
+    
+    int num_frames;
+    fs["num_frames"] >> num_frames;
+    
+    for (int i = 0; i < num_frames; i++)
+    {
+        stringstream ss;
+        ss << i;
+        
+        vector<int> v;
+        fs[string("coords_") + ss.str()] >> v;
+        
+        vector<cv::Rect> frame_rects;
+        for (int j = 0; j < v.size() / 4; j++)
+        {
+            int x0 = v[j*4];
+            int y0 = v[j*4+1];
+            int x1 = v[j*4+2];
+            int y1 = v[j*4+3];
+            
+            frame_rects.push_back( cv::Rect(x0, y0, x1 - x0 + 1, y1 - y0 + 1) );
+        }
+        
+        rects.push_back(frame_rects);
+    }
+    
+    fs.release();
+}
+
 
 void ModalityReader::loadCalibVarsDir(string dir, vector<string>& calibVarsDirs) {
     
@@ -735,3 +780,55 @@ void ModalityReader::agreement(vector<ModalityGridData*> mgds)
     }
 }
 */
+
+void ModalityReader::getBoundingBoxesInMask(cv::Mat mask, vector<cv::Rect>& boxes)
+{
+    boxes.clear();
+    
+    cvtColor(mask, mask, CV_RGB2GRAY);
+    
+    for (int l = 0; l < ((int) m_MaxOffset); l++)
+    {
+        cv::Mat binaryMask = (mask == m_MasksOffset + l);
+        
+        vector<vector<cv::Point> > contours;
+        findContours(binaryMask,contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE); //find contours in groundtruth
+        vector<vector<cv::Point> > contours_poly(contours.size());
+        vector<cv::Rect> boundRect(contours.size());
+        
+        for (unsigned int i = 0; i< contours.size(); i++)
+        {
+            //find bounding boxes around ground truth contours
+            approxPolyDP( cv::Mat(contours[i]), contours_poly[i], 2, true );
+            boundRect[i] = boundingRect( cv::Mat(contours_poly[i]) );
+            boxes.push_back(boundRect[i]);
+        }
+    }
+}
+
+void ModalityReader::getBoundingBoxesFromGroundtruthMasks(string modality, vector<string> sceneDirs, vector<vector<cv::Rect> >& boxes)
+{
+    boxes.clear();
+    
+    for (int s = 0; s < sceneDirs.size(); s++)
+    {
+        getBoundingBoxesFromGroundtruthMasks(modality, sceneDirs[s], boxes);
+    }
+}
+
+void ModalityReader::getBoundingBoxesFromGroundtruthMasks(string modality, string sceneDir, vector<vector<cv::Rect> >& boxes)
+{
+    string dir = m_DataPath + sceneDir + "GroundTruth/" + modality;
+    vector<string> filenames;
+    loadFilenames(dir, "png", filenames);
+    for (int f = 0; f < filenames.size(); f++)
+    {
+        string filePath = dir + "/" + filenames[f] + ".png";
+        cv::Mat mask = cv::imread(filePath, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+        
+        vector<cv::Rect> maskBoxes;
+        getBoundingBoxesInMask(mask, maskBoxes);
+        
+        boxes.push_back(maskBoxes);
+    }
+}
