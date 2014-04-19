@@ -151,6 +151,7 @@ void GridMapWriter::write(ModalityGridData& mgd, GridMat& gvalues, string output
             }
             
             string mapPath = frameFilePath + "Maps/" + outputDir + frameFilename + ".png";
+
             cv::imwrite(mapPath, map);
             
 //            // DEBUG

@@ -34,6 +34,8 @@
 
 #include "GridMapWriter.h"
 
+#include "Validation.h"
+
 #include "StatTools.h"
 
 #include <opencv2/opencv.hpp>
@@ -159,6 +161,9 @@ int main(int argc, const char* argv[])
     int kModelSelec = 3;
     int seed = 74;
  
+    // Overlap params
+    vector<float> dontCareRange;
+    dontCareRange += 1, 3, 5, 7, 9, 11, 13, 15, 17;
     
 // =============================================================================
 //  Execution
@@ -337,11 +342,11 @@ int main(int argc, const char* argv[])
     reader.readAllScenesMetadata("Depth", "png", hp, wp, dGridMetadata);
     reader.readAllScenesMetadata("Thermal", "jpg", hp, wp, tGridMetadata);
     
+    /*
     reader.loadDescription("Color.yml", cGridMetadata);
     reader.loadDescription("Motion.yml", mGridMetadata);
     reader.loadDescription("Depth.yml", dGridMetadata);
     reader.loadDescription("Thermal.yml", tGridMetadata);
-    
     
     ModalityPrediction<cv::EM> prediction;
     float mean, conf;
@@ -522,7 +527,7 @@ int main(int argc, const char* argv[])
     //
     // Fusion
     //
-    
+
     cout << "Computing fusion predictions ... " << endl;
     
     vector<ModalityGridData> mgds;
@@ -686,16 +691,75 @@ int main(int argc, const char* argv[])
     aux.setTo(svmRBFFusionPredictions);
     aux.save("svmRBFFusionPredictions.yml");
     
-//    //
-//    // Map writing
-//    //
-//    
-//    GridMapWriter mapWriter;
-//    
-//    GridMat m; // create an empty GridMat
-//    m.setTo(mConsensusPredictions); // set all the cells to same cv::Mat
-//    
-//    mapWriter.write<unsigned char>(mGridMetadata, m, "Motion/Predictions/");
-//    
+    */
+    
+    //
+    // Map writing
+    //
+    
+
+    GridMapWriter mapWriter;
+    
+    //GridMat m; // create an empty GridMat
+    //m.setTo(mConsensusPredictions); // set all the cells to same cv::Mat
+    
+    //mapWriter.write<unsigned char>(mMockData, m, "Predictions/");
+    
+    GridMat g;
+    g.load("mGridConsensusPredictions.yml");
+    mapWriter.write<unsigned char>(mGridMetadata, g, "Motion/Predictions/");
+    
+    g.load("dGridConsensusPredictions.yml");
+    mapWriter.write<unsigned char>(dGridMetadata, g, "Depth/Predictions/");
+ /*
+    g.load("tGridConsensusPredictions.yml");
+    mapWriter.write<unsigned char>(tMockData, g, "Thermal/Predictions/");
+                         
+    g.load("cGridConsensusPredictions.yml");
+    mapWriter.write<unsigned char>(cMockData, g, "Color/Predictions/");
+                                
+    g.load("simpleFusionPredictions1.yml");
+    mapWriter.write<unsigned char>(cMockData, g, "Simple_1_fusion/Predictions/");
+                                       
+    g.load("simpleFusionPredictions2.yml");
+    mapWriter.write<unsigned char>(cMockData, g, "Simple_2_fusion/Predictions/");
+                                              
+    g.load("simpleFusionPredictions3.yml");
+    mapWriter.write<unsigned char>(cMockData, g, "Simple_3_fusion/Predictions/");
+    
+    g.load("boostFusionPredictions.yml");
+    mapWriter.write<unsigned char>(cMockData, g, "Boost_fusion/Predictions/");
+           
+    g.load("mlpSigmoidFusionPredictions.yml");
+    mapWriter.write<unsigned char>(cMockData, g, "MLP_sigmoid_fusion/Predictions/");
+                  
+    g.load("mlpGaussianFusionPredictions.yml");
+    mapWriter.write<unsigned char>(cMockData, g, "MLP_gaussian_fusion/Predictions/");
+                         
+    g.load("svmLinearFusionPredictions.yml");
+    mapWriter.write<unsigned char>(cMockData, g, "SVM_linear_fusion/Predictions/");
+                                
+    g.load("svmRBFFusionPredictions.yml");
+    mapWriter.write<unsigned char>(cMockData, g, "SVM_rbf_fusion/Predictions/");
+    */
+    
+    //
+    // Overlap
+    //
+    
+    Validation validate;
+    
+    //Individual..
+    
+    //Depth
+    cv::Mat overlapIDs;
+    for (int s = 0; s < sequences.size(); s++)
+    {
+        ModalityData depthData;
+        cout << "Reading depth data in scene " << s << ".." << endl;
+        reader.overlapreadScene("Depth", "Depth", sequences[s], ".png", depthData);
+        validate.getOverlap(depthData, dontCareRange, overlapIDs);
+    }
+    
     return 0;
 }
