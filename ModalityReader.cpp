@@ -49,12 +49,20 @@ void ModalityReader::setDataPath(string dataPath)
 		{
 			if ( is_directory( *iter ) && iter->path().string().find("Scene") != string::npos)
 			{
-                string scenePath = iter->path().string();
-				m_ScenesPaths.push_back(scenePath);
+                cout << "Loading scene ... " << endl;
+                m_ScenesPaths.push_back(iter->path().string() + "/");
+                cout << "Path: " << m_ScenesPaths.back() << endl;
+            
+                cv::FileStorage fs (m_ScenesPaths.back() + "Partition.yml", cv::FileStorage::READ);
+                if (fs.isOpened())
+                    cout << "Partition file: FOUND" << endl;
+                    
+                cv::Mat sceneFramesPartition;
+                sceneFramesPartition.push_back(fs["partition"]);
                 
-                cout << "Scene found: " << scenePath << endl;
+                cout << endl;
 			}
-		}
+        }
 	}
     else
     {
@@ -62,6 +70,37 @@ void ModalityReader::setDataPath(string dataPath)
     }
 }
 
+unsigned int ModalityReader::getNumOfScenes()
+{
+    return m_ScenesPaths.size();
+}
+
+string ModalityReader::getScenePath(unsigned int sid)
+{
+    return m_ScenesPaths[sid];
+}
+
+cv::Mat ModalityReader::getScenePartition(unsigned int sid)
+{
+    return m_SceneFramesPartitions[sid];
+}
+
+vector<cv::Mat> ModalityReader::getPartitions()
+{
+    return m_SceneFramesPartitions;
+}
+
+cv::Mat ModalityReader::getAllScenesPartition()
+{
+    cv::Mat merge = m_SceneFramesPartitions[0];
+    
+    for (int s = 1; s < m_SceneFramesPartitions.size(); s++)
+    {
+        vconcat(merge, m_SceneFramesPartitions[s], merge);
+    }
+    
+    return merge;
+}
 
 void ModalityReader::setMasksOffset(unsigned char offset)
 {
@@ -135,33 +174,20 @@ void ModalityReader::read(string modality, ModalityData& md)
     }
 }
 
-void ModalityReader::read(string modality, string sceneDir, const char* filetype, int hp, int wp, ModalityGridData& mgd)
-{
-    vector<string> scenesDirs;
-    scenesDirs.push_back(sceneDir);
-    
-    read(modality, m_DataPath, scenesDirs, filetype, hp, wp, mgd);
-}
-
-void ModalityReader::read(string modality, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd)
-{
-    read(modality, m_DataPath, sceneDirs, filetype, hp, wp, mgd);
-}
-
-void ModalityReader::read(string modality, string dataPath, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd)
+void ModalityReader::readAllScenesData(string modality, const char* filetype, int hp, int wp, ModalityGridData& mgd)
 {
     mgd.clear();
     mgd.setModality(modality);
     mgd.setHp(hp);
     mgd.setWp(wp);
     
-    for (int s = 0; s < sceneDirs.size(); s++)
+    for (int s = 0; s < m_ScenesPaths.size(); s++)
     {
-        readScene(modality, dataPath + sceneDirs[s], filetype, hp, wp, mgd);
+        readSceneData(s, modality, filetype, hp, wp, mgd);
     }
 }
 
-void ModalityReader::readScene(string modality, string scenePath, const char* filetype, int hp, int wp, ModalityGridData& mgd)
+void ModalityReader::readSceneData(unsigned int sid, string modality, const char* filetype, int hp, int wp, ModalityGridData& mgd)
 {
 	// auxiliary
 	vector<string> framesFilenames; // Frames' filenames from <dataDir>/Frames/<modality>/
@@ -174,32 +200,27 @@ void ModalityReader::readScene(string modality, string scenePath, const char* fi
     // .. In ramanan, the frames are already computed probability maps (from Matlab)
     if (modality.compare("Motion") == 0)
     {
-        loadFilenames	 (scenePath + "/Frames/Color/", filetype, framesFilenames);
-        loadFilenames	 (scenePath + "/Masks/Color/", "png", masksFilenames);
+        loadFilenames	 (m_ScenesPaths[sid] + "Frames/Color/", filetype, framesFilenames);
+        loadFilenames	 (m_ScenesPaths[sid] + "Masks/Color/", "png", masksFilenames);
         
-        loadBoundingRects(scenePath + "/Masks/Color.yml", rects, tags);
+        loadBoundingRects(m_ScenesPaths[sid] + "Masks/Color.yml", rects, tags);
     }
     else if (modality.compare("Ramanan") == 0)
     {
-        loadFilenames	 (scenePath + "/Maps/" + modality + "/", filetype, framesFilenames);
-        loadFilenames	 (scenePath + "/Masks/Color/", "png", masksFilenames);
+        loadFilenames	 (m_ScenesPaths[sid] + "Maps/" + modality + "/", filetype, framesFilenames);
+        loadFilenames	 (m_ScenesPaths[sid] + "Masks/Color/", "png", masksFilenames);
         
-        loadBoundingRects(scenePath + "/Masks/Color.yml", rects, tags);
+        loadBoundingRects(m_ScenesPaths[sid] + "Masks/Color.yml", rects, tags);
     }
     else
     {
-        loadFilenames	 (scenePath + "/Frames/" + modality + "/", filetype, framesFilenames);
-        loadFilenames	 (scenePath + "/Masks/" + modality + "/", "png", masksFilenames);
+        loadFilenames	 (m_ScenesPaths[sid] + "Frames/" + modality + "/", filetype, framesFilenames);
+        loadFilenames	 (m_ScenesPaths[sid] + "Masks/" + modality + "/", "png", masksFilenames);
         
-        loadBoundingRects(scenePath + "/Masks/" + modality + ".yml", rects, tags);
+        loadBoundingRects(m_ScenesPaths[sid] + "Masks/" + modality + ".yml", rects, tags);
     }
     
     assert (framesFilenames.size() == masksFilenames.size());
-    
-    cv::Mat partition;
-    cv::FileStorage fs (scenePath + "Partition.yml", cv::FileStorage::READ);
-    fs["partition"] >> partition;
-    fs.release();
     
     // Load frame-wise (Mat), extract the roi represented by the bounding boxes,
     // grid the rois (GridMat), and store in GridModalityData object
@@ -214,18 +235,18 @@ void ModalityReader::readScene(string modality, string scenePath, const char* fi
         
         if (modality.compare("Motion") == 0)
         {
-            framePath = scenePath + "/Frames/Color/" + framesFilenames[f] + "." + filetype;
-            maskPath = scenePath + "/Masks/Color/" + masksFilenames[f] + ".png";
+            framePath = m_ScenesPaths[sid] + "Frames/Color/" + framesFilenames[f] + "." + filetype;
+            maskPath  = m_ScenesPaths[sid] + "Masks/Color/" + masksFilenames[f] + ".png";
         }
         if (modality.compare("Ramanan") == 0)
         {
-            framePath = scenePath + "/Maps/Ramanan/" + framesFilenames[f] + "." + filetype;
-            maskPath = scenePath + "/Masks/Color/" + masksFilenames[f] + ".png";
+            framePath = m_ScenesPaths[sid] + "Maps/Ramanan/" + framesFilenames[f] + "." + filetype;
+            maskPath  = m_ScenesPaths[sid] + "Masks/Color/" + masksFilenames[f] + ".png";
         }
         else
         {
-            framePath = scenePath + "/Frames/" + modality + "/" + framesFilenames[f] + "." + filetype;
-            maskPath = scenePath + "/Masks/" + modality + "/" + masksFilenames[f] + ".png";
+            framePath = m_ScenesPaths[sid] + "Frames/" + modality + "/" + framesFilenames[f] + "." + filetype;
+            maskPath  = m_ScenesPaths[sid] + "Masks/" + modality + "/" + masksFilenames[f] + ".png";
         }
         
         cv::Mat frame;
@@ -246,7 +267,7 @@ void ModalityReader::readScene(string modality, string scenePath, const char* fi
             if (f == 0)
                 currFrame.copyTo(prevFrame);
             else
-                prevFrame = cv::imread(scenePath + "/Frames/Color/" + framesFilenames[f-1] + "." + filetype,
+                prevFrame = cv::imread(m_ScenesPaths[sid] + "Frames/Color/" + framesFilenames[f-1] + "." + filetype,
                                        CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
             
             MotionFeatureExtractor::computeOpticalFlow(pair<cv::Mat,cv::Mat>(prevFrame,currFrame), frame);
@@ -287,7 +308,7 @@ void ModalityReader::readScene(string modality, string scenePath, const char* fi
 				mgd.addGridFrameID(f);
                 
                 // Frame path
-                mgd.addFramePath(scenePath);
+                mgd.addFramePath(m_ScenesPaths[sid]);
                 
                 // Frame filename
                 mgd.addFrameFilename(framesFilenames[f]);
@@ -309,44 +330,32 @@ void ModalityReader::readScene(string modality, string scenePath, const char* fi
                 mgd.addValidnesses(validnesses);
                 
                 // Partition idx
-                mgd.addPartitionIndex(partition.at<int>(f,0));
+                mgd.addElementPartition(m_SceneFramesPartitions[sid].at<int>(f,0));
 			}
 		}
 	}
     
-    mgd.addScenePath(scenePath);
+    mgd.addScenePath(m_ScenesPaths[sid]);
 }
 
 /*
  * Read only the metadata (frames' filenames, bounding rects, tags, etc)
  */
-void ModalityReader::mockread(string modality, string sceneDir, const char* filetype, int hp, int wp, ModalityGridData& mgd)
-{
-    vector<string> scenesDirs;
-    scenesDirs.push_back(sceneDir);
-    
-    mockread(modality, m_DataPath, scenesDirs, filetype, hp, wp, mgd);
-}
 
-void ModalityReader::mockread(string modality, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd)
-{
-    mockread(modality, m_DataPath, sceneDirs, filetype, hp, wp, mgd);
-}
-
-void ModalityReader::mockread(string modality, string dataPath, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd)
+void ModalityReader::readAllScenesMetadata(string modality, const char* filetype, int hp, int wp, ModalityGridData& mgd)
 {
     mgd.clear();
     mgd.setModality(modality);
     mgd.setHp(hp);
     mgd.setWp(wp);
     
-    for (int s = 0; s < sceneDirs.size(); s++)
+    for (int s = 0; s < m_ScenesPaths.size(); s++)
     {
-        mockreadScene(modality, dataPath + sceneDirs[s], filetype, hp, wp, mgd);
+        readSceneMetadata(s, modality, filetype, hp, wp, mgd);
     }
 }
 
-void ModalityReader::mockreadScene(string modality, string scenePath, const char* filetype, int hp, int wp, ModalityGridData& mgd)
+void ModalityReader::readSceneMetadata(unsigned int sid, string modality, const char* filetype, int hp, int wp, ModalityGridData& mgd)
 {
 	// auxiliary
 	vector<string> framesFilenames; // Frames' filenames from <dataDir>/Frames/<modality>/
@@ -356,30 +365,30 @@ void ModalityReader::mockreadScene(string modality, string scenePath, const char
     
     if (modality.compare("Motion") == 0)
     {
-        loadFilenames	 (scenePath + "/Frames/Color/", filetype, framesFilenames);
-        loadFilenames	 (scenePath + "/Masks/Color/", "png", masksFilenames);
+        loadFilenames	 (m_ScenesPaths[sid] + "Frames/Color/", filetype, framesFilenames);
+        loadFilenames	 (m_ScenesPaths[sid] + "Masks/Color/", "png", masksFilenames);
         
-        loadBoundingRects(scenePath + "/Masks/Color.yml", rects, tags);
+        loadBoundingRects(m_ScenesPaths[sid] + "Masks/Color.yml", rects, tags);
     }
     else if (modality.compare("Ramanan") == 0)
     {
-        loadFilenames	 (scenePath + "/Maps/" + modality + "/", filetype, framesFilenames);
-        loadFilenames	 (scenePath + "/Masks/" + modality + "/", "png", masksFilenames);
+        loadFilenames	 (m_ScenesPaths[sid] + "Maps/" + modality + "/", filetype, framesFilenames);
+        loadFilenames	 (m_ScenesPaths[sid] + "Masks/" + modality + "/", "png", masksFilenames);
         
-        loadBoundingRects(scenePath + "/Masks/" + modality + ".yml", rects, tags);
+        loadBoundingRects(m_ScenesPaths[sid] + "Masks/" + modality + ".yml", rects, tags);
     }
     else
     {
-        loadFilenames	 (scenePath + "/Frames/" + modality + "/", filetype, framesFilenames);
-        loadFilenames	 (scenePath + "/Masks/" + modality + "/", "png", masksFilenames);
+        loadFilenames	 (m_ScenesPaths[sid] + "Frames/" + modality + "/", filetype, framesFilenames);
+        loadFilenames	 (m_ScenesPaths[sid] + "Masks/" + modality + "/", "png", masksFilenames);
         
-        loadBoundingRects(scenePath + "/Masks/" + modality + ".yml", rects, tags);
+        loadBoundingRects(m_ScenesPaths[sid] + "Masks/" + modality + ".yml", rects, tags);
     }
     
     assert (framesFilenames.size() == masksFilenames.size());
     
     cv::Mat partition;
-    cv::FileStorage fs (scenePath + "Partition.yml", cv::FileStorage::READ);
+    cv::FileStorage fs (m_ScenesPaths[sid] + "Partition.yml", cv::FileStorage::READ);
     fs["partition"] >> partition;
     fs.release();
     
@@ -398,9 +407,9 @@ void ModalityReader::mockreadScene(string modality, string scenePath, const char
         string maskPath;
         
         if (modality.compare("Motion") == 0)
-            maskPath = scenePath + "/Masks/Color/" + masksFilenames[f] + ".png";
+            maskPath = m_ScenesPaths[sid] + "Masks/Color/" + masksFilenames[f] + ".png";
         else
-            maskPath = scenePath + "/Masks/" + modality + "/" + masksFilenames[f] + ".png";
+            maskPath = m_ScenesPaths[sid] + "Masks/" + modality + "/" + masksFilenames[f] + ".png";
         
 		cv::Mat mask = cv::imread(maskPath, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
         
@@ -420,7 +429,7 @@ void ModalityReader::mockreadScene(string modality, string scenePath, const char
                 mgd.addGridMaskOffset(m_MasksOffset + r);
                 
                 // Frame path
-                mgd.addFramePath(scenePath);
+                mgd.addFramePath(m_ScenesPaths[sid]);
                 
                 // Frame filename
                 mgd.addFrameFilename(framesFilenames[f]);
@@ -446,12 +455,12 @@ void ModalityReader::mockreadScene(string modality, string scenePath, const char
                 mgd.addValidnesses(validnesses);
                 
                 // Partition idx
-                mgd.addPartitionIndex(partition.at<int>(f,0));
+                mgd.addElementPartition(partition.at<int>(f,0));
 			}
 		}
 	}
     
-    mgd.addScenePath(scenePath);
+    mgd.addScenePath(m_ScenesPaths[sid]);
 }
 
 
@@ -804,6 +813,11 @@ void ModalityReader::getBoundingBoxesInMask(cv::Mat mask, vector<cv::Rect>& boxe
             boxes.push_back(boundRect[i]);
         }
     }
+}
+
+void ModalityReader::loadDescription(string filePath, ModalityGridData& mgd)
+{
+    mgd.loadDescription(m_ScenesPaths, filePath);
 }
 
 void ModalityReader::getBoundingBoxesFromGroundtruthMasks(string modality, vector<string> sceneDirs, vector<vector<cv::Rect> >& boxes)

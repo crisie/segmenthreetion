@@ -70,6 +70,13 @@ GridMat::GridMat(const GridMat& other)
     m_grid = other.m_grid;
 }
 
+void GridMat::operator=(const GridMat& other)
+{
+    m_crows = other.m_crows;
+    m_ccols = other.m_ccols;
+    m_grid = other.m_grid;
+}
+
 //GridMat::GridMat(GridMat& other, cv::Mat indices, int dim, bool logical)
 //{
 //    m_crows = other.m_crows;

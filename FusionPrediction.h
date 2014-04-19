@@ -24,28 +24,43 @@ using namespace std;
 /*
  * Simple fusion prediction
  */
-template<typename PredictorT>
-class SimpleFusionPrediction
-{};
 
-template<>
-class SimpleFusionPrediction<cv::EM>
+class SimpleFusionPrediction
 {
 public:
     
     SimpleFusionPrediction();
     
+    void setModalitiesData(vector<ModalityGridData> mgds);
+    
     // Cells' preconsensus
-    void compute(vector<cv::Mat> allPredictions, vector<cv::Mat> allDistsToMargin,
-                 cv::Mat& fusedPredictions, cv::Mat& fusedDistsToMargin);
+
     
-    void compute(vector<GridMat> allPredictions, vector<GridMat> allDistsToMargin, GridMat& fusedPredictions, GridMat& fusedDistsToMargin); // want back some kind of consensued dists to margin in the fusion prediction?
+     // want back some kind of consensued dists to margin in the fusion prediction?
     
-    void compute(vector<GridMat> allDistsToMargin, GridMat& fusedPredictions, GridMat& fusedDistsToMargin);
+    void predict(vector<cv::Mat> allPredictions, vector<cv::Mat> allDistsToMargin,
+                 cv::Mat& fusionPredictions, cv::Mat& fusionDistsToMargin);
+    void predict(vector<GridMat> allPredictions, vector<GridMat> allDistsToMargin, cv::Mat& fusionPredictions, cv::Mat& fusionDistsToMargin);
+    void predict(vector<GridMat> allDistsToMargin, cv::Mat& fusionPredictions, cv::Mat& fusionDistsToMargin);
+    
+    cv::Mat getAccuracies();
     
 private:
     
-    void compute(GridMat allDistsToMargin, GridMat& fusedPredictions, GridMat& fusedDistsToMargin);
+    void predict(GridMat distsToMarginGrid, GridMat& fusionPredictions, GridMat& fusionDistsToMargin);
+    void computeGridConsensusPredictions(GridMat fusionPredictionsGrid,
+                                         GridMat fusionDistsToMarginGrid,
+                                         cv::Mat& consensusfusionPredictions,
+                                         cv::Mat& consensusfusionDistsToMargin);
+    
+    // Attributes
+    
+    vector<ModalityGridData> m_mgds;
+    cv::Mat m_tags;
+    cv::Mat m_partitions;
+    
+    cv::Mat m_fusionPredictions;
+    cv::Mat m_fusionDistsToMargin;
 };
 
 
@@ -68,16 +83,16 @@ public:
     
     ClassifierFusionPredictionBase();
     
-    void setData(vector<GridMat> distsToMargin);
-    void setData(vector<GridMat> distsToMargin, vector<cv::Mat> predictions);
-    void setResponses(cv::Mat responses);
+    void setData(vector<ModalityGridData> mgds, vector<GridMat> distsToMargin, vector<cv::Mat> predictions);
     
     void setModelSelection(bool flag);
     void setModelSelectionParameters(int k, int seed, bool best);
-    void setValidationParameters(int k, int seed);
+    void setValidationParameters(int k);
     void setPartitions(cv::Mat partitions);
     
     void setStackedPrediction(bool flag);
+    
+    cv::Mat getAccuracies();
     
 protected:
     
@@ -85,13 +100,14 @@ protected:
 
     // Attributes
     
+    vector<ModalityGridData> m_mgds;
     vector<cv::Mat> m_predictions;
-//    vector<GridMat> m_loglikelihoods;
     vector<GridMat> m_distsToMargin;
     
     cv::Mat m_data; // input data
     cv::Mat m_responses; // output labels
     ClassifierT* m_pClassifier;
+    cv::Mat m_fusionPredictions;
     
     bool m_bModelSelection;
     int m_testK;
@@ -104,6 +120,8 @@ protected:
     bool m_bStackPredictions;
     
     int  m_narrowSearchSteps;
+    
+    
 };
 
 // SVM template
@@ -128,7 +146,7 @@ public:
     
     void modelSelection(cv::Mat data, cv::Mat responses, cv::Mat params, cv::Mat& goodnesses);
     
-    void compute(cv::Mat& fusionPredictions);
+    void predict(cv::Mat& fusionPredictions);
 
 private:
     
@@ -156,15 +174,15 @@ public:
     
     void modelSelection(cv::Mat data, cv::Mat responses, cv::Mat params, cv::Mat& goodnesses);
     
-    void compute(cv::Mat& fusionPredictions);
+    void predict(cv::Mat& fusionPredictions);
     
 private:
     
     // Attributes
     
-    int m_BoostType;
-    vector<float> m_NumOfWeaks;
-    vector<float> m_WeightTrimRate;
+    int m_boostType;
+    vector<float> m_numOfWeaks;
+    vector<float> m_weightTrimRate;
 };
 
 // <cv::EM,CvANN_MLP> template instantiation
@@ -175,6 +193,9 @@ public:
     
     ClassifierFusionPrediction();
     
+    cv::Mat encode(cv::Mat vector);
+    cv::Mat decode(cv::Mat matrix);
+    
     void setActivationFunctionType(int type);
     
     void setHiddenLayerSizes(vector<float> hiddenSizes);
@@ -184,18 +205,17 @@ public:
     
     void modelSelection(cv::Mat data, cv::Mat responses, cv::Mat params, cv::Mat& goodnesses);
     
-    void compute(cv::Mat& fusionPredictions);
+    void predict(cv::Mat& fusionPredictions);
     
 private:
     
     // Attributes
+    int m_actFcnType; // activation function type
     
-    int m_ActFcnType; // activation function type
+    int m_numOfEpochs;
+    int m_numOfRepetitions; // deal with stochasticity introduced by the random weights initialization
     
-    int m_NumOfEpochs;
-    int m_NumOfRepetitions; // deal with stochasticity introduced by the random weights initialization
-    
-    vector<float> m_HiddenLayerSizes;
+    vector<float> m_hiddenLayerSizes;
     //vector<float> m_bpDwScales; // decay in weight (dw)
     //vector<float> m_bpMomentScales;
 };

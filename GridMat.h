@@ -34,6 +34,9 @@ public:
 
     void create(unsigned int hp = 2, unsigned int wp = 2);
     
+    void operator=(const GridMat& other);
+    void operator=(const cv::Mat& other);
+    
     template<typename T>
     void create(unsigned int hp, unsigned int wp, unsigned int helems = 1, unsigned int welems = 1);
     GridMat clone();

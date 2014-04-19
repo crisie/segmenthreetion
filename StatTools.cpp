@@ -592,12 +592,31 @@ void accuracy(cv::Mat actuals, cv::Mat predictions, cv::Mat partitions, cv::Mat&
     cv::Mat aux = partitions.t();
     std::set<int> set (aux.ptr<int>(0), aux.ptr<int>(0) + aux.cols);
     std::vector<int> labels (set.begin(), set.end());
-
+    
     accuracies.create(labels.size(), 1, cv::DataType<float>::type);
     for (int k = 0; k < labels.size(); k++)
-    {        
+    {
         accuracies.at<float>(k,0) = accuracy(cvx::indexMat(actuals, partitions == k),
                                              cvx::indexMat(predictions, partitions == k));
+    }
+}
+
+void accuracy(cv::Mat actuals, GridMat predictions, cv::Mat partitions, GridMat& accuracies)
+{
+    cv::Mat aux = partitions.t();
+    std::set<int> set (aux.ptr<int>(0), aux.ptr<int>(0) + aux.cols);
+    std::vector<int> labels (set.begin(), set.end());
+    
+    accuracies.create(predictions.crows(), predictions.ccols());
+    for (int i = 0; i < predictions.crows(); i++) for (int j = 0; j < predictions.ccols(); j++)
+    {
+        cv::Mat cellAccuracies (labels.size(), 1, cv::DataType<float>::type);
+        for (int k = 0; k < labels.size(); k++)
+        {
+            cellAccuracies.at<float>(k,0) = accuracy(cvx::indexMat(actuals, partitions == k),
+                                                     cvx::indexMat(predictions.at(i,j), partitions == k));
+        }
+        accuracies.assign(cellAccuracies, i, j);
     }
 }
 

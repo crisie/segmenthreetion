@@ -28,8 +28,15 @@ public:
     ModalityReader();
     ModalityReader(string dataPath);
     
+    unsigned int getNumOfScenes();
+    string getScenePath(unsigned int sid);
+    
     void setDataPath(string dataPath);
     void setMasksOffset(unsigned char offset);
+    
+    cv::Mat getScenePartition(unsigned int sid);
+    vector<cv::Mat> getPartitions();
+    cv::Mat getAllScenesPartition();
     
     void read(string modality, ModalityData& md);
     // TODO:
@@ -37,14 +44,13 @@ public:
 	// void read(string modality, vector<string> sceneDirs, const char* filetype, ModalityData& md);
     
     // Read and grid all the data
-    void read(string modality, string sceneDir, const char* filetype, int hp, int wp, ModalityGridData& mgd);
-	void read(string modality, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd);
-    void read(string modality, string dataPath, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd);
-    
+	void readAllScenesData(string modality, const char* filetype, int hp, int wp, ModalityGridData& mgd);
+    void readSceneData(unsigned int sid, string modality, const char* filetype, int hp, int wp, ModalityGridData& mgd);
+
     // Read and grid all some data (omit frames and masks)
-    void mockread(string modality, string sceneDir, const char* filetype, int hp, int wp, ModalityGridData& mgd);
-	void mockread(string modality, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd);
-    void mockread(string modality, string dataPath, vector<string> sceneDirs, const char* filetype, int hp, int wp, ModalityGridData& mgd);
+	void readAllScenesMetadata(string modality, const char* filetype, int hp, int wp, ModalityGridData& mgd);
+    void readSceneMetadata(unsigned int sid, string modality, const char* filetype, int hp, int wp, ModalityGridData& mgd);
+
     
     //Read only predicted and gt mask for computing overlap
     void overlapreadScene(string predictionType, string modality, string scenePath, const char* filetype, ModalityData& md);
@@ -52,6 +58,7 @@ public:
     
     void agreement(vector<ModalityGridData*> mgds);
     
+    void loadDescription(string modality, ModalityGridData& mgd);
     
     void getBoundingBoxesFromGroundtruthMasks(string modality, vector<string> sceneDirs, vector<vector<cv::Rect> >& boxes);
     void getBoundingBoxesFromGroundtruthMasks(string modality, string sceneDir, vector<vector<cv::Rect> >& boxes);
@@ -61,12 +68,11 @@ private:
     vector<string> m_ScenesPaths;
     unsigned char m_MasksOffset;
     unsigned char m_MaxOffset;
-    double m_MinVal, m_MaxVal;
     
-    // TODO:
-    // void read(string modality, string scenePath, const char* filetype, ModalityData& md);
-    void readScene(string modality, string scenePath, const char* filetype, int hp, int wp, ModalityGridData& mgd);
-    void mockreadScene(string modality, string scenePath, const char* filetype, int hp, int wp, ModalityGridData& mgd);
+    vector<cv::Mat> m_SceneFramesPartitions;
+    
+    double m_MinVal, m_MaxVal;
+
     
 	void loadFilenames(string dir, const char* fileExtension, vector<string>& filenames);
     // Load frames of a modality within a directory

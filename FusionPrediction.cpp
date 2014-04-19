@@ -15,42 +15,59 @@ using namespace boost::assign;
 // Instantiation of template member functions
 // -----------------------------------------------------------------------------
 
-template void ClassifierFusionPredictionBase<cv::EM,CvBoost>::setData(vector<GridMat> distsToMargin, vector<cv::Mat> predictions);
-template void ClassifierFusionPredictionBase<cv::EM,CvBoost>::setResponses(cv::Mat);
+template void ClassifierFusionPredictionBase<cv::EM,CvBoost>::setData(vector<ModalityGridData> mgds, vector<GridMat> distsToMargin, vector<cv::Mat> predictions);
+//template void ClassifierFusionPredictionBase<cv::EM,CvBoost>::setResponses(cv::Mat);
 template void ClassifierFusionPredictionBase<cv::EM,CvBoost>::setModelSelection(bool flag);
 template void ClassifierFusionPredictionBase<cv::EM,CvBoost>::setModelSelectionParameters(int, int, bool);
-template void ClassifierFusionPredictionBase<cv::EM,CvBoost>::setValidationParameters(int, int);
+template void ClassifierFusionPredictionBase<cv::EM,CvBoost>::setValidationParameters(int);
 template void ClassifierFusionPredictionBase<cv::EM,CvBoost>::setStackedPrediction(bool flag);
-template void ClassifierFusionPredictionBase<cv::EM,CvBoost>::setPartitions(cv::Mat partitions);
+template cv::Mat ClassifierFusionPredictionBase<cv::EM,CvBoost>::getAccuracies();
+//template void ClassifierFusionPredictionBase<cv::EM,CvBoost>::setPartitions(cv::Mat partitions);
 
 
-template void ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>::setData(vector<GridMat> distsToMargin, vector<cv::Mat> predictions);
-template void ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>::setResponses(cv::Mat);
+template void ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>::setData(vector<ModalityGridData> mgds, vector<GridMat> distsToMargin, vector<cv::Mat> predictions);
+//template void ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>::setResponses(cv::Mat);
 template void ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>::setModelSelection(bool flag);
 template void ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>::setModelSelectionParameters(int, int, bool);
-template void ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>::setValidationParameters(int, int);
+template void ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>::setValidationParameters(int);
 template void ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>::setStackedPrediction(bool flag);
-template void ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>::setPartitions(cv::Mat partitions);
+template cv::Mat ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>::getAccuracies();
+//template void ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>::setPartitions(cv::Mat partitions);
 
 
-template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setData(vector<GridMat> distsToMargin, vector<cv::Mat> predictions);
-template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setResponses(cv::Mat);
+template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setData(vector<ModalityGridData> mgds, vector<GridMat> distsToMargin, vector<cv::Mat> predictions);
+//template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setResponses(cv::Mat);
 template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setModelSelection(bool flag);
 template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setModelSelectionParameters(int, int, bool);
-template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setValidationParameters(int, int);
+template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setValidationParameters(int);
 template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setStackedPrediction(bool flag);
-template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setPartitions(cv::Mat partitions);
+template cv::Mat ClassifierFusionPredictionBase<cv::EM,CvSVM>::getAccuracies();
+//template void ClassifierFusionPredictionBase<cv::EM,CvSVM>::setPartitions(cv::Mat partitions);
 
 // -----------------------------------------------------------------------------
 
 
-SimpleFusionPrediction<cv::EM>::SimpleFusionPrediction()
+SimpleFusionPrediction::SimpleFusionPrediction()
 {
     
 }
 
-void SimpleFusionPrediction<cv::EM>::compute(vector<cv::Mat> allPredictions, vector<cv::Mat> allDistsToMargin,
-                                             cv::Mat& fusedPredictions, cv::Mat& fusedDistsToMargin)
+void SimpleFusionPrediction::setModalitiesData(vector<ModalityGridData> mgds)
+{
+    m_mgds = mgds;
+    m_partitions = m_mgds[0].getPartitions();
+    m_tags = m_mgds[0].getTagsMat();
+    for (int i = 0; i < m_mgds.size(); i++)
+    {
+        // partitions' values among modalities coincide
+        assert ( cv::sum(m_partitions == m_mgds[i].getPartitions()).val[0] / 255 == m_partitions.rows );
+        // same check for tags
+        assert ( cv::sum(m_tags == m_mgds[i].getTagsMat()).val[0] / 255 == m_tags.rows );
+    }
+}
+
+void SimpleFusionPrediction::predict(vector<cv::Mat> allPredictions, vector<cv::Mat> allDistsToMargin,
+                                     cv::Mat& fusionPredictions, cv::Mat& fusionDistsToMargin)
 {
     // Concatenate along the horizontal direction all the modalities' predictions in a GridMat,
     // and the same for the distsToMargin
@@ -66,8 +83,8 @@ void SimpleFusionPrediction<cv::EM>::compute(vector<cv::Mat> allPredictions, vec
     
     int n = predictions.rows;
     
-    fusedPredictions.create(predictions.rows, 1, predictions.type());
-    fusedDistsToMargin.create(distsToMargin.rows, 1, distsToMargin.type());
+    fusionPredictions.create(predictions.rows, 1, predictions.type());
+    fusionDistsToMargin.create(distsToMargin.rows, 1, distsToMargin.type());
     
     for (int k = 0; k < n; k++)
     {
@@ -92,33 +109,38 @@ void SimpleFusionPrediction<cv::EM>::compute(vector<cv::Mat> allPredictions, vec
         
         if (pos < neg)
         {
-            fusedPredictions.at<int>(k,0) = 0;
-            fusedDistsToMargin.at<float>(k,0) = accNegDists/neg;
+            fusionPredictions.at<int>(k,0) = 0;
+            fusionDistsToMargin.at<float>(k,0) = accNegDists/neg;
         }
         else if (pos > neg)
         {
-            fusedPredictions.at<int>(k,0) = 1;
-            fusedDistsToMargin.at<float>(k,0) = accPosDists/pos;
+            fusionPredictions.at<int>(k,0) = 1;
+            fusionDistsToMargin.at<float>(k,0) = accPosDists/pos;
         }
         else
         {
             if (accPosDists/pos < abs(accNegDists/neg))
             {
-                fusedPredictions.at<int>(k,0) = 0;
-                fusedDistsToMargin.at<float>(k,0) = accNegDists/neg;
+                fusionPredictions.at<int>(k,0) = 0;
+                fusionDistsToMargin.at<float>(k,0) = accNegDists/neg;
             }
             else
             {
-                fusedPredictions.at<int>(k,0) = 1;
-                fusedDistsToMargin.at<float>(k,0) = accPosDists/pos;
+                fusionPredictions.at<int>(k,0) = 1;
+                fusionDistsToMargin.at<float>(k,0) = accPosDists/pos;
             }
                 
         }
     }
+    
+    m_fusionPredictions = fusionPredictions;
+    m_fusionDistsToMargin = fusionDistsToMargin;
 }
 
-void SimpleFusionPrediction<cv::EM>::compute(vector<GridMat> allPredictions, vector<GridMat> allDistsToMargin, GridMat& fusedPredictions, GridMat& fusedDistsToMargin)
+void SimpleFusionPrediction::predict(vector<GridMat> allPredictions, vector<GridMat> allDistsToMargin, cv::Mat& fusionPredictions, cv::Mat& fusionDistsToMargin)
 {
+    GridMat fusionPredictionsGrid, fusionDistsToMarginGrid;
+    
     int hp = allPredictions[0].crows();
     int wp = allPredictions[0].ccols();
     for (int m = 1; m < allPredictions.size(); m++)
@@ -127,8 +149,8 @@ void SimpleFusionPrediction<cv::EM>::compute(vector<GridMat> allPredictions, vec
         assert (allDistsToMargin[m].crows() == hp || allDistsToMargin[m].ccols() == wp);
     }
     
-    fusedPredictions.create(hp, wp);
-    fusedDistsToMargin.create(hp, wp);
+    fusionPredictionsGrid.create(hp, wp);
+    fusionDistsToMarginGrid.create(hp, wp);
     
     for (int i = 0; i < hp; i++) for (int j = 0; j < wp; j++)
     {
@@ -139,38 +161,49 @@ void SimpleFusionPrediction<cv::EM>::compute(vector<GridMat> allPredictions, vec
             distsToMargin += allDistsToMargin[m].at(i,j);
         }
 
-        compute(predictions, distsToMargin, fusedPredictions.at(i,j), fusedDistsToMargin.at(i,j));
+        predict(predictions, distsToMargin, fusionPredictionsGrid.at(i,j), fusionDistsToMarginGrid.at(i,j));
     }
+    
+    computeGridConsensusPredictions(fusionPredictionsGrid, fusionDistsToMarginGrid, fusionPredictions, fusionDistsToMargin);
+    
+    m_fusionPredictions = fusionPredictions;
+    m_fusionDistsToMargin = fusionDistsToMargin;
 }
 
-void SimpleFusionPrediction<cv::EM>::compute(vector<GridMat> allDistsToMargin, GridMat& fusedPredictions, GridMat& fusedDistsToMargin)
+void SimpleFusionPrediction::predict(vector<GridMat> allDistsToMargin, cv::Mat& fusionPredictions, cv::Mat& fusionDistsToMargin)
 {
     // Concatenate along the horizontal direction all the modalities' predictions in a GridMat,
     // and the same for the distsToMargin
     
-    GridMat hConcatDistsToMargin;
+    GridMat concatDistsToMarginGrid;
     
     for (int i = 0; i < allDistsToMargin.size(); i++)
     {
-        hConcatDistsToMargin.hconcat(allDistsToMargin[i]);
+        concatDistsToMarginGrid.hconcat(allDistsToMargin[i]);
     }
     
-    compute(hConcatDistsToMargin, fusedPredictions, fusedDistsToMargin);
+    GridMat fusionPredictionsGrid, fusionDistsToMarginGrid;
+    predict(concatDistsToMarginGrid, fusionPredictionsGrid, fusionDistsToMarginGrid);
+    
+    computeGridConsensusPredictions(fusionPredictionsGrid, fusionDistsToMarginGrid, fusionPredictions, fusionDistsToMargin);
+    
+    m_fusionPredictions = fusionPredictions;
+    m_fusionDistsToMargin = fusionDistsToMargin;
 }
 
-void SimpleFusionPrediction<cv::EM>::compute(GridMat distsToMargin, GridMat& fusedPredictions, GridMat& fusedDistsToMargin)
+void SimpleFusionPrediction::predict(GridMat distsToMarginGrid, GridMat& fusionPredictionsGrid, GridMat& fusionDistsToMarginGrid)
 {
-    int hp = distsToMargin.crows();
-    int wp = distsToMargin.ccols();
-    int n = distsToMargin.at(0,0).rows;
+    int hp = distsToMarginGrid.crows();
+    int wp = distsToMarginGrid.ccols();
+    int n = distsToMarginGrid.at(0,0).rows;
     
     for (int i = 0; i < hp; i++) for (int j = 0; j < wp; j++)
     {
-        assert (n == distsToMargin.at(i,j).rows);
+        assert (n == distsToMarginGrid.at(i,j).rows);
     }
     
-    fusedPredictions.create<int>(hp, wp, n, 1);
-    fusedDistsToMargin.create<float>(hp, wp, n, 1);
+    fusionPredictionsGrid.create<int>(hp, wp, n, 1);
+    fusionDistsToMarginGrid.create<float>(hp, wp, n, 1);
     
     for (int k = 0; k < n; k++)
     {
@@ -180,10 +213,10 @@ void SimpleFusionPrediction<cv::EM>::compute(GridMat distsToMargin, GridMat& fus
             int neg = 0;
             float accPosDists = 0;
             float accNegDists = 0;
-            for (int m = 0; m < distsToMargin.at(i,j).cols; m++)
+            for (int m = 0; m < distsToMarginGrid.at(i,j).cols; m++)
             {
-                float dist = distsToMargin.at<float>(i,j,k,m);
-                if (distsToMargin.at<int>(i,j,k,m) < 0)
+                float dist = distsToMarginGrid.at<float>(i,j,k,m);
+                if (distsToMarginGrid.at<int>(i,j,k,m) < 0)
                 {
                     neg++;
                     accNegDists += dist;
@@ -197,13 +230,13 @@ void SimpleFusionPrediction<cv::EM>::compute(GridMat distsToMargin, GridMat& fus
             
             if (pos < neg)
             {
-                fusedPredictions.at<int>(i,j,k,0) = 0;
-                fusedDistsToMargin.at<float>(i,j,k,0) = accNegDists/neg;
+                fusionPredictionsGrid.at<int>(i,j,k,0) = 0;
+                fusionDistsToMarginGrid.at<float>(i,j,k,0) = accNegDists/neg;
             }
             else if (pos > neg)
             {
-                fusedPredictions.at<int>(i,j,k,0) = 1;
-                fusedDistsToMargin.at<float>(i,j,k,0) = accPosDists/pos;
+                fusionPredictionsGrid.at<int>(i,j,k,0) = 1;
+                fusionDistsToMarginGrid.at<float>(i,j,k,0) = accPosDists/pos;
             }
             else
             {
@@ -211,18 +244,84 @@ void SimpleFusionPrediction<cv::EM>::compute(GridMat distsToMargin, GridMat& fus
                 float meanPos = accPosDists/pos;
                 if (meanPos > abs(meanNeg))
                 {
-                    fusedPredictions.at<int>(i,j,k,0) = 1;
-                    fusedDistsToMargin.at<float>(i,j,k,0) = accPosDists/pos;
+                    fusionPredictionsGrid.at<int>(i,j,k,0) = 1;
+                    fusionDistsToMarginGrid.at<float>(i,j,k,0) = accPosDists/pos;
                 }
                 else
                 {
-                    fusedPredictions.at<int>(i,j,k,0) = 0;
-                    fusedDistsToMargin.at<float>(i,j,k,0) = accNegDists/neg;
+                    fusionPredictionsGrid.at<int>(i,j,k,0) = 0;
+                    fusionDistsToMarginGrid.at<float>(i,j,k,0) = accNegDists/neg;
                 }
             }
         }
         
     }
+}
+
+void SimpleFusionPrediction::computeGridConsensusPredictions(GridMat fusionPredictionsGrid,
+                                                             GridMat fusionDistsToMarginGrid,
+                                                             cv::Mat& consensusfusionPredictions,
+                                                             cv::Mat& consensusfusionDistsToMargin)
+{
+    consensusfusionPredictions.create(m_tags.rows, 1, cv::DataType<int>::type);
+    consensusfusionDistsToMargin.create(m_tags.rows, 1, cv::DataType<float>::type);
+    
+    //    cv::Mat partitions;
+    //    cvpartition(tags, m_testK, m_seed, partitions);
+    
+    for (int r = 0; r < m_tags.rows; r++)
+    {
+        int pos = 0;
+        int neg = 0;
+        float accPosDists = 0;
+        float accNegDists = 0;
+        for (int i = 0; i < fusionPredictionsGrid.crows(); i++) for (int j = 0; j < fusionPredictionsGrid.ccols(); j++)
+        {
+            if (fusionPredictionsGrid.at<int>(i,j,r,0) == 0)
+            {
+                neg++;
+                accNegDists += fusionDistsToMarginGrid.at<float>(i,j,r,0);
+            }
+            else if (fusionPredictionsGrid.at<int>(i,j,r,0) == 1)
+            {
+                pos++;
+                accPosDists += fusionDistsToMarginGrid.at<float>(i,j,r,0);
+            }
+        }
+        
+        if (pos > neg)
+        {
+            consensusfusionPredictions.at<int>(r,0) = 1;
+            consensusfusionDistsToMargin.at<float>(r,0) = accPosDists / pos;
+        }
+        else if (pos < neg)
+        {
+            consensusfusionPredictions.at<int>(r,0) = 0;
+            consensusfusionDistsToMargin.at<float>(r,0) = accNegDists / neg;
+        }
+        else // pos == neg
+        {
+            if (accPosDists > abs(accNegDists)) // most confident towards positive classification
+            {
+                consensusfusionPredictions.at<int>(r,0) = 1;
+                consensusfusionDistsToMargin.at<float>(r,0) = accPosDists / pos;
+            }
+            else
+            {
+                consensusfusionPredictions.at<int>(r,0) = 0;
+                consensusfusionDistsToMargin.at<float>(r,0) = accNegDists / neg;
+            }
+        }
+    }
+}
+
+cv::Mat SimpleFusionPrediction::getAccuracies()
+{
+    cv::Mat accuracies;
+    
+    accuracy(m_tags, m_fusionPredictions, m_partitions, accuracies);
+    
+    return accuracies;
 }
 
 //
@@ -236,24 +335,36 @@ ClassifierFusionPredictionBase<cv::EM, ClassifierT>::ClassifierFusionPredictionB
     
 }
 
-template<typename ClassifierT>
-void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setData(vector<GridMat> distsToMargin)
-{
-    m_distsToMargin = distsToMargin;
-}
+//template<typename ClassifierT>
+//void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setData(vector<ModalityGridData> mgds, vector<GridMat> distsToMargin)
+//{
+//    m_mgds = mgds;
+//    m_distsToMargin = distsToMargin;
+//}
 
 template<typename ClassifierT>
-void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setData(vector<GridMat> distsToMargin, vector<cv::Mat> predictions)
+void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setData(vector<ModalityGridData> mgds, vector<GridMat> distsToMargin, vector<cv::Mat> predictions)
 {
+    m_mgds = mgds;
+    m_partitions = m_mgds[0].getPartitions();
+    m_responses = m_mgds[0].getTagsMat();
+    for (int i = 0; i < m_mgds.size(); i++)
+    {
+        // partitions' values among modalities coincide
+        assert ( cv::sum(m_partitions == m_mgds[i].getPartitions()).val[0] / 255 == m_partitions.rows );
+        // same check for tags
+        assert ( cv::sum(m_responses == m_mgds[i].getTagsMat()).val[0] / 255 == m_responses.rows );
+    }
+    
     m_distsToMargin = distsToMargin;
     m_predictions = predictions;
 }
 
-template<typename ClassifierT>
-void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setResponses(cv::Mat responses)
-{
-    m_responses = responses;
-}
+//template<typename ClassifierT>
+//void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setResponses(cv::Mat responses)
+//{
+//    m_responses = responses;
+//}
 
 template<typename ClassifierT>
 void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setModelSelection(bool flag)
@@ -270,17 +381,16 @@ void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setModelSelectionParam
 }
 
 template<typename ClassifierT>
-void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setValidationParameters(int k, int seed)
+void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setValidationParameters(int k)
 {
     m_testK = k;
-    m_seed = seed;
 }
 
-template<typename ClassifierT>
-void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setPartitions(cv::Mat partitions)
-{
-    m_partitions = partitions;
-}
+//template<typename ClassifierT>
+//void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::setPartitions(cv::Mat partitions)
+//{
+//    m_partitions = partitions;
+//}
 
 template<typename ClassifierT>
 void ClassifierFusionPredictionBase<cv::EM, ClassifierT>::formatData()
@@ -314,6 +424,15 @@ void ClassifierFusionPredictionBase<cv::EM,ClassifierT>::setStackedPrediction(bo
     m_bStackPredictions = flag;
 }
 
+template<typename ClassifierT>
+cv::Mat ClassifierFusionPredictionBase<cv::EM,ClassifierT>::getAccuracies()
+{
+    cv::Mat accuracies;
+    
+    accuracy(m_responses, m_fusionPredictions, m_partitions, accuracies);
+    
+    return accuracies;
+}
 
 //
 // ClassifierFusionPrediction class templates' specialization
@@ -342,7 +461,7 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::setGammas(vector<float> gammas)
     m_gammas = gammas;
 }
 
-void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(cv::Mat& fusionPredictions)
+void ClassifierFusionPrediction<cv::EM,CvSVM>::predict(cv::Mat& fusionPredictions)
 {
     formatData();
     
@@ -402,7 +521,7 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(cv::Mat& fusionPrediction
     
     cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
     
-    cv::Mat predictions;
+    fusionPredictions.create(m_responses.rows, 1, cv::DataType<int>::type);
     
     for (int k = 0; k < m_testK; k++)
     {
@@ -440,12 +559,11 @@ void ClassifierFusionPrediction<cv::EM,CvSVM>::compute(cv::Mat& fusionPrediction
         cv::Mat tePredictions;
         m_pClassifier->predict(teData, tePredictions);
         
-        cvx::setMat(tePredictions, predictions, m_partitions == k);
+        cvx::setMat(tePredictions, fusionPredictions, m_partitions == k);
     }
     cout << endl;
     
-    // Mat to GridMat
-    fusionPredictions = predictions;
+    m_fusionPredictions = fusionPredictions;
 }
 
 void ClassifierFusionPrediction<cv::EM,CvSVM>::modelSelection(cv::Mat data, cv::Mat responses, cv::Mat expandedParams, cv::Mat& goodnesses)
@@ -520,28 +638,28 @@ ClassifierFusionPrediction<cv::EM,CvBoost>::ClassifierFusionPrediction()
 
 void ClassifierFusionPrediction<cv::EM,CvBoost>::setBoostType(int type)
 {
-    m_BoostType = type;
+    m_boostType = type;
 }
 
 void ClassifierFusionPrediction<cv::EM,CvBoost>::setNumOfWeaks(vector<float> numOfWeaks)
 {
-    m_NumOfWeaks = numOfWeaks;
+    m_numOfWeaks = numOfWeaks;
 }
 
 void ClassifierFusionPrediction<cv::EM,CvBoost>::setWeightTrimRate(vector<float> weightTrimRates)
 {
-    m_WeightTrimRate = weightTrimRates;
+    m_weightTrimRate = weightTrimRates;
 }
 
-void ClassifierFusionPrediction<cv::EM,CvBoost>::compute(cv::Mat& fusionPredictions)
+void ClassifierFusionPrediction<cv::EM,CvBoost>::predict(cv::Mat& fusionPredictions)
 {
     formatData();
     
     // Prepare parameters' combinations
     vector<vector<float> > params;
-    params.push_back(m_NumOfWeaks);
-    if (m_BoostType == CvBoost::GENTLE)
-        params.push_back(m_WeightTrimRate);
+    params.push_back(m_numOfWeaks);
+    if (m_boostType == CvBoost::GENTLE)
+        params.push_back(m_weightTrimRate);
     
     // create a list of parameters' variations
     cv::Mat coarseExpandedParameters;
@@ -574,7 +692,7 @@ void ClassifierFusionPrediction<cv::EM,CvBoost>::compute(cv::Mat& fusionPredicti
             narrow<float>(coarseExpandedParameters, coarseGoodnesses, m_narrowSearchSteps, discretes, narrowExpandedParameters);
             
             std::stringstream coarsess;
-            coarsess << "boost_" << m_distsToMargin.size() << "_" << m_BoostType << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << ".yml";
+            coarsess << "boost_" << m_distsToMargin.size() << "_" << m_boostType << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << ".yml";
             cv::hconcat(coarseExpandedParameters, coarseGoodnesses, coarseGoodnesses);
             cvx::save(coarsess.str(), coarseGoodnesses);
         
@@ -583,7 +701,7 @@ void ClassifierFusionPrediction<cv::EM,CvBoost>::compute(cv::Mat& fusionPredicti
             modelSelection(trData, trResponses, narrowExpandedParameters, narrowGoodnesses);
             
             std::stringstream narrowss;
-            narrowss << "boost_" << m_distsToMargin.size() << "_" << m_BoostType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << ".yml";
+            narrowss << "boost_" << m_distsToMargin.size() << "_" << m_boostType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << ".yml";
             cv::hconcat(narrowExpandedParameters, narrowGoodnesses, narrowGoodnesses);
             cvx::save(narrowss.str(), narrowGoodnesses);
         }
@@ -593,7 +711,7 @@ void ClassifierFusionPrediction<cv::EM,CvBoost>::compute(cv::Mat& fusionPredicti
     
     cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
     
-    cv::Mat predictions;
+    fusionPredictions.create(m_responses.rows, 1, cv::DataType<int>::type);
     
     for (int k = 0; k < m_testK; k++)
     {
@@ -611,7 +729,7 @@ void ClassifierFusionPrediction<cv::EM,CvBoost>::compute(cv::Mat& fusionPredicti
         
         cv::Mat goodnesses;
         std::stringstream ss;
-        ss << "boost_" << m_distsToMargin.size() << "_" << m_BoostType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << ".yml";
+        ss << "boost_" << m_distsToMargin.size() << "_" << m_boostType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << ".yml";
         cvx::load(ss.str(), goodnesses);
         
         // Find best parameters (using goodnesses) to train the final model
@@ -623,7 +741,7 @@ void ClassifierFusionPrediction<cv::EM,CvBoost>::compute(cv::Mat& fusionPredicti
         float bestNumOfWeaks     = goodnesses.row(best.y).at<float>(0,0);
         float bestWeightTrimRate = goodnesses.row(best.y).at<float>(0,1);
         
-        CvBoostParams boostParams (m_BoostType, bestNumOfWeaks, bestWeightTrimRate, 1, 0, NULL);
+        CvBoostParams boostParams (m_boostType, bestNumOfWeaks, bestWeightTrimRate, 1, 0, NULL);
         
         m_pClassifier->train(validTrData, CV_ROW_SAMPLE, validTrResponses,
                              cv::Mat(), cv::Mat(), cv::Mat(), cv::Mat(),
@@ -634,12 +752,12 @@ void ClassifierFusionPrediction<cv::EM,CvBoost>::compute(cv::Mat& fusionPredicti
         for (int d = 0; d < teData.rows; d++)
             tePredictions.at<int>(d,0) = (int) m_pClassifier->predict(teData.row(d));
         
-        cvx::setMat(tePredictions, predictions, m_partitions == k);
+        cvx::setMat(tePredictions, fusionPredictions, m_partitions == k);
     }
     cout << endl;
     
     // Mat to GridMat
-    fusionPredictions = predictions;
+    m_fusionPredictions = fusionPredictions;
 }
 
 void ClassifierFusionPrediction<cv::EM,CvBoost>::modelSelection(cv::Mat data, cv::Mat responses, cv::Mat expandedParams, cv::Mat& goodnesses)
@@ -677,7 +795,7 @@ void ClassifierFusionPrediction<cv::EM,CvBoost>::modelSelection(cv::Mat data, cv
             float bestNumOfWeaks = selectedParams.at<float>(0,0);
             float bestWeightTrimRate = selectedParams.at<float>(0,1); // indeed, gamma not used if not RBF kernel
             
-            CvBoostParams boostParams (m_BoostType, (int) bestNumOfWeaks, bestWeightTrimRate, 1, 0, NULL);
+            CvBoostParams boostParams (m_boostType, (int) bestNumOfWeaks, bestWeightTrimRate, 1, 0, NULL);
             
             m_pClassifier->train(trSbjObjData, CV_ROW_SAMPLE, trSbjObjResponses,
                                  cv::Mat(), cv::Mat(), cv::Mat(), cv::Mat(),
@@ -706,19 +824,47 @@ void ClassifierFusionPrediction<cv::EM,CvBoost>::modelSelection(cv::Mat data, cv
 // CvANN_MLP
 
 ClassifierFusionPrediction<cv::EM,CvANN_MLP>::ClassifierFusionPrediction()
-: m_NumOfEpochs(500), m_NumOfRepetitions(5)
+: m_numOfEpochs(500), m_numOfRepetitions(5)
 {
     
 }
 
+cv::Mat ClassifierFusionPrediction<cv::EM,CvANN_MLP>::encode(cv::Mat classes)
+{
+    cv::Mat mat (classes.rows, 2, cv::DataType<float>::type, cv::Scalar(0));
+    
+    for (int i = 0; i < classes.rows; i++)
+    {
+        int idx = classes.at<int>(i,0);
+        mat.at<float>(i, idx) = 1.0f;
+    }
+    
+    return mat;
+}
+
+cv::Mat ClassifierFusionPrediction<cv::EM,CvANN_MLP>::decode(cv::Mat predictions)
+{
+    cv::Mat mat (predictions.rows, 1, cv::DataType<int>::type);
+    
+    for (int i = 0; i < predictions.rows; i++)
+    {
+        double minVal, maxVal;
+        cv::Point minLoc, maxLoc;
+        cv::minMaxLoc(predictions.row(i), &minVal, &maxVal, &minLoc, &maxLoc);
+        mat.at<int>(i,0) = maxLoc.x;
+    }
+    
+    return mat;
+}
+
 void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::setActivationFunctionType(int type)
 {
-    m_ActFcnType = type;
+    m_actFcnType = type;
 }
 
 void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::setHiddenLayerSizes(vector<float> hiddenSizes)
 {
-    m_HiddenLayerSizes = hiddenSizes;
+    m_hiddenLayerSizes = hiddenSizes;
 }
 
 //void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::setBackpropDecayWeightScales(vector<float> dwScales)
@@ -731,20 +877,18 @@ void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::setHiddenLayerSizes(vector<fl
 //    m_bpMomentScales = momScales;
 //}
 
-void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::compute(cv::Mat& fusionPredictions)
+void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::predict(cv::Mat& fusionPredictions)
 {
     formatData();
     
     // Prepare parameters' combinations
     vector<vector<float> > params;
-    params.push_back(m_HiddenLayerSizes);
+    params.push_back(m_hiddenLayerSizes);
     
     // create a list of parameters' variations
     cv::Mat coarseExpandedParameters;
     expandParameters(params, coarseExpandedParameters);
     
-//    cv::Mat partitions;
-//    cvpartition(m_responses, m_testK, m_seed, partitions);
     
     if (m_bModelSelection)
     {
@@ -770,7 +914,7 @@ void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::compute(cv::Mat& fusionPredic
             narrow<float>(coarseExpandedParameters, coarseGoodnesses, m_narrowSearchSteps, discretes, narrowExpandedParameters);
             
             std::stringstream coarsess;
-            coarsess << "mlp_" << m_distsToMargin.size() << "_" << m_ActFcnType << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << ".yml";
+            coarsess << "mlp_" << m_distsToMargin.size() << "_" << m_actFcnType << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << ".yml";
             cv::hconcat(coarseExpandedParameters, coarseGoodnesses, coarseGoodnesses);
             cvx::save(coarsess.str(), coarseGoodnesses);
             
@@ -779,7 +923,7 @@ void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::compute(cv::Mat& fusionPredic
             modelSelection(trData, trResponses, narrowExpandedParameters, narrowGoodnesses);
             
             std::stringstream narrowss;
-            narrowss << "mlp_" << m_distsToMargin.size() << "_" << m_ActFcnType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << ".yml";
+            narrowss << "mlp_" << m_distsToMargin.size() << "_" << m_actFcnType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << ".yml";
             cv::hconcat(narrowExpandedParameters, narrowGoodnesses, narrowGoodnesses);
             cvx::save(narrowss.str(), narrowGoodnesses);
         }
@@ -789,7 +933,7 @@ void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::compute(cv::Mat& fusionPredic
     
     cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
     
-    cv::Mat predictions;
+    fusionPredictions.create(m_responses.rows, 1, cv::DataType<int>::type);
     
     for (int k = 0; k < m_testK; k++)
     {
@@ -807,7 +951,7 @@ void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::compute(cv::Mat& fusionPredic
         
         cv::Mat goodnesses;
         std::stringstream ss;
-        ss << "mlp_" << m_distsToMargin.size() << "_" << m_ActFcnType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << ".yml";
+        ss << "mlp_" << m_distsToMargin.size() << "_" << m_actFcnType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << ".yml";
         cvx::load(ss.str(), goodnesses);
         
         // Find best parameters (using goodnesses) to train the final model
@@ -821,20 +965,19 @@ void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::compute(cv::Mat& fusionPredic
         cv::Mat layerSizes (3, 1, cv::DataType<int>::type);
         layerSizes.at<int>(0,0) = trData.cols; // as many inputs as feature vectors' num of dimensions
         layerSizes.at<int>(1,0) = bestHiddenSize; // num of hidden neurons experimentally selected
-        layerSizes.at<int>(2,0) = 1; // one output neuron
-        m_pClassifier->create(layerSizes, m_ActFcnType);
+        layerSizes.at<int>(2,0) = 2; // one output neuron
+        m_pClassifier->create(layerSizes, m_actFcnType);
         
         CvANN_MLP_TrainParams mlpParams (cv::TermCriteria(CV_TERMCRIT_ITER + CV_TERMCRIT_EPS, 1, 1e-2), CvANN_MLP_TrainParams::BACKPROP, 0.1, 0.1);
-        
-        validTrResponses.convertTo(validTrResponses, cv::DataType<float>::type);
-        m_pClassifier->train(validTrData, validTrResponses, cv::Mat(), cv::Mat(),
+                
+        m_pClassifier->train(validTrData, encode(validTrResponses), cv::Mat(), cv::Mat(),
                              mlpParams);
         
         cv::Mat valPredictions;
         m_pClassifier->predict(valData, valPredictions);
-        float prevAcc = accuracy(valResponses, valPredictions);
-        
-        float bestValAcc = 0;
+
+        float bestValAcc, prevAcc;
+        prevAcc = bestValAcc = accuracy(valResponses, decode(valPredictions));
         
         bool overfitting = false; // wheter performance in validation keeps decreasing
         int counter = 0; // number of iterations the performance in validation is getting worse
@@ -844,9 +987,9 @@ void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::compute(cv::Mat& fusionPredic
         cv::Mat tePredictions;
         
         int e;
-        for (e = 0; e < m_NumOfEpochs && !overfitting && !saturation; e++)
+        for (e = 0; e < m_numOfEpochs && !overfitting && !saturation; e++)
         {
-            int iters = m_pClassifier->train(validTrData, validTrResponses, cv::Mat(), cv::Mat(),
+            int iters = m_pClassifier->train(validTrData, encode(validTrResponses), cv::Mat(), cv::Mat(),
                                              mlpParams, CvANN_MLP::UPDATE_WEIGHTS);
             saturation = (iters < 1);
             
@@ -854,7 +997,7 @@ void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::compute(cv::Mat& fusionPredic
             cv::Mat valPredictions;
             m_pClassifier->predict(valData, valPredictions);
             
-            float acc = accuracy(valResponses, valPredictions);
+            float acc = accuracy(valResponses, decode(valPredictions));
             if (acc > bestValAcc)
             {
                 bestValAcc = acc;
@@ -867,12 +1010,11 @@ void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::compute(cv::Mat& fusionPredic
             prevAcc = acc;
         }
 
-        cvx::setMat(tePredictions, predictions, m_partitions == k);
+        cvx::setMat(decode(tePredictions), fusionPredictions, m_partitions == k);
     }
     cout << endl;
     
-    // Mat to GridMat
-    fusionPredictions = predictions;
+    m_fusionPredictions = fusionPredictions;
 }
 
 void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::modelSelection(cv::Mat data, cv::Mat responses, cv::Mat expandedParams, cv::Mat& goodnesses)
@@ -900,7 +1042,7 @@ void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::modelSelection(cv::Mat data, 
         cv::Mat trSbjObjData = cvx::indexMat(trData, trResponses >= 0); // ignore unknown category (class -1) in training
         cv::Mat trSbjObjResponses = cvx::indexMat(trResponses, trResponses >= 0);
         
-        cv::Mat foldAccs (expandedParams.rows, m_NumOfRepetitions, cv::DataType<float>::type); // results
+        cv::Mat foldAccs (expandedParams.rows, m_numOfRepetitions, cv::DataType<float>::type); // results
         
         for (int m = 0; m < expandedParams.rows; m++)
         {
@@ -912,22 +1054,22 @@ void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::modelSelection(cv::Mat data, 
             cv::Mat layerSizes (3, 1, cv::DataType<int>::type);
             layerSizes.at<int>(0,0) = trData.cols; // as many inputs as feature vectors' num of dimensions
             layerSizes.at<int>(1,0) = hiddenSize; // num of hidden neurons experimentally selected
-            layerSizes.at<int>(2,0) = 1; // one output neuron
+            layerSizes.at<int>(2,0) = 2; // one output neuron
             
-            for (int r = 0; r < m_NumOfRepetitions; r++)
+            for (int r = 0; r < m_numOfRepetitions; r++)
             {
-                m_pClassifier->create(layerSizes, m_ActFcnType);
+                m_pClassifier->create(layerSizes, m_actFcnType);
                 
                 CvANN_MLP_TrainParams mlpParams (cv::TermCriteria(CV_TERMCRIT_ITER + CV_TERMCRIT_EPS, 1, 1e-2), CvANN_MLP_TrainParams::BACKPROP, 0.1, 0.1);
                 
-                trSbjObjResponses.convertTo(trSbjObjResponses, cv::DataType<float>::type);
-                m_pClassifier->train(trSbjObjData, trSbjObjResponses, cv::Mat(), cv::Mat(),
+                m_pClassifier->train(trSbjObjData, encode(trSbjObjResponses), cv::Mat(), cv::Mat(),
                                      mlpParams);
                 
                 cv::Mat valPredictions;
                 m_pClassifier->predict(valData, valPredictions);
+                
                 float prevAcc, bestAcc;
-                bestAcc = prevAcc = accuracy(valResponses, valPredictions);
+                prevAcc = bestAcc = accuracy(valResponses, decode(valPredictions));
                 
                 bool overfitting = false; // wheter performance in validation keeps decreasing
                 int counter = 0; // number of iterations the performance in validation is getting worse
@@ -935,9 +1077,9 @@ void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::modelSelection(cv::Mat data, 
                 bool saturation = false; // performance in training is saturated
                 
                 int e;
-                for (e = 0; e < m_NumOfEpochs && !overfitting && !saturation; e++)
+                for (e = 0; e < m_numOfEpochs && !overfitting && !saturation; e++)
                 {
-                    int iters = m_pClassifier->train(trSbjObjData, trSbjObjResponses, cv::Mat(), cv::Mat(),
+                    int iters = m_pClassifier->train(trSbjObjData, encode(trSbjObjResponses), cv::Mat(), cv::Mat(),
                                                      mlpParams, CvANN_MLP::UPDATE_WEIGHTS);
                     saturation = (iters < 1);
                     
@@ -945,7 +1087,7 @@ void ClassifierFusionPrediction<cv::EM,CvANN_MLP>::modelSelection(cv::Mat data, 
                     cv::Mat valPredictions;
                     m_pClassifier->predict(valData, valPredictions);
                     
-                    float acc = accuracy(valResponses, valPredictions);
+                    float acc = accuracy(valResponses, decode(valPredictions));
                     if (acc > bestAcc) bestAcc = acc;
                     
                     if (acc > prevAcc) counter = 0;

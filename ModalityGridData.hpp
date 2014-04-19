@@ -60,7 +60,7 @@ public:
                 {
                     addDescriptor(other.getDescriptor(i, j, k), i, j);
                 }
-                addPartitionIndex(other.getPartitionIndex(k));
+                addElementPartition(other.getElementPartition(k));
             }
         }
     }
@@ -78,7 +78,7 @@ public:
 		m_Tags.clear();
         m_Validnesses.release();
         m_Descriptors.release();
-        m_PartitionIndices.clear();
+        m_Partitions.clear();
 	}
     
     void operator=(const ModalityGridData& other)
@@ -99,7 +99,7 @@ public:
         m_Descriptors = other.m_Descriptors;
         m_MinVal = other.m_MinVal;
         m_MaxVal = other.m_MaxVal;
-        m_PartitionIndices = other.m_PartitionIndices;
+        m_Partitions = other.m_Partitions;
     }
     
     // Getters
@@ -193,9 +193,9 @@ public:
         return GridMat(m_Descriptors, m_Validnesses);
     }
 
-    int getPartitionIndex(int k)
+    int getElementPartition(int k)
     {
-        return m_PartitionIndices[k];
+        return m_Partitions[k];
     }
     
     int getNumOfScenes()
@@ -299,9 +299,9 @@ public:
         return gValidTags;
     }
     
-    cv::Mat getPartitionIndicesMat()
+    cv::Mat getPartitions()
     {
-		return cv::Mat(m_PartitionIndices.size(), 1, cv::DataType<int>::type, m_PartitionIndices.data());
+		return cv::Mat(m_Partitions.size(), 1, cv::DataType<int>::type, m_Partitions.data());
     }
     
     
@@ -536,9 +536,9 @@ public:
         m_Validnesses.vconcat(g);
     }
     
-    void addPartitionIndex(int index)
+    void addElementPartition(int fold)
     {
-        m_PartitionIndices.push_back(index);
+        m_Partitions.push_back(fold);
     }
     
     void addDescriptor(cv::Mat descriptor, unsigned int i, unsigned int j)
@@ -548,33 +548,33 @@ public:
         m_Descriptors.at(i,j).push_back(descriptor);
     }
     
-    void saveDescription(string dataPath, string sequencePath, string filename)
+    void saveDescription(string sequencePath, string filename)
     {
-        m_Descriptors.save(dataPath + sequencePath + "Description/" + filename);
+        m_Descriptors.save(sequencePath + "Description/" + filename);
     }
     
-    void saveDescription(string dataPath, vector<string> sequencesPaths, string filename)
+    void saveDescription(vector<string> sequencesPaths, string filename)
     {
         for (int i = 0; i < sequencesPaths.size(); i++)
-            saveDescription(dataPath, sequencesPaths[i], filename);
+            saveDescription(sequencesPaths[i], filename);
     }
     
-    void loadDescription(string dataPath, string sequencePath, string filename)
+    void loadDescription(string sequencePath, string filename)
     {
         GridMat descriptors;
-        descriptors.load(dataPath + sequencePath + "Description/" + filename);
+        descriptors.load(sequencePath + "Description/" + filename);
         
         setDescriptors(descriptors);
     }
     
-    void loadDescription(string dataPath, vector<string> sequencesPaths, string filename)
+    void loadDescription(vector<string> sequencesPaths, string filename)
     {
         GridMat descriptors;
         
         for (int i = 0; i < sequencesPaths.size(); i++)
         {
             GridMat aux;
-            aux.load(dataPath + sequencesPaths[i] + "Description/" + filename);
+            aux.load(sequencesPaths[i] + "Description/" + filename);
             descriptors.vconcat(aux);
         }
         
@@ -598,7 +598,7 @@ private:
     vector<cv::Point2d> m_FramesResolutions;
     vector<cv::Rect> m_GBoundingRects;
     vector<int> m_Tags;
-    vector<int> m_PartitionIndices;
+    vector<int> m_Partitions;
     
     GridMat m_Validnesses; // whether cells in the grids are valid to be described
     GridMat m_Descriptors;

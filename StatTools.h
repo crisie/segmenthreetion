@@ -82,6 +82,7 @@ float accuracy(GridMat actuals, GridMat predictions);
 float accuracy(cv::Mat actuals, GridMat predictions);
 
 void accuracy(cv::Mat actuals, cv::Mat predictions, cv::Mat partitions, cv::Mat& accuracies);
+void accuracy(cv::Mat actuals, GridMat predictions, cv::Mat partitions, GridMat& accuracies);
 
 template<typename T>
 void narrow(cv::Mat coarse, cv::Mat goodnesses, int steps, int* discrete, cv::Mat& narrow);

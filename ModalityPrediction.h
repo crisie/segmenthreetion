@@ -33,12 +33,17 @@ public:
     void setModelSelection(bool flag);
     void setModelSelectionParameters(int k, bool best);
     
-    void setValidationParameters(int k, int seed);
+    void setValidationParameters(int k);
     
     void setDimensionalityReduction(float variance);
     
-    void computeGridPredictionsConsensus(ModalityGridData data, GridMat predictions, GridMat distsToMargin,
-                                         cv::Mat& consensusPredictions, cv::Mat& consensusDistsToMargin);
+    void computeGridConsensusPredictions(cv::Mat& consensusPredictions, cv::Mat& consensusDistsToMargin);
+
+    void getAccuracy(cv::Mat predictions, cv::Mat& accuracies);
+    void getAccuracy(GridMat predictions, GridMat& accuracies);
+    
+    void setPredictions(GridMat predictionsGrid);
+    void setDistsToMargin(GridMat distsToMarginGrid);
     
 protected:
     
@@ -61,6 +66,9 @@ protected:
     float m_variance;
     
     int m_narrowSearchSteps;
+    
+    GridMat m_PredictionsGrid;
+    GridMat m_DistsToMarginGrid;
 };
 
 
@@ -88,7 +96,7 @@ public:
                         vector<vector<T> > params,
                         GridMat& goodnesses);
     
-    void compute(GridMat& predictions, GridMat& loglikelihoods, GridMat& distsToMargin, GridMat& accuracies); // this
+    void predict(GridMat& predictions, GridMat& loglikelihoods, GridMat& distsToMargin); // this
     
     void computeLoglikelihoodsDistribution(int nbins, double min, double max, cv::Mat& sbjDistribution, cv::Mat& objDistribution);
     
@@ -98,6 +106,9 @@ private:
     
     vector<int> m_nmixtures;
     vector<float> m_logthresholds;
+    
+    GridMat m_LoglikelihoodsGrid;
+
 };
 
 template<>
@@ -118,7 +129,7 @@ public:
                         cv::Mat params,
                         cv::Mat& goodness);
     
-    void compute(GridMat& predictions, GridMat& scores, GridMat& distsToMargin, GridMat& accuracies); // this
+    void predict(GridMat& predictions, GridMat& ramananScores, GridMat& distsToMargin); // this
     
 private:
     
@@ -126,6 +137,8 @@ private:
     
     vector<float> m_ratios;
     vector<float> m_scores;
+    
+    GridMat m_RamananScoresGrid;
 };
 
 
