@@ -184,7 +184,7 @@ void DepthFeatureExtractor::describeNormalsOrients(const cv::Mat cell, const cv:
     // Create an histogram for the cell region of blurred intensity values
     int thetasHistSize[] = { (int) m_DepthParam.thetaBins };
     int channels[] = { 0 }; // 1 channel, number 0
-    float tranges[] = { 0, 360 }; // thermal intensity values range: [0, 256)
+    float tranges[] = { 0, 360 };
     const float* ranges[] = { tranges };
     
     cv::Mat tmpThetasHist;

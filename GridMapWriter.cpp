@@ -143,7 +143,7 @@ void GridMapWriter::write(ModalityGridData& mgd, GridMat& gvalues, string output
 
                 for (int i = 0; i < mgd.getHp(); i++) for (int j = 0; j < mgd.getWp(); j++)
                 {
-                    T value = gvalues.at<T>(i, j, counts.at<int>(i,j)++, 0) * 255;
+                    T value = gvalues.at<T>(i, j, counts.at<int>(i,j)++, 0);
                     gRoiMap.setTo(value, i, j, gRoiMask.at(i,j));
                 }
                 
@@ -152,7 +152,10 @@ void GridMapWriter::write(ModalityGridData& mgd, GridMat& gvalues, string output
             
             string mapPath = frameFilePath + "Maps/" + outputDir + frameFilename + ".png";
 
-            cv::imwrite(mapPath, map);
+            // check: the map only contains 0s or 1s. Their added countings must coincide with #pixels in map
+            assert( cv::sum(map == 0).val[0]/255 + cv::sum(map == 1).val[0]/255 == (map.rows * map.cols) );
+            
+            cv::imwrite(mapPath, map * 255);
             
 //            // DEBUG
 //            // +----------------------------------------------------------------
@@ -176,7 +179,18 @@ void GridMapWriter::write(ModalityGridData& mgd, GridMat& gvalues, string output
 //            cv::imshow("a", drawableMap);
 //            cv::waitKey();
 //            // +----------------------------------------------------------------
-            
+           
+//            // DEBUG
+//            // +----------------------------------------------------------------
+//            int predsHistSize[] = { 20 };
+//            int channels[] = { 0 }; // 1 channel, number 0
+//            float pranges[] = { 0, 256 };
+//            const float* ranges[] = { pranges };
+//            
+//            cv::Mat predictionsHist;
+//            cv::calcHist(&map, 1, channels, cv::Mat(), predictionsHist, 1, predsHistSize, ranges, true, false);
+//            cout << predictionsHist << endl;
+//            // +----------------------------------------------------------------
         }
     }
 }

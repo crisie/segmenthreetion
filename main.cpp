@@ -703,7 +703,7 @@ int main(int argc, const char* argv[])
     //GridMat m; // create an empty GridMat
     //m.setTo(mConsensusPredictions); // set all the cells to same cv::Mat
     
-    //mapWriter.write<unsigned char>(mMockData, m, "Predictions/");
+    //mapWriter.write<unsigned char>(mGridMetadata, m, "Predictions/");
     
     GridMat g;
     g.load("mGridConsensusPredictions.yml");
@@ -713,53 +713,53 @@ int main(int argc, const char* argv[])
     mapWriter.write<unsigned char>(dGridMetadata, g, "Depth/Predictions/");
  /*
     g.load("tGridConsensusPredictions.yml");
-    mapWriter.write<unsigned char>(tMockData, g, "Thermal/Predictions/");
+    mapWriter.write<unsigned char>(tGridMetadata, g, "Thermal/Predictions/");
                          
     g.load("cGridConsensusPredictions.yml");
-    mapWriter.write<unsigned char>(cMockData, g, "Color/Predictions/");
+    mapWriter.write<unsigned char>(cGridMetadata, g, "Color/Predictions/");
                                 
     g.load("simpleFusionPredictions1.yml");
-    mapWriter.write<unsigned char>(cMockData, g, "Simple_1_fusion/Predictions/");
+    mapWriter.write<unsigned char>(cGridMetadata, g, "Simple_1_fusion/Predictions/");
                                        
     g.load("simpleFusionPredictions2.yml");
-    mapWriter.write<unsigned char>(cMockData, g, "Simple_2_fusion/Predictions/");
+    mapWriter.write<unsigned char>(cGridMetadata, g, "Simple_2_fusion/Predictions/");
                                               
     g.load("simpleFusionPredictions3.yml");
-    mapWriter.write<unsigned char>(cMockData, g, "Simple_3_fusion/Predictions/");
+    mapWriter.write<unsigned char>(cGridMetadata, g, "Simple_3_fusion/Predictions/");
     
     g.load("boostFusionPredictions.yml");
-    mapWriter.write<unsigned char>(cMockData, g, "Boost_fusion/Predictions/");
+    mapWriter.write<unsigned char>(cGridMetadata, g, "Boost_fusion/Predictions/");
            
     g.load("mlpSigmoidFusionPredictions.yml");
-    mapWriter.write<unsigned char>(cMockData, g, "MLP_sigmoid_fusion/Predictions/");
+    mapWriter.write<unsigned char>(cGridMetadata, g, "MLP_sigmoid_fusion/Predictions/");
                   
     g.load("mlpGaussianFusionPredictions.yml");
-    mapWriter.write<unsigned char>(cMockData, g, "MLP_gaussian_fusion/Predictions/");
+    mapWriter.write<unsigned char>(cGridMetadata, g, "MLP_gaussian_fusion/Predictions/");
                          
     g.load("svmLinearFusionPredictions.yml");
-    mapWriter.write<unsigned char>(cMockData, g, "SVM_linear_fusion/Predictions/");
+    mapWriter.write<unsigned char>(cGridMetadata, g, "SVM_linear_fusion/Predictions/");
                                 
     g.load("svmRBFFusionPredictions.yml");
-    mapWriter.write<unsigned char>(cMockData, g, "SVM_rbf_fusion/Predictions/");
+    mapWriter.write<unsigned char>(cGridMetadata, g, "SVM_rbf_fusion/Predictions/");
     */
     
-    //
-    // Overlap
-    //
-    
-    Validation validate;
-    
-    //Individual..
-    
-    //Depth
-    cv::Mat overlapIDs;
-    for (int s = 0; s < sequences.size(); s++)
-    {
-        ModalityData depthData;
-        cout << "Reading depth data in scene " << s << ".." << endl;
-        reader.overlapreadScene("Depth", "Depth", sequences[s], ".png", depthData);
-        validate.getOverlap(depthData, dontCareRange, overlapIDs);
-    }
+//    //
+//    // Overlap
+//    //
+//    
+//    Validation validate;
+//    
+//    //Individual..
+//    
+//    //Depth
+//    cv::Mat overlapIDs;
+//    for (int s = 0; s < sequences.size(); s++)
+//    {
+//        ModalityData depthData;
+//        cout << "Reading depth data in scene " << s << ".." << endl;
+//        reader.overlapreadScene("Depth", "Depth", sequences[s], ".png", depthData);
+//        validate.getOverlap(depthData, dontCareRange, overlapIDs);
+//    }
     
     return 0;
 }
