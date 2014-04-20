@@ -8,8 +8,9 @@
 
 #include "Validation.h"
 #include "StatTools.h"
+#include "CvExtraTools.h"
 
-
+#include <iomanip>
 
 
 using namespace std;
@@ -17,15 +18,15 @@ using namespace std;
 Validation::Validation()
 { }
 
-void Validation::getOverlap(ModalityData& md, vector<float> dcRange, cv::Mat& overlapIDs) {
+void Validation::getOverlap(ModalityData& md, vector<int>& dcRange, cv::Mat& overlapIDs) {
     
-    cv::Mat newOverlapIDs(cvSize(md.getPredictedMasks().size(), dcRange.size()+1), CV_8UC1);
+    cv::Mat newOverlapIDs(cvSize(md.getPredictedMasks().size(), dcRange.size()+1), CV_32FC1, NAN);
     this->getOverlap(md.getPredictedMasks(), md.getGroundTruthMasks(), dcRange, newOverlapIDs);
     cv::hconcat(overlapIDs, newOverlapIDs, overlapIDs);
     
 }
 
-void Validation::getOverlap(vector<cv::Mat> predictedMasks, vector<cv::Mat> gtMasks, vector<float> dcRange, cv::Mat& overlapIDs) {
+void Validation::getOverlap(vector<cv::Mat>& predictedMasks, vector<cv::Mat>& gtMasks, vector<int>& dcRange, cv::Mat& overlapIDs) {
     
     //cv::resize(overlapIDs, overlapIDs, cvSize(predictedMasks.size(), dcRange.size()+1));
     int idx = 0;
@@ -46,7 +47,8 @@ void Validation::getOverlap(vector<cv::Mat> predictedMasks, vector<cv::Mat> gtMa
             }
             cout << endl;
             
-            overlapIDs.at<float>(0, idx) = getMaskOverlap(predictedMasks[f], gtMasks[f], cv::Mat());
+            cv::Mat emptyDontCare;
+            overlapIDs.at<float>(0, idx) = getMaskOverlap(predictedMasks[f], gtMasks[f], emptyDontCare);
             
             for(int dc = 0; dc < dcRange.size(); dc++)
             {
@@ -55,30 +57,67 @@ void Validation::getOverlap(vector<cv::Mat> predictedMasks, vector<cv::Mat> gtMa
                 //threshold(dontCare, dontCare, 128, 255, CV_THRESH_BINARY);
                 
                 overlapIDs.at<float>(dc+1, idx) = getMaskOverlap(predictedMasks[f], gtMasks[f], dontCare);
+                dontCare.release();
             }
+            
+            cout << "overlap f: " << f << " : ";
+            for(int a = 0; a < dcRange.size()+1; a++)
+            {
+                cout << std::setprecision(6) << overlapIDs.at<float>(a,idx) << " ";
+            }
+            cout << endl;
+            
             idx++;
         }
     }
     
-    //TODO: Check if all iDs are finite or treat it when computing the mean (outside this function ?)
+}
+
+void Validation::save(cv::Mat overlapIDs, cv::Mat meanOverlap, string filename)
+{
+    cv::Mat overlapConcat;
+    cv::vconcat(overlapIDs, meanOverlap, overlapConcat);
     
+    cvx::save(filename, overlapConcat);
+}
+
+
+void Validation::getMeanOverlap(cv::Mat overlapIDs, cv::Mat& meanOverlap)
+{
+    //cv::reduce(overlapIDs, meanOverlap, 1, CV_REDUCE_AVG, -1);
+    //std::accumulate(overlapIDs.begin(), overlapIDs.end(), 0.0)/nBB;
+    for(int r = 0; r < overlapIDs.rows; r++)
+    {
+        float accRow = 0.0;
+        int idx = 0;
+        for(int f = 0; f < overlapIDs.cols; f++)
+        {
+            if (cv::checkRange(overlapIDs.at<float>(r,f)))
+            {
+                accRow += overlapIDs.at<float>(r,f);
+                idx++;
+            }
+        }
+        meanOverlap.at<float>(r,0) = accRow/idx;
+    }
 }
 
 /*
  * Get overlap value between predicted mask and ground truth mask based on Jaccard Similarity/Index
  */
-float Validation::getMaskOverlap(cv::Mat predictedMask, cv::Mat gtMask, cv::Mat dontCareRegion)
+float Validation::getMaskOverlap(cv::Mat& predictedMask, cv::Mat& gtMask, cv::Mat& dontCareRegion)
 {
     
-    imshow("gtMask", gtMask);
-    imshow("predictedMask", predictedMask);
+  //  imshow("gtMask", gtMask);
+  //  imshow("predictedMask", predictedMask);
+    cv::waitKey(10);
     
     bool useDontCare = false;
     if(!dontCareRegion.empty()) useDontCare = true;
     
-    double overlap = 0.0;
+    float overlap = 0.0;
     int nBB = 0;
-    vector<double> overlapIDs;
+    vector<float> overlapIDs;
     
     vector<int> gtMaskPersonID;
     findUniqueValues(gtMask, gtMaskPersonID);
@@ -100,7 +139,7 @@ float Validation::getMaskOverlap(cv::Mat predictedMask, cv::Mat gtMask, cv::Mat 
         drawContours(labeledGtMask, contours, c, c, CV_FILLED, 8, vector<cv::Vec4i>());
     }
     imshow("labeledGtMask", labeledGtMask);*/
-    cv::waitKey(1);
+    //if(cv::waitKey() > 30) {}
     vector<bool> gtMaskUsedIDs;
     for(int g = 0; g < gtMaskPersonID.size(); g++) gtMaskUsedIDs.push_back(false);
     
@@ -114,8 +153,8 @@ float Validation::getMaskOverlap(cv::Mat predictedMask, cv::Mat gtMask, cv::Mat 
         {
             int id  = *gtID;
             cv::Mat person = (gtMask == id);
-            threshold(person, person, 128, 255, CV_THRESH_BINARY);
-            imshow("person", person);
+            //threshold(person, person, 128, 255, CV_THRESH_BINARY);
+        //    imshow("person", person);
             
             vector<int> personsInBlob;
             personsInBlob.push_back(id);
@@ -145,7 +184,16 @@ float Validation::getMaskOverlap(cv::Mat predictedMask, cv::Mat gtMask, cv::Mat 
                     for(int i = 0 ; i < regionIDs.size(); i++)
                     {
                         vector<int> uniqueIDs;
-                        findUniqueValues(gtMask == regionIDs[i], uniqueIDs);
+                        cv::Mat gtMaskContainingID = (gtMask == regionIDs[i]);
+
+                        for(int r = 0; r < gtMaskContainingID.rows; r++) for(int c = 0; c < gtMaskContainingID.cols; c++)
+                        {
+                            if(gtMaskContainingID.at<uchar>(r,c) == 255)
+                                gtMaskContainingID.at<uchar>(r,c) = regionIDs[i];
+                        }
+                        
+                        findUniqueValues(gtMaskContainingID, uniqueIDs);
+                        uniqueIDs.erase(std::remove(uniqueIDs.begin(), uniqueIDs.end(), 0), uniqueIDs.end());
                         personsInBlob.insert(personsInBlob.end(), uniqueIDs.begin(), uniqueIDs.end());
                     }
                     
@@ -159,7 +207,9 @@ float Validation::getMaskOverlap(cv::Mat predictedMask, cv::Mat gtMask, cv::Mat 
                         {
                             add(person, gtMask == personsInBlob[i], person);
                         }
-                        threshold(person, person, 128, 255, CV_THRESH_BINARY);
+                        //threshold(person, person, 128, 255, CV_THRESH_BINARY);
+                    //    imshow("person", person);
+                        cv::waitKey(10);
                         
                         personsGt.clear();
                         personsGt.insert(personsGt.end(), personsInBlob.begin(), personsInBlob.end());
@@ -178,13 +228,17 @@ float Validation::getMaskOverlap(cv::Mat predictedMask, cv::Mat gtMask, cv::Mat 
                 
                 labelsOverlap.clear();
                 findUniqueValues(overlap, labelsOverlap);
+                labelsOverlap.erase(remove(labelsOverlap.begin(), labelsOverlap.end(), 0), labelsOverlap.end());
                 
                 resultRegionMask.release();
+                resultRegionMask = cv::Mat::zeros(gtMask.rows, gtMask.cols, CV_8UC1);
                 for(int i = 0; i < labelsOverlap.size(); i++)
                 {
                     add(resultRegionMask, predictedMask == labelsOverlap[i], resultRegionMask);
                 }
-                threshold(resultRegionMask,resultRegionMask,128,255,CV_THRESH_BINARY);
+                //threshold(resultRegionMask,resultRegionMask,128,255,CV_THRESH_BINARY);
+               // imshow("resultRegionMask", resultRegionMask);
+                cv::waitKey(10);
                 
                 cv::Mat gtRegionsOverlap;
                 gtMask.copyTo(gtRegionsOverlap,resultRegionMask);
@@ -206,12 +260,15 @@ float Validation::getMaskOverlap(cv::Mat predictedMask, cv::Mat gtMask, cv::Mat 
                     set_difference(s_gtPersonsOverlap.begin(), s_gtPersonsOverlap.end(), s_personsInBlob.begin(), s_personsInBlob.end(), back_inserter(newPersons));
                     
                     person.release();
+                    person = cv::Mat::zeros(gtMask.rows, gtMask.cols, CV_8UC1);
                     for(int i = 0; i < newPersons.size(); i++)
                     {
                         add(person, gtMask == newPersons[i], person);
                     }
-                    threshold(person, person, 128, 255, CV_THRESH_BINARY);
-
+                    //threshold(person, person, 128, 255, CV_THRESH_BINARY);
+                  //  imshow("person2", person);
+                    cv::waitKey(10);
+                    
                     personsInBlob.insert(personsInBlob.end(), newPersons.begin(), newPersons.end());
                     
                     overlap.release();
@@ -239,37 +296,42 @@ float Validation::getMaskOverlap(cv::Mat predictedMask, cv::Mat gtMask, cv::Mat 
                     gtMaskPersonID.erase(it2);
                 }
                 
-                if(cv::countNonZero(dontCareRegion) > 0) //!dontCareRegion.empty()
+                if(useDontCare)
                 {
-                    person.copyTo(person, dontCareRegion);
-                    resultRegionMask.copyTo(resultRegionMask, dontCareRegion);
+                    person = person & dontCareRegion;
+                    resultRegionMask = resultRegionMask & dontCareRegion;
+
                 }
+                //debug
+             //   cv::imshow("person after dontcare", person);
+             //   cv::imshow("resultRegionMask after dontcare", resultRegionMask);
+                cv::waitKey(10);
                 
                 //Compute intersection and union
-                double intersectArea = 0, unionArea = 0;
+                float intersectArea = 0.0, unionArea = 0.0;
                 
                 cv::Mat intersection, unio;
                 cv::bitwise_and(person, resultRegionMask, intersection);
                 cv::bitwise_or(person, resultRegionMask, unio);
                 
-                vector<vector<cv::Point> > intersectContours, unionContours;
+                //debug
+             //   cv::imshow("intersection", intersection);
+             //   cv::imshow("union", unio);
+                cv::waitKey(10);
                 
-                findContours(intersection, intersectContours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
-                for(int c = 0; c < intersectContours.size(); c++)
-                {
-                    intersectArea = intersectArea + contourArea(intersectContours[c]);
-                }
-                
-                findContours(unio, unionContours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
-                for(int c = 0; c < unionContours.size(); c++)
-                {
-                    unionArea = unionArea + contourArea(unionContours[c]);
-                }
+                intersectArea = cv::countNonZero(intersection);
+                unionArea = cv::countNonZero(unio);
                 
                 if(unionArea > 0) {
                     nBB++;
-                    overlapIDs.push_back(intersectArea/unionArea);
+                    overlapIDs.push_back(float(intersectArea/unionArea));
                 }
+
+                person.release();
+                resultRegionMask.release();
+                intersection.release();
+                unio.release();
+                auxOverlap.release();
             }
             else
             {
@@ -283,26 +345,40 @@ float Validation::getMaskOverlap(cv::Mat predictedMask, cv::Mat gtMask, cv::Mat 
                     gtMaskPersonID.erase(it2);
                 }
             }
+            
+            cv::destroyAllWindows();
         }
         
         int nUnassignedRegions = predictedMaskPersonID.size();
         
-        vector<int> unassignedRegions (nUnassignedRegions);
-        std::fill(unassignedRegions.begin(), unassignedRegions.end(), 0.0);
+        if(nUnassignedRegions > 0)
+        {
+            vector<int> unassignedRegions (nUnassignedRegions);
+            std::fill(unassignedRegions.begin(), unassignedRegions.end(), 0.0);
         
-        overlapIDs.insert(overlapIDs.end(), unassignedRegions.begin(), unassignedRegions.end());
+            overlapIDs.insert(overlapIDs.end(), unassignedRegions.begin(), unassignedRegions.end());
         
-        nBB = nBB + nUnassignedRegions;
+            nBB = nBB + nUnassignedRegions;
+            
+        }
         
-        overlap = std::accumulate(overlapIDs.begin(), overlapIDs.end(), 0)/nBB;
+        if(nBB > 0) {
+            overlap = std::accumulate(overlapIDs.begin(), overlapIDs.end(), 0.0)/nBB;
+        } else {
+            overlap = NAN;
+        }
     }
+   
+    cv::destroyAllWindows();
+    overlapIDs.clear();
+    gtMaskPersonID.clear();
+    predictedMaskPersonID.clear();
     
     return overlap;
-}
+   }
 
-void Validation::createDontCareRegion(cv::Mat inputMask, cv::Mat& outputMask, float size)
+void Validation::createDontCareRegion(cv::Mat& inputMask, cv::Mat& outputMask, int size)
 {
-    cv::imshow("input", inputMask);
     cv::Mat mask1, mask2;
     inputMask.copyTo(mask1);
     inputMask.copyTo(mask2);
@@ -311,22 +387,20 @@ void Validation::createDontCareRegion(cv::Mat inputMask, cv::Mat& outputMask, fl
         size = 1;
     }
     
-    cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2*size, 2*size));
+    cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2*size+1, 2*size+1));
     
     cv::morphologyEx(mask1, mask1, cv::MORPH_DILATE, element);
     
     cv::morphologyEx(mask2, mask2, cv::MORPH_ERODE, element);
-    cv::imshow("2", mask2);
-    cv::imshow("1", mask1);
     
     subtract(mask1, mask2, outputMask);
-    cv::imshow("subtracted", outputMask);
     
     threshold(outputMask, outputMask, 128, 255, CV_THRESH_BINARY_INV);
     
-    //debug
-    cv::imshow("dontCareRegion", outputMask);
-    cv::destroyAllWindows();
+    mask1.release();
+    mask2.release();
+    element.release();
+
 
 }
 

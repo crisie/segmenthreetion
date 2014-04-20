@@ -162,8 +162,10 @@ int main(int argc, const char* argv[])
     int seed = 74;
  
     // Overlap params
-    vector<float> dontCareRange;
-    dontCareRange += 1, 3, 5, 7, 9, 11, 13, 15, 17;
+    vector<int> dontCareRange;
+    dontCareRange += 0, 1, 2, 3, 4, 5, 6, 7;
+    //dontCareRange += 21,23,25;
+    
     
 // =============================================================================
 //  Execution
@@ -703,15 +705,19 @@ int main(int argc, const char* argv[])
     //GridMat m; // create an empty GridMat
     //m.setTo(mConsensusPredictions); // set all the cells to same cv::Mat
     
+
     //mapWriter.write<unsigned char>(mGridMetadata, m, "Predictions/");
     
+
     GridMat g;
     g.load("mGridConsensusPredictions.yml");
     mapWriter.write<unsigned char>(mGridMetadata, g, "Motion/Predictions/");
     
     g.load("dGridConsensusPredictions.yml");
+
     mapWriter.write<unsigned char>(dGridMetadata, g, "Depth/Predictions/");
  /*
+
     g.load("tGridConsensusPredictions.yml");
     mapWriter.write<unsigned char>(tGridMetadata, g, "Thermal/Predictions/");
                          
@@ -743,23 +749,68 @@ int main(int argc, const char* argv[])
     mapWriter.write<unsigned char>(cGridMetadata, g, "SVM_rbf_fusion/Predictions/");
     */
     
-//    //
-//    // Overlap
-//    //
-//    
-//    Validation validate;
-//    
-//    //Individual..
-//    
-//    //Depth
-//    cv::Mat overlapIDs;
-//    for (int s = 0; s < sequences.size(); s++)
-//    {
-//        ModalityData depthData;
-//        cout << "Reading depth data in scene " << s << ".." << endl;
-//        reader.overlapreadScene("Depth", "Depth", sequences[s], ".png", depthData);
-//        validate.getOverlap(depthData, dontCareRange, overlapIDs);
-//    }
+
+    //
+    // Overlap
+    //
+    
+    Validation validate;
+    
+    //Individual..
+    
+    //Depth
+    cv::Mat overlapIDs, meanOverlap(cvSize(1, dontCareRange.size()+1), CV_32FC1);
+    for (int s = 0; s < sequences.size(); s++)
+    {
+        ModalityData depthData;
+        cout << "Reading depth data in scene " << s << ".." << endl;
+        reader.overlapreadScene("Depth", "Depth", sequences[s], ".png", depthData);
+        validate.getOverlap(depthData, dontCareRange, overlapIDs);
+    }
+    validate.getMeanOverlap(overlapIDs, meanOverlap);
+    validate.save(overlapIDs, meanOverlap, "dGridConsensusOverlap.yml");
+    
+    
+    //Motion
+    overlapIDs.release();
+    meanOverlap.release(); meanOverlap = cv::Mat(cvSize(1, dontCareRange.size()+1), CV_32FC1);
+    for (int s = 0; s < sequences.size(); s++)
+    {
+        ModalityData motionData;
+        cout << "Reading motion data in scene " << s << ".." << endl;
+        reader.overlapreadScene("Motion", "Color", sequences[s], ".png", motionData);
+        validate.getOverlap(motionData, dontCareRange, overlapIDs);
+    }
+    validate.getMeanOverlap(overlapIDs, meanOverlap);
+    validate.save(overlapIDs, meanOverlap, "mGridConsensusOverlap.yml");
+    
+    
+    //Color
+    overlapIDs.release();
+    meanOverlap.release(); meanOverlap = cv::Mat(cvSize(1, dontCareRange.size()+1), CV_32FC1);
+    for (int s = 0; s < sequences.size(); s++)
+    {
+        ModalityData colorData;
+        cout << "Reading color data in scene " << s << ".." << endl;
+        reader.overlapreadScene("Color", "Color", sequences[s], ".png", colorData);
+        validate.getOverlap(colorData, dontCareRange, overlapIDs);
+    }
+    validate.getMeanOverlap(overlapIDs, meanOverlap);
+    validate.save(overlapIDs, meanOverlap, "cGridConsensusOverlap.yml");
+    
+    
+    //Thermal
+    overlapIDs.release();
+    meanOverlap.release(); meanOverlap = cv::Mat(cvSize(1, dontCareRange.size()+1), CV_32FC1);
+    for (int s = 0; s < sequences.size(); s++)
+    {
+        ModalityData thermalData;
+        cout << "Reading thermal data in scene " << s << ".." << endl;
+        reader.overlapreadScene("Thermal", "Thermal", sequences[s], ".png", thermalData);
+        validate.getOverlap(thermalData, dontCareRange, overlapIDs);
+    }
+    validate.getMeanOverlap(overlapIDs, meanOverlap);
+    validate.save(overlapIDs, meanOverlap, "tGridConsensusOverlap.yml");
     
     return 0;
 }

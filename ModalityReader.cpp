@@ -557,10 +557,14 @@ void ModalityReader::overlapreadScene(string predictionType, string modality, st
     md.setPredictedMasks(predictionMasks);
     md.setGroundTruthMasks(groundTruthMasks);
     
-    //predictions.clear();
-    //bsMasks.clear();
-    //gtMasks.clear();
-    //predictionMasks.clear();
+    predictions.clear();
+    bsMasks.clear();
+    gtMasks.clear();
+    predictionMasks.clear();
+    groundTruthMasks.clear();
+    predictionFilenames.clear();
+    bsMasksFilenames.clear();
+    gtMasksFilenames.clear();
 }
 
 void ModalityReader::overlapreadScene(string predictionType, string modality, string scenePath, const char* filetype, ModalityData& md)

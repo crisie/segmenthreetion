@@ -28,15 +28,19 @@ class Validation {
 public:
     Validation();
     
-    void getOverlap(ModalityData& md, vector<float> dcRange, cv::Mat& overlapIDs);
+    void getOverlap(ModalityData& md, vector<int>& dcRange, cv::Mat& overlapIDs);
     
-    void getOverlap(vector<cv::Mat> predictedMasks, vector<cv::Mat> gtMasks, vector<float> dcRange, cv::Mat& overlapIDs);
+    void getOverlap(vector<cv::Mat>& predictedMasks, vector<cv::Mat>& gtMasks, vector<int>& dcRange, cv::Mat& overlapIDs);
+    
+    void getMeanOverlap(cv::Mat overlapIDs, cv::Mat& meanOverlap);
+    
+    void save(cv::Mat overlapIDs, cv::Mat meanOverlap, string filename);
     
 private:
   
-    float getMaskOverlap(cv::Mat predictedMask, cv::Mat gtMask, cv::Mat dontCareRegion);
+    float getMaskOverlap(cv::Mat& predictedMask, cv::Mat& gtMask, cv::Mat& dontCareRegion);
     
-    void createDontCareRegion(cv::Mat inputMask, cv::Mat& outputMask, float dcRange);
+    void createDontCareRegion(cv::Mat& inputMask, cv::Mat& outputMask, int dcRange);
 };
 
 
