@@ -80,6 +80,11 @@ string ModalityReader::getScenePath(unsigned int sid)
     return m_ScenesPaths[sid];
 }
 
+void ModalityReader::addScenePartition(cv::Mat partition)
+{
+    m_SceneFramesPartitions.push_back(partition);
+}
+
 cv::Mat ModalityReader::getScenePartition(unsigned int sid)
 {
     return m_SceneFramesPartitions[sid];
@@ -334,7 +339,7 @@ void ModalityReader::readSceneData(unsigned int sid, string modality, const char
 			}
 		}
 	}
-    
+
     mgd.addScenePath(m_ScenesPaths[sid]);
 }
 
@@ -391,7 +396,7 @@ void ModalityReader::readSceneMetadata(unsigned int sid, string modality, const 
     cv::FileStorage fs (m_ScenesPaths[sid] + "Partition.yml", cv::FileStorage::READ);
     fs["partition"] >> partition;
     fs.release();
-    
+    addScenePartition(partition);
     // Load frame-wise (Mat), extract the roi represented by the bounding boxes,
     // grid the rois (GridMat), and store in GridModalityData object
     
@@ -463,7 +468,6 @@ void ModalityReader::readSceneMetadata(unsigned int sid, string modality, const 
     mgd.addScenePath(m_ScenesPaths[sid]);
 }
 
-
 void ModalityReader::overlapreadScene(string predictionType, string modality, string dataPath, string scenePath, const char *filetype, ModalityData &md)
 {
  
@@ -502,9 +506,9 @@ void ModalityReader::overlapreadScene(string predictionType, string modality, st
         {
             //cout << predictionFilenames[predictionsIndex] << endl; //debug
             
-            threshold(predictions[predictionsIndex],predictions[predictionsIndex],1,255,CV_THRESH_BINARY);
-            
-           /* vector<int> un;
+            //threshold(predictions[predictionsIndex],predictions[predictionsIndex],1,255,CV_THRESH_BINARY);
+            /*
+           vector<int> un;
             findUniqueValues(predictions[predictionsIndex], un);
             cout << "Before1: ";
             for(int a = 0; a < un.size(); a++)

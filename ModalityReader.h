@@ -87,6 +87,8 @@ private:
     void loadCalibVarsDir(string dir, vector<string>& calibVarsDirs);
     
     void getBoundingBoxesInMask(cv::Mat mask, vector<cv::Rect>& boxes);
+    
+    void addScenePartition(cv::Mat partition);
 };
 
 #endif /* defined(__segmenthreetion__ModalityReader__) */
