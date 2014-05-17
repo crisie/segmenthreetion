@@ -81,25 +81,35 @@ public:
         m_Partitions.clear();
 	}
     
-    void operator=(const ModalityGridData& other)
+    ModalityGridData(const ModalityGridData& other)
     {
-        m_hp = other.m_hp;
-        m_wp = other.m_wp;
-		m_ModalityName = other.m_ModalityName;
-        m_GFrames = other.m_GFrames;
-        m_GMasks = other.m_GMasks;
-        m_MasksOffsets = other.m_MasksOffsets;
-        m_FrameIDs = other.m_FrameIDs;
-        m_FramesPaths = other.m_FramesPaths;
-        m_FramesFilenames = other.m_FramesFilenames;
-        m_FramesResolutions = other.m_FramesResolutions;
-        m_GBoundingRects = other.m_GBoundingRects;
-        m_Tags = other.m_Tags;
-        m_Validnesses = other.m_Validnesses;
-        m_Descriptors = other.m_Descriptors;
-        m_MinVal = other.m_MinVal;
-        m_MaxVal = other.m_MaxVal;
-        m_Partitions = other.m_Partitions;
+        *this = other;
+    }
+    
+    ModalityGridData& operator=(const ModalityGridData& other)
+    {
+        if (this != &other)
+        {
+            m_hp = other.m_hp;
+            m_wp = other.m_wp;
+            m_ModalityName = other.m_ModalityName;
+            m_GFrames = other.m_GFrames;
+            m_GMasks = other.m_GMasks;
+            m_MasksOffsets = other.m_MasksOffsets;
+            m_FrameIDs = other.m_FrameIDs;
+            m_FramesPaths = other.m_FramesPaths;
+            m_FramesFilenames = other.m_FramesFilenames;
+            m_FramesResolutions = other.m_FramesResolutions;
+            m_GBoundingRects = other.m_GBoundingRects;
+            m_Tags = other.m_Tags;
+            m_Validnesses = other.m_Validnesses;
+            m_Descriptors = other.m_Descriptors;
+            m_MinVal = other.m_MinVal;
+            m_MaxVal = other.m_MaxVal;
+            m_Partitions = other.m_Partitions;
+        }
+        
+        return *this;
     }
     
     // Getters

@@ -65,17 +65,21 @@ GridMat::GridMat(cv::Mat mat, unsigned int crows, unsigned int ccols)
 
 GridMat::GridMat(const GridMat& other)
 {
-    m_crows = other.m_crows;
-    m_ccols = other.m_ccols;
-    m_grid = other.m_grid;
+    *this = other;
 }
 
-void GridMat::operator=(const GridMat& other)
+GridMat& GridMat::operator=(const GridMat& other)
 {
-    m_crows = other.m_crows;
-    m_ccols = other.m_ccols;
-    m_grid = other.m_grid;
+    if (this != &other)
+    {
+        m_crows = other.m_crows;
+        m_ccols = other.m_ccols;
+        m_grid = other.m_grid;
+    }
+    
+    return *this;
 }
+
 
 //GridMat::GridMat(GridMat& other, cv::Mat indices, int dim, bool logical)
 //{

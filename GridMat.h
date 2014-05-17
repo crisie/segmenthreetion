@@ -34,8 +34,7 @@ public:
 
     void create(unsigned int hp = 2, unsigned int wp = 2);
     
-    void operator=(const GridMat& other);
-    void operator=(const cv::Mat& other);
+    GridMat& operator=(const GridMat& other);
     
     template<typename T>
     void create(unsigned int hp, unsigned int wp, unsigned int helems = 1, unsigned int welems = 1);
@@ -63,8 +62,10 @@ public:
     void setTo(T value, unsigned int i, unsigned int j);
     template<typename T>
     void setTo(T value, unsigned int i, unsigned int j, cv::Mat mask);
-    //void setTo(cv::Mat& m);
-    //void setTo(GridMat& m);
+//    template<>
+//    void setTo(cv::Mat m);
+//    template<>
+//    void setTo(GridMat m);
     
     template<typename T>
     void convertToMat(cv::Mat& mat, bool imshow = false);
