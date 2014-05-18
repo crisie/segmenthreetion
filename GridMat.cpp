@@ -685,6 +685,25 @@ void GridMat::vserial(cv::Mat& serial)
     }
 }
 
+GridMat GridMat::flip(int flipCode)
+{
+    GridMat g (crows(), ccols()); // flipped gridmat
+    for (int i = 0; i < crows(); i++) for (int j = 0; j < ccols(); j++)
+    {
+        cv::Mat tmp;
+        cv::flip(at(i,j), tmp, flipCode);
+        
+        if (flipCode == 0)
+            g.at(crows()-i-1, j) = tmp;
+        else if (flipCode > 0)
+            g.at(i, ccols()-j-1) = tmp;
+        else
+            g.at(crows()-i-1, ccols()-j-1) = tmp;
+    }
+    
+    return g;
+}
+
 void GridMat::normalize(GridMat& normalized)
 {
     normalized.create(crows(), ccols());
@@ -1203,13 +1222,9 @@ void GridMat::vconcat(GridMat& other)
         for (unsigned int i = 0; i < m_crows; i++) for (unsigned int j = 0; j < m_ccols; j++)
         {
             if (this->at(i,j).empty())
-            {
-                this->assign(other.at(i,j), i, j);
-            }
+                assign(other.at(i,j), i, j);
             else
-            {
                 cv::vconcat(this->at(i,j), other.at(i,j), this->at(i,j));
-            }
         }
     }
 }
@@ -1220,9 +1235,7 @@ void GridMat::hconcat(cv::Mat& mat, unsigned int i, unsigned int j)
     if (this->at(i,j).rows == 0 && this->at(i,j).cols == 0)
         this->assign(mat,i,j);
     else
-    {
         cv::hconcat(this->at(i,j), mat, this->at(i,j));
-    }
 }
 
 
@@ -1231,11 +1244,8 @@ void GridMat::vconcat(cv::Mat& mat, unsigned int i, unsigned int j)
     if (this->at(i,j).rows == 0 && this->at(i,j).cols == 0)
         this->assign(mat,i,j);
     else
-    {
         cv::vconcat(this->at(i,j), mat, this->at(i,j));
-    }
 }
-
 
 
 void GridMat::mean(GridMat& gmean, int dim)
@@ -1247,7 +1257,6 @@ void GridMat::mean(GridMat& gmean, int dim)
         gmean.assign(meanCol, i, j);
     }
 }
-
 
 
 void GridMat::max(GridMat& gmax, int dim)

@@ -35,41 +35,37 @@ void ThermalFeatureExtractor::setParam(ThermalParametrization thermalParam)
     m_ThermalParam = thermalParam;
 }
 
-
 void ThermalFeatureExtractor::describe(ModalityGridData& data)
 {
-    for (int k = 0; k < data.getGridsFrames().size(); k++)
-    {
-        if (k % 100 == 0) cout << 100.0 * k / data.getGridsFrames().size() << "%" <<  endl; // debug
-        
-        GridMat grid = data.getGridFrame(k);
-        GridMat gmask = data.getGridMask(k);
-        cv::Mat gvalidness = data.getValidnesses(k);
+    FeatureExtractor::describe(data);
+}
 
-        for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
+void ThermalFeatureExtractor::describe(GridMat grid, GridMat gmask,
+                                       cv::Mat gvalidness, GridMat& gdescriptors)
+{
+    for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
+    {
+        cv::Mat tHist (1, m_ThermalParam.ibins + m_ThermalParam.oribins, CV_32F);
+        tHist.setTo(std::numeric_limits<float>::quiet_NaN());
+        
+        if (gvalidness.at<unsigned char>(i,j))
         {
-            cv::Mat tHist (1, m_ThermalParam.ibins + m_ThermalParam.oribins, CV_32F);
-            tHist.setTo(std::numeric_limits<float>::quiet_NaN());
+            cv::Mat& cell = grid.at(i,j);
+            cv::Mat& cellMask = gmask.at(i,j);
             
-            if (gvalidness.at<unsigned char>(i,j))
-            {
-                cv::Mat& cell = grid.at(i,j);
-                cv::Mat& cellMask = gmask.at(i,j);
-                
-                // Intensities descriptor
-                cv::Mat tIntensitiesHist;
-                describeThermalIntesities(cell, cellMask, tIntensitiesHist);
-                
-                // Gradient orientation descriptor
-                cv::Mat tGradOrientsHist, dX, dY, p;
-                describeThermalGradOrients(cell, cellMask, tGradOrientsHist);
-                
-                // Join both descriptors in a row
-                hconcat(tIntensitiesHist, tGradOrientsHist, tHist);
-            }
+            // Intensities descriptor
+            cv::Mat tIntensitiesHist;
+            describeThermalIntesities(cell, cellMask, tIntensitiesHist);
             
-            data.addDescriptor(tHist, i, j); // row in a matrix of descriptors
+            // Gradient orientation descriptor
+            cv::Mat tGradOrientsHist, dX, dY, p;
+            describeThermalGradOrients(cell, cellMask, tGradOrientsHist);
+            
+            // Join both descriptors in a row
+            hconcat(tIntensitiesHist, tGradOrientsHist, tHist);
         }
+        
+        gdescriptors.at(i,j) = tHist; // row in a matrix of descriptors
     }
 }
 

@@ -182,9 +182,6 @@ void ModalityReader::read(string modality, ModalityData& md)
 void ModalityReader::readAllScenesData(string modality, const char* filetype, int hp, int wp, ModalityGridData& mgd)
 {
     mgd.clear();
-    mgd.setModality(modality);
-    mgd.setHp(hp);
-    mgd.setWp(wp);
     
     for (int s = 0; s < m_ScenesPaths.size(); s++)
     {
@@ -194,11 +191,28 @@ void ModalityReader::readAllScenesData(string modality, const char* filetype, in
 
 void ModalityReader::readSceneData(unsigned int sid, string modality, const char* filetype, int hp, int wp, ModalityGridData& mgd)
 {
+    if (mgd.getModality().compare("") != 0)
+        mgd.setModality(modality);
+    else
+        assert(mgd.getModality().compare("") == 0);
+    
+    if (mgd.getHp() == 0)
+        mgd.setHp(hp);
+    else
+        assert(mgd.getHp() == hp);
+    
+    if (mgd.getWp() == 0)
+        mgd.setWp(wp);
+    else
+        assert(mgd.getWp() == wp);
+    
 	// auxiliary
 	vector<string> framesFilenames; // Frames' filenames from <dataDir>/Frames/<modality>/
     vector<string> masksFilenames; // Corresponding masks' filenames
 	vector<vector<cv::Rect> > rects; // Bounding rects at frame level (having several per frame)
 	vector<vector<int> > tags; // Tags corresponding to the bounding rects
+    
+    cout << "Searching for " << modality << " files ... ";
     
     // Motion & Ramanan modalities need special treatment for reading
     // .. In motion case, the optical flow vectors must be computed for every pair of frames
@@ -227,8 +241,22 @@ void ModalityReader::readSceneData(unsigned int sid, string modality, const char
     
     assert (framesFilenames.size() == masksFilenames.size());
     
+    cout << "DONE" << endl;
+    
+    cout << "Loading validation partitions ... ";
+    
+    cv::Mat partition;
+    cv::FileStorage fs (m_ScenesPaths[sid] + "Partition.yml", cv::FileStorage::READ);
+    fs["partition"] >> partition;
+    fs.release();
+    addScenePartition(partition);
+    
+    cout << "DONE" << endl;
+    
     // Load frame-wise (Mat), extract the roi represented by the bounding boxes,
     // grid the rois (GridMat), and store in GridModalityData object
+    
+    cout << "Loading and griding frames and masks ... " << endl;
     
 	for (int f = 0; f < framesFilenames.size(); f++)
 	{
@@ -283,6 +311,7 @@ void ModalityReader::readSceneData(unsigned int sid, string modality, const char
 
 		for (int r = 0; r < rects[f].size(); r++)
 		{
+//            cout << "+ frame " << f << ", grid " << r << " : ";
             // Create the grid structures
             
 			if (rects[f][r].height >= hp && rects[f][r].width >= wp)
@@ -290,6 +319,8 @@ void ModalityReader::readSceneData(unsigned int sid, string modality, const char
 				cv::Mat subjectroi (frame, rects[f][r]); // Get a roi in frame defined by the rectangle.
 				GridMat gsubject (subjectroi, hp, wp);
 				mgd.addGridFrame( gsubject );
+                
+//                cout << "F";
                 
                 double minFVal, maxFVal;  // keep global min and max normalization purposes
                 cv::minMaxIdx(subjectroi, &minFVal, &maxFVal);
@@ -303,43 +334,66 @@ void ModalityReader::readSceneData(unsigned int sid, string modality, const char
 				GridMat gmask (indexedmaskroi, hp, wp);
 				mgd.addGridMask( gmask );
                 
+//                cout << "M";
+                
                 // Mask offset
                 mgd.addGridMaskOffset(m_MasksOffset + r);
+                
+//                cout << "o";
                 
                 // Scene id
                 mgd.addSceneID(mgd.getNumOfScenes());
                 
+//                cout << "s";
+                
 				// Frame id
 				mgd.addGridFrameID(f);
+                
+//                cout << "i";
                 
                 // Frame path
                 mgd.addFramePath(m_ScenesPaths[sid]);
                 
+//                cout << "p";
+                
                 // Frame filename
                 mgd.addFrameFilename(framesFilenames[f]);
                 
+//                cout << "n";
+                
                 // Mask filename
                 mgd.addMaskFilename(masksFilenames[f]);
+                
+//                cout << "m";
 
                 // Frame resolution
                 mgd.addFrameResolution(frame.cols, frame.rows);
+                
+//                cout << "r";
 
                 // Bounding rect
 				mgd.addGridBoundingRect(rects[f][r]);
                 
+//                cout << "b";
+                
 				// Tag
 				mgd.addTag(tags[f][r]);
+                
+//                cout << "t";
                 
                 // Cells' validness
                 cv::Mat validnesses = gmask.findNonZero<unsigned char>();
                 mgd.addValidnesses(validnesses);
+//                cout << "v";
                 
                 // Partition idx
-                mgd.addElementPartition(m_SceneFramesPartitions[sid].at<int>(f,0));
+                mgd.addElementPartition(partition.at<int>(f,0));
+                
+//                cout << "p";
 			}
-		}
+        }
 	}
-
+    
     mgd.addScenePath(m_ScenesPaths[sid]);
 }
 

@@ -144,6 +144,8 @@ public:
     void hserial(cv::Mat& serial);
     void vserial(cv::Mat& serial);
     
+    GridMat flip(int flipCode);
+    
     // Cells' collapse functions. Each cell into a row or a column.
     void mean(GridMat& gmean, int dim = 0);
     void max(GridMat& gmax, int dim = 0);

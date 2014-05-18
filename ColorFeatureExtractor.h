@@ -26,6 +26,7 @@ public:
     void setParam(ColorParametrization dParam);
     
     void describe(ModalityGridData& data);
+    void describe(GridMat grid, GridMat gmask, cv::Mat gvalidness, GridMat& gdescriptors);
     
     cv::Mat get_hogdescriptor_visu(cv::Mat origImg, cv::Mat mask, vector<float> descriptorValues);
     

@@ -24,6 +24,7 @@ public:
     void setParam(DepthParametrization dParam);
 
     void describe(ModalityGridData& data);
+    void describe(GridMat grid, GridMat gmask, cv::Mat gvalidness, GridMat& gdescriptors);
     
 private:
     /*

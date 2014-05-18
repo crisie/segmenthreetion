@@ -25,6 +25,73 @@ void ColorFeatureExtractor::setParam(ColorParametrization ColorParam)
     m_ColorParam = ColorParam;
 }
 
+void ColorFeatureExtractor::describe(ModalityGridData& data)
+{
+    FeatureExtractor::describe(data);
+}
+
+void ColorFeatureExtractor::describe(GridMat grid, GridMat gmask, cv::Mat gvalidness,
+                                     GridMat& gdescriptors)
+{
+    gdescriptors.release();
+    gdescriptors.create(grid.crows(), grid.ccols());
+    
+    for(int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
+    {
+        cv::Mat cOrientedGradsHist (1, m_ColorParam.hogbins, CV_32F);
+        cOrientedGradsHist.setTo(std::numeric_limits<float>::quiet_NaN());
+        
+        if (gvalidness.at<unsigned char>(i,j))
+        {
+            cv::Mat & cell = grid.at(i,j);
+            cv::Mat & tmpCellMask = gmask.at(i,j);
+            
+            cv::Mat cellMask = cv::Mat::zeros(tmpCellMask.rows, tmpCellMask.cols, CV_8UC1);
+            if (tmpCellMask.channels() == 3)
+                cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);
+            threshold(tmpCellMask,tmpCellMask,1,255,CV_THRESH_BINARY);
+            tmpCellMask.convertTo(cellMask, CV_8UC1);
+            
+            //HOG descriptor
+            describeColorHog(cell, cellMask, cOrientedGradsHist);
+        }
+        
+        gdescriptors.at(i,j) = cOrientedGradsHist;
+    }
+}
+
+//void ColorFeatureExtractor::describe(ModalityGridData& data)
+//{
+//	for (int k = 0; k < data.getGridsFrames().size(); k++)
+//	{
+//        if (k % 100 == 0) cout << 100.0 * k / data.getGridsFrames().size() << "%" <<  endl; // debug
+//
+//        // Normal image description
+//
+//        GridMat grid        = data.getGridFrame(k);
+//        GridMat gmask       = data.getGridMask(k);
+//        cv::Mat gvalidness  = data.getValidnesses(k);
+//
+//        GridMat description;
+//        describe(grid, gmask, gvalidness, description);
+//
+//        // Mirrored image description
+//
+//        int flipCode            = 1;
+//        GridMat gridMirrored    = grid.flip(flipCode); // flip respect the vertical axis
+//        GridMat gmaskMirrored   = gmask.flip(flipCode);
+//        cv::Mat gvalidnessMirrored;
+//        cv::flip(gvalidness, gvalidnessMirrored, flipCode);
+//
+//        GridMat descriptionMirrored;
+//        describe(gridMirrored, gmaskMirrored, gvalidnessMirrored, descriptionMirrored);
+//
+//        // Add to the descriptors to the data
+//
+//        data.addDescriptors(description);
+//        data.addDescriptorsMirrored(descriptionMirrored);
+//	}
+//}
 
 void ColorFeatureExtractor::describeColorHog(const cv::Mat cell, const cv::Mat cellMask, cv::Mat & cOrientedGradsHist)
 {
@@ -171,43 +238,6 @@ void ColorFeatureExtractor::describeColorHog(const cv::Mat cell, const cv::Mat c
     vTmpHist.release();
 	tmpHist.release();
 }
-
-
-void ColorFeatureExtractor::describe(ModalityGridData& data)
-{
-	for (int k = 0; k < data.getGridsFrames().size(); k++)
-	{
-        if (k % 100 == 0) cout << 100.0 * k / data.getGridsFrames().size() << "%" <<  endl; // debug
-        
-        GridMat grid = data.getGridFrame(k);
-        GridMat gmask = data.getGridMask(k);
-        cv::Mat gvalidness = data.getValidnesses(k);
-        
-        for(int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
-        {
-            cv::Mat cOrientedGradsHist (1, m_ColorParam.hogbins, CV_32F);
-            cOrientedGradsHist.setTo(std::numeric_limits<float>::quiet_NaN());
-            
-            if (gvalidness.at<unsigned char>(i,j))
-            {
-                cv::Mat & cell = grid.at(i,j);
-                cv::Mat & tmpCellMask = gmask.at(i,j);
-
-                cv::Mat cellMask = cv::Mat::zeros(tmpCellMask.rows, tmpCellMask.cols, CV_8UC1);
-                if (tmpCellMask.channels() == 3)
-                    cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);
-                threshold(tmpCellMask,tmpCellMask,1,255,CV_THRESH_BINARY);
-                tmpCellMask.convertTo(cellMask, CV_8UC1);
-                
-                //HOG descriptor
-                describeColorHog(cell, cellMask, cOrientedGradsHist);
-            }
-            
-            data.addDescriptor(cOrientedGradsHist, i, j); // row in a matrix of descriptors
-        }
-	}
-}
-
 
 cv::Mat ColorFeatureExtractor::get_hogdescriptor_visu(cv::Mat origImg, cv::Mat mask, vector<float> descriptorValues)
 {

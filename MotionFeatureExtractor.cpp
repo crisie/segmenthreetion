@@ -26,39 +26,71 @@ void MotionFeatureExtractor::setParam(MotionParametrization param)
     m_Param = param;
 }
 
-
 void MotionFeatureExtractor::describe(ModalityGridData& data)
 {
-	for (int k = 0; k < data.getGridsFrames().size(); k++)
-	{
-        if (k % 100 == 0) cout << 100.0 * k / data.getGridsFrames().size() << "%" <<  endl; // debug
-        
-        GridMat grid = data.getGridFrame(k);
-        GridMat gmask = data.getGridMask(k);
-        cv::Mat gvalidness = data.getValidnesses(k);
-        
-        for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
-        {
-            cv::Mat mOrientedFlowHist (1, m_Param.hoofbins, CV_32F);
-            mOrientedFlowHist.setTo(std::numeric_limits<float>::quiet_NaN());
-            
-            if (gvalidness.at<unsigned char>(i,j))
-            {
-                cv::Mat & cell = grid.at(i,j);
-                cv::Mat & tmpCellMask = gmask.at(i,j);
-                cv::Mat cellMask = cv::Mat::zeros(tmpCellMask.rows, tmpCellMask.cols, CV_8UC1);
-                if (tmpCellMask.channels() == 3)
-                    cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);
-                threshold(tmpCellMask,tmpCellMask,1,255,CV_THRESH_BINARY);
-                tmpCellMask.convertTo(cellMask, CV_8UC1);
-                
-                describeMotionOrientedFlow(cell, cellMask, mOrientedFlowHist);
-            }
-            
-            data.addDescriptor(mOrientedFlowHist, i, j); // row in a matrix of descriptors
-        }
-	}
+    FeatureExtractor::describe(data);
 }
+
+void MotionFeatureExtractor::describe(GridMat grid, GridMat gmask, cv::Mat gvalidness,
+                                     GridMat& description)
+{
+    description.release();
+    description.create(grid.crows(), grid.ccols());
+    
+    for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
+    {
+        cv::Mat mOrientedFlowHist (1, m_Param.hoofbins, CV_32F);
+        mOrientedFlowHist.setTo(std::numeric_limits<float>::quiet_NaN());
+        
+        if (gvalidness.at<unsigned char>(i,j))
+        {
+            cv::Mat & cell = grid.at(i,j);
+            cv::Mat & tmpCellMask = gmask.at(i,j);
+            cv::Mat cellMask = cv::Mat::zeros(tmpCellMask.rows, tmpCellMask.cols, CV_8UC1);
+            if (tmpCellMask.channels() == 3)
+                cvtColor(tmpCellMask, tmpCellMask, CV_RGB2GRAY);
+            threshold(tmpCellMask,tmpCellMask,1,255,CV_THRESH_BINARY);
+            tmpCellMask.convertTo(cellMask, CV_8UC1);
+            
+            describeMotionOrientedFlow(cell, cellMask, mOrientedFlowHist);
+        }
+        
+        description.at(i,j) = mOrientedFlowHist; // row in a matrix of descriptors
+    }
+}
+
+//void MotionFeatureExtractor::describe(ModalityGridData& data)
+//{
+//	for (int k = 0; k < data.getGridsFrames().size(); k++)
+//	{
+//        if (k % 100 == 0) cout << 100.0 * k / data.getGridsFrames().size() << "%" <<  endl; // debug
+//        
+//        // Normal image description
+//        
+//        GridMat grid        = data.getGridFrame(k);
+//        GridMat gmask       = data.getGridMask(k);
+//        cv::Mat gvalidness  = data.getValidnesses(k);
+//        
+//        GridMat description;
+//        describe(grid, gmask, gvalidness, description);
+//        
+//        // Mirrored image description
+//        
+//        int flipCode            = 1;
+//        GridMat gridMirrored    = grid.flip(flipCode); // flip respect the vertical axis
+//        GridMat gmaskMirrored   = gmask.flip(flipCode);
+//        cv::Mat gvalidnessMirrored;
+//        cv::flip(gvalidness, gvalidnessMirrored, flipCode);
+//        
+//        GridMat descriptionMirrored;
+//        describe(gridMirrored, gmaskMirrored, gvalidnessMirrored, descriptionMirrored);
+//        
+//        // Add to the descriptors to the data
+//        
+//        data.addDescriptors(description);
+//        data.addDescriptorsMirrored(descriptionMirrored);
+//	}
+//}
 
 
 void MotionFeatureExtractor::describeMotionOrientedFlow(const cv::Mat cell, const cv::Mat cellMask, cv::Mat & tOrientedFlowHist)

@@ -24,6 +24,7 @@ class ModalityGridData
 {
 public:
     ModalityGridData()
+    : m_ModalityName(""), m_hp(0), m_wp(0)
     {
         m_MinVal =  std::numeric_limits<double>::infinity();
         m_MaxVal = -std::numeric_limits<double>::infinity();
@@ -31,9 +32,11 @@ public:
     
     ModalityGridData(ModalityGridData& other, cv::Mat logicals)
     {
+        m_ModalityName = other.m_ModalityName;
+        
         m_hp = other.m_hp;
         m_wp = other.m_wp;
-        m_ModalityName = other.m_ModalityName;
+        
         m_MinVal = other.m_MinVal;
         m_MaxVal = other.m_MaxVal;
         
@@ -59,6 +62,7 @@ public:
                 for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
                 {
                     addDescriptor(other.getDescriptor(i, j, k), i, j);
+                    addDescriptorMirrored(other.getDescriptorMirrored(i, j, k), i, j);
                 }
                 addElementPartition(other.getElementPartition(k));
             }
@@ -76,8 +80,10 @@ public:
 		m_FramesResolutions.clear();
 		m_GBoundingRects.clear();
 		m_Tags.clear();
-        m_Validnesses.release();
         m_Descriptors.release();
+        m_DescriptorsMirrored.release();
+        m_Validnesses.release();
+        m_ValidnessesMirrored.release();
         m_Partitions.clear();
 	}
     
@@ -102,8 +108,10 @@ public:
             m_FramesResolutions = other.m_FramesResolutions;
             m_GBoundingRects = other.m_GBoundingRects;
             m_Tags = other.m_Tags;
-            m_Validnesses = other.m_Validnesses;
             m_Descriptors = other.m_Descriptors;
+            m_DescriptorsMirrored = other.m_DescriptorsMirrored;
+            m_Validnesses = other.m_Validnesses;
+            m_ValidnessesMirrored = other.m_ValidnessesMirrored;
             m_MinVal = other.m_MinVal;
             m_MaxVal = other.m_MaxVal;
             m_Partitions = other.m_Partitions;
@@ -167,11 +175,8 @@ public:
     cv::Mat getValidnesses(int k)
     {
         cv::Mat validness (m_hp, m_wp, cv::DataType<unsigned char>::type);
-        
         for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
-        {
             validness.at<unsigned char>(i,j) = m_Validnesses.at<unsigned char>(i,j,k,0);
-        }
         
         return validness;
     }
@@ -188,9 +193,26 @@ public:
         return gDescriptors;
     }
     
+    GridMat getDescriptorMirrored(int k)
+    {
+        GridMat gDescriptors (m_hp, m_wp);
+        
+        for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
+        {
+            gDescriptors.assign(m_DescriptorsMirrored.at(i,j).row(k), i, j);
+        }
+        
+        return gDescriptors;
+    }
+    
     cv::Mat& getDescriptors(unsigned int i, unsigned int j)
     {
         return m_Descriptors.at(i,j);
+    }
+    
+    cv::Mat& getDescriptorsMirrored(unsigned int i, unsigned int j)
+    {
+        return m_DescriptorsMirrored.at(i,j);
     }
     
     cv::Mat getDescriptor(unsigned int i, unsigned int j, int k)
@@ -198,10 +220,15 @@ public:
         return m_Descriptors.at(i,j).row(k);
     }
     
-    GridMat getValidDescriptors()
+    cv::Mat getDescriptorMirrored(unsigned int i, unsigned int j, int k)
     {
-        return GridMat(m_Descriptors, m_Validnesses);
+        return m_DescriptorsMirrored.at(i,j).row(k);
     }
+    
+//    GridMat getValidDescriptors()
+//    {
+//        return GridMat(m_Descriptors, m_Validnesses);
+//    }
 
     int getElementPartition(int k)
     {
@@ -268,14 +295,29 @@ public:
         return m_Validnesses;
     }
     
+    GridMat& getValidnessesMirrored()
+    {
+        return m_ValidnessesMirrored;
+    }
+    
     cv::Mat& getValidnesses(unsigned int i, unsigned int j)
     {
         return m_Validnesses.at(i,j);
     }
     
+    cv::Mat& getValidnessesMirrored(unsigned int i, unsigned int j)
+    {
+        return m_ValidnessesMirrored.at(i,j);
+    }
+    
     GridMat& getDescriptors()
     {
         return m_Descriptors;
+    }
+    
+    GridMat& getDescriptorsMirrored()
+    {
+        return m_DescriptorsMirrored;
     }
 
     cv::Mat getSceneIDsMat()
@@ -432,29 +474,24 @@ public:
         m_Validnesses = validnesses;
     }
     
-    void setDescriptors(GridMat descriptors)
+    void setDescriptors(GridMat descriptors, GridMat& validDescriptors, GridMat& validnesses)
     {
         for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
         {
-            for (int k = 0; k < m_Validnesses.at(i,j).rows; k++)
+            for (int k = 0; k < validnesses.at(i,j).rows; k++)
             {
                 cv::Mat g = descriptors.at(i,j);
                 cv::Mat d = g.row(k);
                 
-                unsigned char bValidMask = m_Validnesses.at<unsigned char>(i,j,k,0);
+                unsigned char bValidMask = validnesses.at<unsigned char>(i,j,k,0);
                 unsigned char bValidDescriptor = cv::checkRange(d);
                 
                 if (!bValidMask || !bValidDescriptor)
-                    m_Validnesses.at<unsigned char>(i,j,k,0) = 0;
+                    validnesses.at<unsigned char>(i,j,k,0) = 0;
                 
-                m_Descriptors.at(i,j).push_back(d);
+                validDescriptors.at(i,j).push_back(d);
             }
         }
-    }
-    
-    void setDescriptor(cv::Mat descriptor, unsigned int i, unsigned int j)
-    {
-        m_Descriptors.at(i,j) = descriptor;
     }
     
     void setDescriptors(cv::Mat descriptors, unsigned int i, unsigned int j)
@@ -470,10 +507,10 @@ public:
         }
     }
     
-    void setValidness(bool validness, unsigned int i, unsigned int j, unsigned int k)
-    {
-        m_Validnesses.at<unsigned char>(i,j,k,0) = validness ? 255 : 0;
-    }
+//    void setValidness(bool validness, unsigned int i, unsigned int j, unsigned int k, GridMat& gvalidnesses)
+//    {
+//        gvalidnesses.at<unsigned char>(i,j,k,0) = validness ? 255 : 0;
+//    }
 
     void addGridFrame(GridMat gframe)
     {
@@ -542,8 +579,11 @@ public:
     
     void addValidnesses(cv::Mat validnesses)
     {
-        GridMat g (validnesses, m_hp, m_wp);
+        GridMat g(validnesses, m_hp, m_wp);
+        GridMat gm = g.flip(1);
+
         m_Validnesses.vconcat(g);
+        m_ValidnessesMirrored.vconcat(gm);
     }
     
     void addElementPartition(int fold)
@@ -551,45 +591,83 @@ public:
         m_Partitions.push_back(fold);
     }
     
+    void addDescriptors(GridMat descriptors)
+    {
+        GridMat g = descriptors;
+        for (int i = 0; i < descriptors.crows(); i++) for (int j = 0; j < descriptors.ccols(); j++)
+        {
+            unsigned char v = cv::checkRange(descriptors.at(i,j)) ? 255 : 0;
+            m_Validnesses.at<unsigned char>(i, j, m_Descriptors.at(i,j).rows, 0) = v;
+            
+            m_Descriptors.at(i,j).push_back(descriptors.at(i,j));
+        }
+    }
+    
+    void addDescriptorsMirrored(GridMat descriptors)
+    {
+        for (int i = 0; i < descriptors.crows(); i++) for (int j = 0; j < descriptors.ccols(); j++)
+        {
+//            setValidness(cv::checkRange(description.at(i,j)), i, j,
+//                         m_DescriptorsMirrored.at(i,j).rows, m_ValidnessesMirrored);
+            m_ValidnessesMirrored.at<unsigned char>(i,j,m_Descriptors.at(i,j).rows,0) = cv::checkRange(descriptors.at(i,j)) ? 255 : 0;
+            m_DescriptorsMirrored.at(i,j).push_back(descriptors.at(i,j));
+        }
+    }
+    
     void addDescriptor(cv::Mat descriptor, unsigned int i, unsigned int j)
     {
-        setValidness(cv::checkRange(descriptor), i, j, m_Descriptors.at(i,j).rows);
-        
+        m_Validnesses.at<unsigned char>(i,j,m_Descriptors.at(i,j).rows,0) = cv::checkRange(descriptor) ? 255 : 0;
         m_Descriptors.at(i,j).push_back(descriptor);
+    }
+    
+    void addDescriptorMirrored(cv::Mat descriptor, unsigned int i, unsigned int j)
+    {
+        m_ValidnessesMirrored.at<unsigned char>(i,j,m_Descriptors.at(i,j).rows,0) = cv::checkRange(descriptor) ? 255 : 0;
+        m_DescriptorsMirrored.at(i,j).push_back(descriptor);
     }
     
     void saveDescription(string sequencePath, string filename)
     {
         m_Descriptors.save(sequencePath + "Description/" + filename);
+        m_Descriptors.save(sequencePath + "Description/Mirrored" + filename);
     }
     
     void saveDescription(vector<string> sequencesPaths, string filename)
     {
         for (int i = 0; i < sequencesPaths.size(); i++)
+        {
             saveDescription(sequencesPaths[i], filename);
+        }
     }
     
     void loadDescription(string sequencePath, string filename)
     {
-        GridMat descriptors;
+        GridMat descriptors, descriptorsMirrored;
         descriptors.load(sequencePath + "Description/" + filename);
+        descriptors.load(sequencePath + "Description/Mirrored" + filename);
         
-        setDescriptors(descriptors);
+        setDescriptors(descriptors, m_Descriptors, m_Validnesses);
+        setDescriptors(descriptorsMirrored, m_DescriptorsMirrored, m_ValidnessesMirrored);
     }
     
     void loadDescription(vector<string> sequencesPaths, string filename)
     {
-        GridMat descriptors;
+        GridMat descriptors, descriptorsMirrored;
         
         for (int i = 0; i < sequencesPaths.size(); i++)
         {
-            GridMat aux;
+            GridMat aux, auxMirrored;
+            
             aux.load(sequencesPaths[i] + "Description/" + filename);
+            auxMirrored.load(sequencesPaths[i] + "Description/Mirrored" + filename);
+            
             descriptors.vconcat(aux);
+            descriptorsMirrored.vconcat(auxMirrored);
         }
         
-        setDescriptors(descriptors);
-    }
+        setDescriptors(descriptors, m_Descriptors, m_Validnesses);
+        setDescriptors(descriptorsMirrored, m_DescriptorsMirrored, m_ValidnessesMirrored);
+}
 
 
 private:
@@ -610,8 +688,8 @@ private:
     vector<int> m_Tags;
     vector<int> m_Partitions;
     
-    GridMat m_Validnesses; // whether cells in the grids are valid to be described
-    GridMat m_Descriptors;
+    GridMat m_Validnesses, m_ValidnessesMirrored; // whether cells in the grids are valid to be described
+    GridMat m_Descriptors, m_DescriptorsMirrored;
     
     double m_MinVal, m_MaxVal;
 };

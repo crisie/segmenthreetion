@@ -155,9 +155,7 @@ int main(int argc, const char* argv[])
     //numOfWeaks += 10, 20, 50, 100, 200, 500, 1000;
     //weightTrimRates += 0, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 0.99;
     
-    
     // Validation procedure
-    
     int kTest = 10; // number of folds in the outer cross-validation
     int kModelSelec = 3;
     int seed = 74;
@@ -252,70 +250,76 @@ int main(int argc, const char* argv[])
 //    writer.write("Thermal", tData);
 
     
+    
     //
     // Feature extraction
     //
 
-//    // Color description
-//
-//    ModalityGridData cGridData;
-//
-//    ColorFeatureExtractor cFE(cParam);
+    // Color description
+
+    ModalityGridData cGridData;
+
+    ColorFeatureExtractor cFE(cParam);
+	for (int s = 0; s < reader.getNumOfScenes(); s++)
+	{
+        cGridData.clear();
+        cout << "Reading color frames in scene " << s << " ..." << endl;
+		reader.readSceneData(s, "Color", "jpg", hp, wp, cGridData);
+        cout << "Describing color..." << endl;
+		cFE.describe(cGridData);
+        cGridData.saveDescription(reader.getScenePath(s), "Color.yml");
+    }
+
+    // Motion description
+    
+    ModalityGridData mGridData;
+
+    MotionFeatureExtractor mFE(mParam);
+    for (int s = 0; s < reader.getNumOfScenes(); s++)
+	{
+        mGridData.clear();
+        cout << "Computing motion (from read color) frames in scene " << s << ".." << endl;
+		reader.readSceneData(s, "Motion", "jpg", hp, wp, mGridData);
+        cout << "Describing motion..." << endl;
+        mFE.describe(mGridData);
+        mGridData.saveDescription(reader.getScenePath(s), "Motion.yml");
+	}
+    
+    // Thermal description
+    
+    ModalityGridData tGridData;
+    
+    ThermalFeatureExtractor tFE(tParam);
+	for (int s = 0; s < reader.getNumOfScenes(); s++)
+	{
+        tGridData.clear();
+        cout << "Reading thermal frames in scene " << s << ".." << endl;
+		reader.readSceneData(s, "Thermal", "jpg", hp, wp, tGridData);
+        cout << "Describing thermal..." << endl;
+		tFE.describe(tGridData);
+        tGridData.saveDescription(reader.getScenePath(s), "Thermal.yml");
+	}
+    
+    // Depth description
+    
+    ModalityGridData dGridData;
+    
+//    DepthFeatureExtractor dFE(dParam);
 //	for (int s = 0; s < reader.getNumOfScenes(); s++)
 //	{
-//        cout << "Reading color frames in scene " << s << ".." << endl;
-//		reader.readSceneData(s, "Color", "jpg", hp, wp, cGridData);
-//        cout << "Describing color..." << endl;
-//		cFE.describe(cGridData);
-//        cGridData.saveDescription(reader.getScenePath(s), "Color.yml");
-//    }
-//
-//    // Motion description
-//    
-//    ModalityGridData mGridData;
-//
-//    MotionFeatureExtractor mFE(mParam);
-//    for (int s = 0; s < reader.getNumOfScenes(); s++)
-//	{
-//        cout << "Computing motion (from read color) frames in scene " << s << ".." << endl;
-//		reader.readSceneData(s, "Motion", "jpg", hp, wp, mGridData);
-//        cout << "Describing motion..." << endl;
-//        mFE.describe(mGridData);
-//        mGridData.saveDescription(reader.getScenePath(s), "Motion.yml");
+//        dGridData.clear();
+//        cout << "Reading depth frames in scene " << s << ".." << endl;
+//		reader.readSceneData(s, "Depth", "png", hp, wp, dGridData);
+//        cout << "Describing depth..." << endl;
+//		dFE.describe(dGridData);
+//        dGridData.saveDescription(reader.getScenePath(s), "Depth.yml");
 //	}
-//    
-//    // Depth description
-//    
-////    ModalityGridData dGridData;
-////    
-////    DepthFeatureExtractor dFE(dParam);
-////	for (int s = 0; s < reader.getNumOfScenes(); s++)
-////	{
-////        cout << "Reading depth frames in scene " << s << ".." << endl;
-////		reader.readSceneData(s, "Depth", "png", hp, wp, dGridData);
-////        cout << "Describing depth..." << endl;
-////		dFE.describe(dGridData);
-////        dGridData.saveDescription(reader.getScenePath(s), "Depth.yml");
-////	}
-//    
-//    // Thermal description
-//    
-//    ModalityGridData tGridData;
-//
-//    ThermalFeatureExtractor tFE(tParam);
-//	for (int s = 0; s < reader.getNumOfScenes(); s++)
-//	{
-//        cout << "Reading thermal frames in scene " << s << ".." << endl;
-//		reader.readSceneData(s, "Thermal", "jpg", hp, wp, tGridData);
-//        cout << "Describing thermal..." << endl;
-//		tFE.describe(tGridData);
-//        tGridData.saveDescription(reader.getScenePath(s), "Thermal.yml");
-//	}
-//
-//    cGridData.clear();
-//    mGridData.clear();
-////    dGridData.clear();
-//    tGridData.clear();
+    
+
+    cGridData.clear();
+    mGridData.clear();
+    tGridData.clear();
+    dGridData.clear();
     
     
     //
@@ -774,7 +778,7 @@ int main(int argc, const char* argv[])
     mapWriter.write<unsigned char>(tGridMetadata, g, "SVM_rbf_fusion/Thermal/Predictions/");
  */
     
-
+/*
     //
     // Overlap
     //
@@ -794,6 +798,7 @@ int main(int argc, const char* argv[])
     
     //Depth
     vector<cv::Mat> partitionedOverlapIDs;
+*/
     /*for (int s = 0; s < sequences.size(); s++)
     {
         boost::timer t;
@@ -1105,6 +1110,7 @@ int main(int argc, const char* argv[])
     partitionedOverlapIDs.clear();
     */
     
+/*
     //SVM linear fusion - thermal
     for (int s = 0; s < sequences.size(); s++)
     {
@@ -1176,6 +1182,7 @@ int main(int argc, const char* argv[])
     overlapIDs.release();
     partitionedMeanOverlap.release();
     partitionedOverlapIDs.clear();
+*/
     
     return 0;
 }
