@@ -259,16 +259,16 @@ int main(int argc, const char* argv[])
 
     ModalityGridData cGridData;
 
-    ColorFeatureExtractor cFE(cParam);
-	for (int s = 0; s < reader.getNumOfScenes(); s++)
-	{
-        cGridData.clear();
-        cout << "Reading color frames in scene " << s << " ..." << endl;
-		reader.readSceneData(s, "Color", "jpg", hp, wp, cGridData);
-        cout << "Describing color..." << endl;
-		cFE.describe(cGridData);
-        cGridData.saveDescription(reader.getScenePath(s), "Color.yml");
-    }
+//    ColorFeatureExtractor cFE(cParam);
+//	for (int s = 0; s < reader.getNumOfScenes(); s++)
+//	{
+//        cGridData.clear();
+//        cout << "Reading color frames in scene " << s << " ..." << endl;
+//		reader.readSceneData(s, "Color", "jpg", hp, wp, cGridData);
+//        cout << "Describing color..." << endl;
+//		cFE.describe(cGridData);
+//        cGridData.saveDescription(reader.getScenePath(s), "Color.yml");
+//    }
 
     // Motion description
     

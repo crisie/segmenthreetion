@@ -191,10 +191,10 @@ void ModalityReader::readAllScenesData(string modality, const char* filetype, in
 
 void ModalityReader::readSceneData(unsigned int sid, string modality, const char* filetype, int hp, int wp, ModalityGridData& mgd)
 {
-    if (mgd.getModality().compare("") != 0)
+    if (mgd.getModality().compare("") == 0)
         mgd.setModality(modality);
     else
-        assert(mgd.getModality().compare("") == 0);
+        assert(mgd.getModality().compare(modality) == 0);
     
     if (mgd.getHp() == 0)
         mgd.setHp(hp);
@@ -258,6 +258,10 @@ void ModalityReader::readSceneData(unsigned int sid, string modality, const char
     
     cout << "Loading and griding frames and masks ... " << endl;
     
+    // ***
+    cv::Mat prevFrame; // used in motion modality
+    // ***
+    
 	for (int f = 0; f < framesFilenames.size(); f++)
 	{
         if (rects[f].size() < 1)
@@ -271,7 +275,7 @@ void ModalityReader::readSceneData(unsigned int sid, string modality, const char
             framePath = m_ScenesPaths[sid] + "Frames/Color/" + framesFilenames[f] + "." + filetype;
             maskPath  = m_ScenesPaths[sid] + "Masks/Color/" + masksFilenames[f] + ".png";
         }
-        if (modality.compare("Ramanan") == 0)
+        else if (modality.compare("Ramanan") == 0)
         {
             framePath = m_ScenesPaths[sid] + "Maps/Ramanan/" + framesFilenames[f] + "." + filetype;
             maskPath  = m_ScenesPaths[sid] + "Masks/Color/" + masksFilenames[f] + ".png";
@@ -294,16 +298,13 @@ void ModalityReader::readSceneData(unsigned int sid, string modality, const char
         // --------------------------------------------------------------------------------------
         if (modality.compare("Motion") == 0)
         {
-            cv::Mat prevFrame;
-            cv::Mat currFrame(frame);
+            cv::Mat currFrame = cv::imread(m_ScenesPaths[sid] + "Frames/Color/" + framesFilenames[f] + "." + filetype, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);;
             
-            if (f == 0)
-                currFrame.copyTo(prevFrame);
-            else
-                prevFrame = cv::imread(m_ScenesPaths[sid] + "Frames/Color/" + framesFilenames[f-1] + "." + filetype,
-                                       CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+            if (prevFrame.empty()) currFrame.copyTo(prevFrame);
             
             MotionFeatureExtractor::computeOpticalFlow(pair<cv::Mat,cv::Mat>(prevFrame,currFrame), frame);
+            
+            currFrame.copyTo(prevFrame);
         }
         // --------------------------------------------------------------------------------------
         
