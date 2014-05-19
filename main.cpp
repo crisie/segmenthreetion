@@ -274,48 +274,47 @@ int main(int argc, const char* argv[])
     
     ModalityGridData mGridData;
 
-    MotionFeatureExtractor mFE(mParam);
-    for (int s = 0; s < reader.getNumOfScenes(); s++)
-	{
-        mGridData.clear();
-        cout << "Computing motion (from read color) frames in scene " << s << ".." << endl;
-		reader.readSceneData(s, "Motion", "jpg", hp, wp, mGridData);
-        cout << "Describing motion..." << endl;
-        mFE.describe(mGridData);
-        mGridData.saveDescription(reader.getScenePath(s), "Motion.yml");
-	}
+//    MotionFeatureExtractor mFE(mParam);
+//    for (int s = 0; s < reader.getNumOfScenes(); s++)
+//	{
+//        mGridData.clear();
+//        cout << "Computing motion (from read color) frames in scene " << s << ".." << endl;
+//		reader.readSceneData(s, "Motion", "jpg", hp, wp, mGridData);
+//        cout << "Describing motion..." << endl;
+//        mFE.describe(mGridData);
+//        mGridData.saveDescription(reader.getScenePath(s), "Motion.yml");
+//	}
     
     // Thermal description
     
     ModalityGridData tGridData;
     
-    ThermalFeatureExtractor tFE(tParam);
-	for (int s = 0; s < reader.getNumOfScenes(); s++)
-	{
-        tGridData.clear();
-        cout << "Reading thermal frames in scene " << s << ".." << endl;
-		reader.readSceneData(s, "Thermal", "jpg", hp, wp, tGridData);
-        cout << "Describing thermal..." << endl;
-		tFE.describe(tGridData);
-        tGridData.saveDescription(reader.getScenePath(s), "Thermal.yml");
-	}
+//    ThermalFeatureExtractor tFE(tParam);
+//	for (int s = 0; s < reader.getNumOfScenes(); s++)
+//	{
+//        tGridData.clear();
+//        cout << "Reading thermal frames in scene " << s << ".." << endl;
+//		reader.readSceneData(s, "Thermal", "jpg", hp, wp, tGridData);
+//        cout << "Describing thermal..." << endl;
+//		tFE.describe(tGridData);
+//        tGridData.saveDescription(reader.getScenePath(s), "Thermal.yml");
+//	}
     
     // Depth description
     
     ModalityGridData dGridData;
     
-//    DepthFeatureExtractor dFE(dParam);
-//	for (int s = 0; s < reader.getNumOfScenes(); s++)
-//	{
-//        dGridData.clear();
-//        cout << "Reading depth frames in scene " << s << ".." << endl;
-//		reader.readSceneData(s, "Depth", "png", hp, wp, dGridData);
-//        cout << "Describing depth..." << endl;
-//		dFE.describe(dGridData);
-//        dGridData.saveDescription(reader.getScenePath(s), "Depth.yml");
-//	}
+    DepthFeatureExtractor dFE(dParam);
+	for (int s = 0; s < reader.getNumOfScenes(); s++)
+	{
+        dGridData.clear();
+        cout << "Reading depth frames in scene " << s << ".." << endl;
+		reader.readSceneData(s, "Depth", "png", hp, wp, dGridData);
+        cout << "Describing depth..." << endl;
+		dFE.describe(dGridData);
+        dGridData.saveDescription(reader.getScenePath(s), "Depth.yml");
+	}
     
-
     cGridData.clear();
     mGridData.clear();
     tGridData.clear();
