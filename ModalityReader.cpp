@@ -80,28 +80,42 @@ string ModalityReader::getScenePath(unsigned int sid)
     return m_ScenesPaths[sid];
 }
 
-void ModalityReader::addScenePartition(cv::Mat partition)
-{
-    m_SceneFramesPartitions.push_back(partition);
-}
 
 cv::Mat ModalityReader::getScenePartition(unsigned int sid)
 {
-    return m_SceneFramesPartitions[sid];
+    cv::Mat partition;
+    cv::FileStorage fs (m_ScenesPaths[sid] + "Partition.yml", cv::FileStorage::READ);
+    fs["partition"] >> partition;
+    fs.release();
+
+    return partition;
 }
 
 vector<cv::Mat> ModalityReader::getPartitions()
 {
-    return m_SceneFramesPartitions;
+    vector<cv::Mat> scenesPartitions;
+    for (int s = 0; s < m_ScenesPaths.size(); s++)
+    {
+        cv::Mat partition;
+        cv::FileStorage fs (m_ScenesPaths[s] + "Partition.yml", cv::FileStorage::READ);
+        fs["partition"] >> partition;
+        fs.release();
+        scenesPartitions.push_back(partition);
+    }
+
+    return scenesPartitions;
 }
 
 cv::Mat ModalityReader::getAllScenesPartition()
 {
-    cv::Mat merge = m_SceneFramesPartitions[0];
-    
-    for (int s = 1; s < m_SceneFramesPartitions.size(); s++)
+    cv::Mat merge;
+    for (int s = 0; s < m_ScenesPaths.size(); s++)
     {
-        vconcat(merge, m_SceneFramesPartitions[s], merge);
+        cv::Mat partition;
+        cv::FileStorage fs (m_ScenesPaths[s] + "Partition.yml", cv::FileStorage::READ);
+        fs["partition"] >> partition;
+        fs.release();
+        cv::vconcat(merge, partition, merge);
     }
     
     return merge;
@@ -182,6 +196,9 @@ void ModalityReader::read(string modality, ModalityData& md)
 void ModalityReader::readAllScenesData(string modality, const char* filetype, int hp, int wp, ModalityGridData& mgd)
 {
     mgd.clear();
+    mgd.setModality(modality);
+    mgd.setHp(hp);
+    mgd.setWp(wp);
     
     for (int s = 0; s < m_ScenesPaths.size(); s++)
     {
@@ -245,11 +262,7 @@ void ModalityReader::readSceneData(unsigned int sid, string modality, const char
     
     cout << "Loading validation partitions ... ";
     
-    cv::Mat partition;
-    cv::FileStorage fs (m_ScenesPaths[sid] + "Partition.yml", cv::FileStorage::READ);
-    fs["partition"] >> partition;
-    fs.release();
-    addScenePartition(partition);
+    cv::Mat partition = getScenePartition(sid);
     
     cout << "DONE" << endl;
     
@@ -417,6 +430,21 @@ void ModalityReader::readAllScenesMetadata(string modality, const char* filetype
 
 void ModalityReader::readSceneMetadata(unsigned int sid, string modality, const char* filetype, int hp, int wp, ModalityGridData& mgd)
 {
+    if (mgd.getModality().compare("") == 0)
+        mgd.setModality(modality);
+    else
+        assert(mgd.getModality().compare(modality) == 0);
+    
+    if (mgd.getHp() == 0)
+        mgd.setHp(hp);
+    else
+        assert(mgd.getHp() == hp);
+    
+    if (mgd.getWp() == 0)
+        mgd.setWp(wp);
+    else
+        assert(mgd.getWp() == wp);
+    
 	// auxiliary
 	vector<string> framesFilenames; // Frames' filenames from <dataDir>/Frames/<modality>/
     vector<string> masksFilenames;
@@ -447,11 +475,8 @@ void ModalityReader::readSceneMetadata(unsigned int sid, string modality, const 
     
     assert (framesFilenames.size() == masksFilenames.size());
     
-    cv::Mat partition;
-    cv::FileStorage fs (m_ScenesPaths[sid] + "Partition.yml", cv::FileStorage::READ);
-    fs["partition"] >> partition;
-    fs.release();
-    addScenePartition(partition);
+    cv::Mat partition = getScenePartition(sid);
+
     // Load frame-wise (Mat), extract the roi represented by the bounding boxes,
     // grid the rois (GridMat), and store in GridModalityData object
     

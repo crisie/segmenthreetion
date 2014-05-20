@@ -69,8 +69,6 @@ private:
     unsigned char m_MasksOffset;
     unsigned char m_MaxOffset;
     
-    vector<cv::Mat> m_SceneFramesPartitions;
-    
     double m_MinVal, m_MaxVal;
 
     

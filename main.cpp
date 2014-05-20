@@ -777,7 +777,7 @@ int main(int argc, const char* argv[])
     mapWriter.write<unsigned char>(tGridMetadata, g, "SVM_rbf_fusion/Thermal/Predictions/");
  */
     
-/*
+
     //
     // Overlap
     //
@@ -787,18 +787,12 @@ int main(int argc, const char* argv[])
     
     //Individual..
     
-    //reader.readAllScenesMetadata("Color", "jpg", hp, wp, cGridMetadata);
-    //reader.readAllScenesMetadata("Motion", "jpg", hp, wp, mGridMetadata);
-    //reader.readAllScenesMetadata("Depth", "png", hp, wp, dGridMetadata);
-    //reader.readAllScenesMetadata("Thermal", "jpg", hp, wp, tGridMetadata);
-    
-    reader.readAllScenesMetadata("Depth", "png", hp, wp, dGridMetadata);
     cv::Mat overlapIDs, partitionedMeanOverlap, partitions = reader.getAllScenesPartition();
     
     //Depth
     vector<cv::Mat> partitionedOverlapIDs;
-*/
-    /*for (int s = 0; s < sequences.size(); s++)
+    
+    for (int s = 0; s < sequences.size(); s++)
     {
         boost::timer t;
         ModalityData depthData;
@@ -1107,9 +1101,7 @@ int main(int argc, const char* argv[])
     overlapIDs.release();
     partitionedMeanOverlap.release();
     partitionedOverlapIDs.clear();
-    */
     
-/*
     //SVM linear fusion - thermal
     for (int s = 0; s < sequences.size(); s++)
     {
@@ -1181,7 +1173,7 @@ int main(int argc, const char* argv[])
     overlapIDs.release();
     partitionedMeanOverlap.release();
     partitionedOverlapIDs.clear();
-*/
+
     
     return 0;
 }
