@@ -115,7 +115,8 @@ cv::Mat ModalityReader::getAllScenesPartition()
         cv::FileStorage fs (m_ScenesPaths[s] + "Partition.yml", cv::FileStorage::READ);
         fs["partition"] >> partition;
         fs.release();
-        cv::vconcat(merge, partition, merge);
+        if (merge.empty()) merge = partition;
+        else cv::vconcat(merge, partition, merge);
     }
     
     return merge;
