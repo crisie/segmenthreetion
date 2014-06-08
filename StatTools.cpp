@@ -656,9 +656,9 @@ void narrow(cv::Mat coarse, cv::Mat goodnesses, int steps, int* discretes, cv::M
         std::vector<double> aux;
         
         if (coord == 0)
-            cvx::linspace((double) parameters[i][coord], (double) parameters[i][coord+1], steps/2 + 1, aux);
+            cvx::linspace((double) parameters[i][coord], (double) parameters[i][coord+2], steps, aux);
         else if (coord == parameters[i].size() - 1)
-            cvx::linspace((double) parameters[i][coord-1], (double) parameters[i][coord], steps/2 + 1, aux);
+            cvx::linspace((double) parameters[i][coord-2], (double) parameters[i][coord], steps, aux);
         else
             cvx::linspace((double) parameters[i][coord-1], (double) parameters[i][coord+1], steps, aux);
         
@@ -709,4 +709,9 @@ void computeConfidenceInterval(GridMat values, cv::Mat& means, cv::Mat& confiden
         means.at<float>(i,j) = mean;
         confidences.at<float>(i,j) = confidence;
     }
+}
+
+float computeF1Score(int tp, int fp, int fn)
+{
+    return (2.f * tp) / (2.f * tp + fp + fn);
 }

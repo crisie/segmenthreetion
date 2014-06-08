@@ -117,7 +117,7 @@ void GridMapWriter::write(ModalityGridData& mgd, GridMat& gvalues, string output
             
             for (int k = 0; k < gridsInFrameIndices.rows; k++)
             {
-                cout << "scene " << s << ", filename " << frameFilename << ", rect " << k << "/" << gridsInFrameIndices.rows << endl;
+                //cout << "scene " << s << ", filename " << frameFilename << ", rect " << k << "/" << gridsInFrameIndices.rows << endl;
                 int idx = gridsInFrameIndices.at<int>(k,1);
                 
                 cv::Rect r = mgd.getGridBoundingRect(idx);

@@ -581,7 +581,7 @@ public:
     {
         GridMat g(validnesses, m_hp, m_wp);
         GridMat gm = g.flip(1);
-
+        
         m_Validnesses.vconcat(g);
         m_ValidnessesMirrored.vconcat(gm);
     }
@@ -607,9 +607,7 @@ public:
     {
         for (int i = 0; i < descriptors.crows(); i++) for (int j = 0; j < descriptors.ccols(); j++)
         {
-//            setValidness(cv::checkRange(description.at(i,j)), i, j,
-//                         m_DescriptorsMirrored.at(i,j).rows, m_ValidnessesMirrored);
-            m_ValidnessesMirrored.at<unsigned char>(i,j,m_Descriptors.at(i,j).rows,0) = cv::checkRange(descriptors.at(i,j)) ? 255 : 0;
+            m_ValidnessesMirrored.at<unsigned char>(i,j,m_DescriptorsMirrored.at(i,j).rows,0) = cv::checkRange(descriptors.at(i,j)) ? 255 : 0;
             m_DescriptorsMirrored.at(i,j).push_back(descriptors.at(i,j));
         }
     }
@@ -628,8 +626,8 @@ public:
     
     void saveDescription(string sequencePath, string filename)
     {
-        m_Descriptors.save(sequencePath + "Description/" + filename);
-        m_Descriptors.save(sequencePath + "Description/Mirrored" + filename);
+        // m_Descriptors.save(sequencePath + "Description/" + filename); // TODO: uncomment
+        m_DescriptorsMirrored.save(sequencePath + "Description/Mirrored" + filename);
     }
     
     void saveDescription(vector<string> sequencesPaths, string filename)

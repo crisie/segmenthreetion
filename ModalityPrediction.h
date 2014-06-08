@@ -17,8 +17,11 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/ml/ml.hpp>
 
+#include "em.h"
 #include "GridMat.h"
 #include "ModalityGridData.hpp"
+
+#include <boost/thread.hpp>
 
 using namespace std;
 
@@ -31,11 +34,13 @@ public:
     void setData(ModalityGridData& data);
     
     void setModelSelection(bool flag);
-    void setModelSelectionParameters(int k, bool best);
+    void setModelSelectionParameters(int k, bool bGlobalBest = false);
     
     void setValidationParameters(int k);
     
     void setDimensionalityReduction(float variance);
+    
+    void setTrainMirrored(bool flag);
     
     void computeGridConsensusPredictions(cv::Mat& consensusPredictions, cv::Mat& consensusDistsToMargin);
 
@@ -60,15 +65,19 @@ protected:
                             // files would be named: goodnesses_1.yml, ..., goodnesses_N.yml
                             // where N is equal to m_testK
     int m_modelSelecK; // number of folds in inner cross-validation to perform model selection
-    bool m_selectBest; // in model selection
+    bool m_bGlobalBest; // in model selection
     
     bool m_bDimReduction;
     float m_variance;
+    
+    bool m_bTrainMirrored;
     
     int m_narrowSearchSteps;
     
     GridMat m_PredictionsGrid;
     GridMat m_DistsToMarginGrid;
+    
+    boost::mutex m_mutex;
 };
 
 
@@ -80,13 +89,16 @@ class ModalityPrediction : public ModalityPredictionBase<Prediction>
 
 
 template<>
-class ModalityPrediction<cv::EM> : public ModalityPredictionBase<cv::EM>
+class ModalityPrediction<cv::EM40> : public ModalityPredictionBase<cv::EM40>
 {
 public:
     ModalityPrediction();
     
     void setNumOfMixtures(int m);
     void setNumOfMixtures(vector<int> m);
+    
+    void setEpsilons(float eps);
+    void setEpsilons(vector<float> eps);
     
     void setLoglikelihoodThresholds(float t);
     void setLoglikelihoodThresholds(vector<float> t);
@@ -100,11 +112,16 @@ public:
     
     void computeLoglikelihoodsDistribution(int nbins, double min, double max, cv::Mat& sbjDistribution, cv::Mat& objDistribution);
     
+    template<typename T>
+    void _modelSelection(GridMat descriptorsSbjTr, GridMat descriptorsSbjObjVal, GridMat tagsSbjObjVal,
+                         int k, vector<vector<T> > params, GridMat& accs);
+    
 private:
     
     // Attributes
     
     vector<int> m_nmixtures;
+    vector<float> m_epsilons;
     vector<float> m_logthresholds;
     
     GridMat m_LoglikelihoodsGrid;

@@ -18,6 +18,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/ml/ml.hpp>
 
+#include "em.h"
 #include "GridMat.h"
 
 using namespace std;
@@ -57,12 +58,13 @@ class GridPredictor : public GridPredictorBase<PredictorT>
 };
 
 template<>
-class GridPredictor<cv::EM> : public GridPredictorBase<cv::EM>
+class GridPredictor<cv::EM40> : public GridPredictorBase<cv::EM40>
 {
 public:
     GridPredictor(int hp, int wp);
     
     void setNumOfMixtures(cv::Mat nmixtures);
+    void setEpsilons(cv::Mat epsilons);
     void setLoglikelihoodThreshold(cv::Mat loglikes);
     
     void train(GridMat data);
@@ -71,6 +73,7 @@ public:
     
 private:
     cv::Mat m_nmixtures;
+    cv::Mat m_epsilons;
     cv::Mat m_logthreshold;
 };
 

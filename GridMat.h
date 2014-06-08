@@ -135,6 +135,9 @@ public:
     unsigned int crows() const;
     unsigned int cols(unsigned int i, unsigned int j);
     unsigned int rows(unsigned int i, unsigned int j);
+    
+    GridMat row(unsigned int i);
+    GridMat col(unsigned int i);
 
     void hconcat(GridMat& other);
     void vconcat(GridMat& other);

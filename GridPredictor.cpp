@@ -11,8 +11,8 @@
 #include "CvExtraTools.h"
 
 
-template GridPredictorBase<cv::EM>::~GridPredictorBase();
-template void GridPredictorBase<cv::EM>::setDimensionalityReduction(cv::Mat variances);
+template GridPredictorBase<cv::EM40>::~GridPredictorBase();
+template void GridPredictorBase<cv::EM40>::setDimensionalityReduction(cv::Mat variances);
 
 //
 // GridPredictorBase
@@ -65,13 +65,12 @@ GridPredictorBase<PredictorT>::~GridPredictorBase()
 //
 
 
-GridPredictor<cv::EM>::GridPredictor(int hp, int wp)
-: GridPredictorBase<cv::EM>(hp, wp)
+GridPredictor<cv::EM40>::GridPredictor(int hp, int wp)
+: GridPredictorBase<cv::EM40>(hp, wp)
 {
-    
 }
 
-//void GridPredictor<cv::EM>::setParameters(GridMat parameters)
+//void GridPredictor<cv::EM40>::setParameters(GridMat parameters)
 //{
 //    m_nmixtures.release();
 //    m_logthreshold.release();
@@ -97,7 +96,7 @@ GridPredictor<cv::EM>::GridPredictor(int hp, int wp)
 //    }
 //}
 
-void GridPredictor<cv::EM>::setNumOfMixtures(cv::Mat nmixtures)
+void GridPredictor<cv::EM40>::setNumOfMixtures(cv::Mat nmixtures)
 {
     m_nmixtures = nmixtures;
     
@@ -107,12 +106,22 @@ void GridPredictor<cv::EM>::setNumOfMixtures(cv::Mat nmixtures)
     }
 }
 
-void GridPredictor<cv::EM>::setLoglikelihoodThreshold(cv::Mat loglikes)
+void GridPredictor<cv::EM40>::setEpsilons(cv::Mat epsilons)
+{
+    m_epsilons = epsilons;
+    
+    for (int i = 0; i < epsilons.rows; i++) for (int j = 0; j < epsilons.cols; j++)
+    {
+        at(i,j)->set("epsilon", epsilons.at<float>(i,j));
+    }
+}
+
+void GridPredictor<cv::EM40>::setLoglikelihoodThreshold(cv::Mat loglikes)
 {
     m_logthreshold = loglikes;
 }
 
-void GridPredictor<cv::EM>::train(GridMat data)
+void GridPredictor<cv::EM40>::train(GridMat data)
 {
     m_data = data;
     
@@ -139,7 +148,7 @@ void GridPredictor<cv::EM>::train(GridMat data)
 /*
  * Returns predictions of the cells, the normalized loglikelihoods [0,1]
  */
-void GridPredictor<cv::EM>::predict(GridMat data, GridMat& loglikelihoods)
+void GridPredictor<cv::EM40>::predict(GridMat data, GridMat& loglikelihoods)
 {
     for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
     {
@@ -153,9 +162,9 @@ void GridPredictor<cv::EM>::predict(GridMat data, GridMat& loglikelihoods)
             if (m_bDimReduction)
                 descriptor = getPCA(i,j)->project(descriptor);
             
-            cv::Vec2d res = at(i,j)->predict(descriptor);
+            cv::Vec3d res = at(i,j)->predict(descriptor);
             
-            cellLoglikelihoods.at<float>(d,0) = static_cast<float>(res.val[0]);
+            cellLoglikelihoods.at<float>(d,0) = static_cast<float>(res.val[1]);
         }
         
         cv::Mat stdCellLoglikelihoods;
@@ -171,11 +180,12 @@ void GridPredictor<cv::EM>::predict(GridMat data, GridMat& loglikelihoods)
 /*
  * Returns predictions of the cells, the normalized loglikelihoods [0,1]
  */
-void GridPredictor<cv::EM>::predict(GridMat data, GridMat& predictions, GridMat& loglikelihoods, GridMat& distsToMargin)
+void GridPredictor<cv::EM40>::predict(GridMat data, GridMat& predictions, GridMat& loglikelihoods, GridMat& distsToMargin)
 {
     for (int i = 0; i < m_hp; i++) for (int j = 0; j < m_wp; j++)
     {
         cv::Mat& cell = data.at(i,j);
+        cv::Mat_<int> cellLabels(cell.rows, 1);
         cv::Mat_<float> cellLoglikelihoods (cell.rows, 1);
         
         for (int d = 0; d < cell.rows; d++)
@@ -185,15 +195,26 @@ void GridPredictor<cv::EM>::predict(GridMat data, GridMat& predictions, GridMat&
             if (m_bDimReduction)
                 descriptor = getPCA(i,j)->project(descriptor);
             
-            cv::Vec2d res = at(i,j)->predict(descriptor);
+            cv::Vec3d res = at(i,j)->predict(descriptor);
 
-            cellLoglikelihoods.at<float>(d,0) = static_cast<float>(res.val[0]);
+            cellLoglikelihoods.at<float>(d,0) = static_cast<float>(res.val[1]); // res.val[0] the global likelihood, res.val[0] the likelihood in the cluster
+            cellLabels.at<int>(d,0) = static_cast<int>(res.val[2]);
         }
 
         // Standardized loglikelihoods
-        cv::Scalar mean, stddev;
-        cv::meanStdDev(cellLoglikelihoods, mean, stddev);
-        cv::Mat_<float> stdCellLoglikelihoods = (cellLoglikelihoods - mean.val[0]) / stddev.val[0];
+        cv::Mat_<float> means, stddevs;
+        means.create(cellLoglikelihoods.rows, cellLoglikelihoods.cols);
+        stddevs.create(cellLoglikelihoods.rows, cellLoglikelihoods.cols);
+        for (int l = 0; l < at(i,j)->get<int>("nclusters"); l++)
+        {
+            cv::Scalar mean, stddev;
+            cv::meanStdDev(cellLoglikelihoods, mean, stddev, cellLabels == l);
+            means.setTo(mean.val[0], cellLabels == l);
+            stddevs.setTo(stddev.val[0], cellLabels == l);
+        }
+        cv::Mat_<float> ctrCellLoglikelihoods, stdCellLoglikelihoods;
+        cv::subtract(cellLoglikelihoods, means, ctrCellLoglikelihoods);
+        cv::divide(ctrCellLoglikelihoods, stddevs, stdCellLoglikelihoods);
         
         // Predictions evaluation comparing the standardized loglikelihoods to a threshold,
         // loglikelihoods over threshold are considered subject (1)

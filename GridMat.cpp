@@ -330,6 +330,29 @@ unsigned int GridMat::cols(unsigned int i, unsigned int j)
     return m_grid[i * ccols() + j].cols;
 }
 
+GridMat GridMat::row(unsigned int i)
+{
+    GridMat g (crows(), ccols());
+    
+    for (int i = 0; i < m_crows; i++) for (int j = 0; j < m_ccols; j++)
+    {
+        g.at(i,j) = at(i,j).row(i).clone();
+    }
+    
+    return g;
+}
+
+GridMat GridMat::col(unsigned int i)
+{
+    GridMat g (crows(), ccols());
+    
+    for (int i = 0; i < m_crows; i++) for (int j = 0; j < m_ccols; j++)
+    {
+        g.at(i,j) = at(i,j).col(i).clone();
+    }
+    
+    return g;
+}
 
 cv::Mat& GridMat::at(unsigned int i, unsigned int j)
 {

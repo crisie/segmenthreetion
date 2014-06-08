@@ -17,6 +17,9 @@
 
 #include "ModalityGridData.hpp"
 #include "GridMat.h"
+#include "em.h"
+
+#include <boost/thread.hpp>
 
 using namespace std;
 
@@ -75,9 +78,9 @@ class ClassifierFusionPredictionBase
     
 };
 
-// <cv::EM,ClassifierT> template parital-instantation
+// <cv::EM40,ClassifierT> template parital-instantation
 template<typename ClassifierT>
-class ClassifierFusionPredictionBase<cv::EM, ClassifierT>
+class ClassifierFusionPredictionBase<cv::EM40, ClassifierT>
 {
 public:
     
@@ -86,7 +89,7 @@ public:
     void setData(vector<ModalityGridData> mgds, vector<GridMat> distsToMargin, vector<cv::Mat> predictions);
     
     void setModelSelection(bool flag);
-    void setModelSelectionParameters(int k, int seed, bool best);
+    void setModelSelectionParameters(int k, int seed, bool bGlobalBest);
     void setValidationParameters(int k);
     void setPartitions(cv::Mat partitions);
     
@@ -112,7 +115,7 @@ protected:
     bool m_bModelSelection;
     int m_testK;
     int m_modelSelecK;
-    bool m_selectBest;
+    bool m_bGlobalBest;
     
     int m_seed;
     cv::Mat m_partitions;
@@ -121,7 +124,7 @@ protected:
     
     int  m_narrowSearchSteps;
     
-    
+    boost::mutex m_mutex;
 };
 
 // SVM template
@@ -131,9 +134,9 @@ template<typename PredictorT, typename ClassifierT>
 class ClassifierFusionPrediction : public ClassifierFusionPredictionBase<PredictorT, ClassifierT>
 {};
 
-// <cv::EM,CvSVM> template instantiation
+// <cv::EM40,CvSVM> template instantiation
 template<>
-class ClassifierFusionPrediction<cv::EM,CvSVM> : public ClassifierFusionPredictionBase<cv::EM,CvSVM>
+class ClassifierFusionPrediction<cv::EM40,CvSVM> : public ClassifierFusionPredictionBase<cv::EM40,CvSVM>
 {
 public:
     
@@ -149,6 +152,7 @@ public:
     void predict(cv::Mat& fusionPredictions);
 
 private:
+    void _modelSelection(cv::Mat& descriptorsTr, cv::Mat& responsesTr, cv::Mat& descriptorsVal, cv::Mat& responsesVal, int k, cv::Mat& expandedParams, cv::Mat& accuracies);
     
     // Attributes
     
@@ -159,9 +163,9 @@ private:
     int m_numItersSVM;
 };
 
-// <cv::EM,CvBoost> template instantiation
+// <cv::EM40,CvBoost> template instantiation
 template<>
-class ClassifierFusionPrediction<cv::EM,CvBoost> : public ClassifierFusionPredictionBase<cv::EM,CvBoost>
+class ClassifierFusionPrediction<cv::EM40,CvBoost> : public ClassifierFusionPredictionBase<cv::EM40,CvBoost>
 {
 public:
     
@@ -177,6 +181,7 @@ public:
     void predict(cv::Mat& fusionPredictions);
     
 private:
+    void _modelSelection(cv::Mat& descriptorsTr, cv::Mat& responsesTr, cv::Mat& descriptorsVal, cv::Mat& responsesVal, int k, cv::Mat& expandedParams, cv::Mat& accuracies);
     
     // Attributes
     
@@ -185,9 +190,9 @@ private:
     vector<float> m_weightTrimRate;
 };
 
-// <cv::EM,CvANN_MLP> template instantiation
+// <cv::EM40,CvANN_MLP> template instantiation
 template<>
-class ClassifierFusionPrediction<cv::EM,CvANN_MLP> : public ClassifierFusionPredictionBase<cv::EM,CvANN_MLP>
+class ClassifierFusionPrediction<cv::EM40,CvANN_MLP> : public ClassifierFusionPredictionBase<cv::EM40,CvANN_MLP>
 {
 public:
     
@@ -195,9 +200,8 @@ public:
     
     cv::Mat encode(cv::Mat vector);
     cv::Mat decode(cv::Mat matrix);
-    
+
     void setActivationFunctionType(int type);
-    
     void setHiddenLayerSizes(vector<float> hiddenSizes);
     
     //void setBackpropDecayWeightScales(vector<float> dwScales);
@@ -208,6 +212,7 @@ public:
     void predict(cv::Mat& fusionPredictions);
     
 private:
+    void _modelSelection(cv::Mat& descriptorsTr, cv::Mat& responsesTr, cv::Mat& descriptorsVal, cv::Mat& responsesVal, int k, cv::Mat& expandedParams, cv::Mat& accuracies);
     
     // Attributes
     int m_actFcnType; // activation function type
