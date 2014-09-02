@@ -145,15 +145,19 @@ void ModalityReader::read(string modality, ModalityData& md)
     int nFrames = 0;
     for (int i = 0; i < m_ScenesPaths.size(); i++)
     {
-        loadDataToMats   (m_ScenesPaths[i] + "/Frames/" + modality + "/", "jpg", frames, filenames);
-        loadDataToMats   (m_ScenesPaths[i] + "/Masks/" + modality + "/", "png", masks);
-        loadDataToMats(m_ScenesPaths[i] + "/GroundTruth/" + modality + "/", "png", gtMasks);
-        loadBoundingRects(m_ScenesPaths[i] + "/Masks/" + modality + ".yml", rects, tags);
+        if(modality.compare("Depth") == 0)
+            loadDataToMats   (m_ScenesPaths[i] + "Frames/" + modality + "/", "png", frames, filenames);
+        else
+            loadDataToMats   (m_ScenesPaths[i] + "Frames/" + modality + "/", "jpg", frames, filenames);
+
+        loadDataToMats   (m_ScenesPaths[i] + "Masks/" + modality + "/", "png", masks);
+        loadDataToMats(m_ScenesPaths[i] + "GroundTruth/" + modality + "/", "png", gtMasks);
+        loadBoundingRects(m_ScenesPaths[i] + "Masks/" + modality + ".yml", rects, tags);
         if(modality.compare("Thermal") == 0) {
-            loadCalibVarsDir (m_ScenesPaths[i] + "/calibVars.yml", calibVars);
+            loadCalibVarsDir (m_ScenesPaths[i] + "calibVars.yml", calibVars);
         }
         if(modality.compare("Depth") == 0) {
-            loadDataToMats(m_ScenesPaths[i] + "/Frames/" + modality + "Raw/", "png", regFrames);
+            loadDataToMats(m_ScenesPaths[i] + "Frames/" + modality + "Raw/", "png", regFrames);
         }
         
         framesPerScene.push_back(std::make_pair(nFrames, frames.size() - 1));
@@ -668,6 +672,8 @@ void ModalityReader::loadFilenames(string dir, const char* filetype, vector<stri
 	filenames.clear();
 
     const char* path = dir.c_str();
+    string extension = "." + string(filetype);
+
 	if( exists( path ) )
 	{
         boost::filesystem::
@@ -675,7 +681,6 @@ void ModalityReader::loadFilenames(string dir, const char* filetype, vector<stri
 		directory_iterator iter(path);
 		for( ; iter != end ; ++iter )
 		{
-            string extension = "." + string(filetype);
 			if ( !is_directory( *iter ) && (iter->path().extension().string().compare(extension) == 0) )
 			{
 				string filename = iter->path().filename().string();
@@ -693,6 +698,8 @@ void ModalityReader::loadFilenames(string dir, const char* filetype, vector<stri
 void ModalityReader::loadDataToMats(string dir, const char* filetype, vector<cv::Mat> & frames)
 {
     const char* path = dir.c_str();
+    string extension = "." + string(filetype);
+
 	if( exists( path ) )
 	{
         boost::filesystem::
@@ -700,7 +707,7 @@ void ModalityReader::loadDataToMats(string dir, const char* filetype, vector<cv:
 		directory_iterator iter(path);
 		for( ; iter != end ; ++iter )
 		{
-			if ( !is_directory( *iter ) && (iter->path().extension().string().compare(filetype) == 0) )
+			if ( !is_directory( *iter ) && (iter->path().extension().string().compare(extension) == 0) )
 			{
                 //cout << iter->path().string() << endl; //debug
 				cv::Mat img = cv::imread( iter->path().string(), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR );
@@ -718,6 +725,8 @@ void ModalityReader::loadDataToMats(string dir, const char* filetype, vector<cv:
 void ModalityReader::loadDataToMats(string dir, const char* filetype, vector<cv::Mat> & frames, vector<string>& indices)
 {
     const char* path = dir.c_str();
+    string extension = "." + string(filetype);
+    
 	if( exists( path ) )
 	{
         boost::filesystem::
@@ -725,7 +734,7 @@ void ModalityReader::loadDataToMats(string dir, const char* filetype, vector<cv:
 		directory_iterator iter(path);
 		for( ; iter != end ; ++iter )
 		{
-			if ( !is_directory( *iter ) && (iter->path().extension().string().compare(filetype) == 0) )
+			if ( !is_directory( *iter ) && (iter->path().extension().string().compare(extension) == 0) )
 			{
                 //cout << iter->path().string() << endl; //debug
 				cv::Mat img = cv::imread( iter->path().string(), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
