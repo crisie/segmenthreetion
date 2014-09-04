@@ -275,6 +275,16 @@ void ModalityPrediction<cv::EM40>::predict(GridMat& predictionsGrid, GridMat& lo
             GridMat validnessesTrainGrid (validnessesGrid, partitionsGrid, k, true);
             GridMat tagsTrainGrid (tagsGrid, partitionsGrid, k, true);
             
+//            // <-- dbg
+//            cv::Mat d = descriptorsTrainGrid.at(0,0);
+//            cv::Mat v = validnessesTrainGrid.at(0,0);
+//            cv::Mat t = tagsTrainGrid.at(0,0);
+//            for (int i = 0; i < d.rows; i++)
+//            {
+//                cout << d.row(i) << " " << v.row(i) << " " << t.row(i) << endl;
+//            }
+//           // dgb -->
+            
             // Within the k-th training partition,
             // remove the nonvalid descriptors (validness == 0) and associated tags
             GridMat validDescriptorsTrainGrid = descriptorsTrainGrid.convertToDense(validnessesTrainGrid);
@@ -295,7 +305,6 @@ void ModalityPrediction<cv::EM40>::predict(GridMat& predictionsGrid, GridMat& lo
             GridMat goodnesses;
             modelSelection(validDescriptorsTrainGrid, validTagsTrainGrid,
                            gridExpandedParameters, goodnesses);
-
 
             std::stringstream ss;
             ss << m_data.getModality() << "_models_goodnesses_" << k << (m_bTrainMirrored ? "m" : "") << ".yml";
@@ -340,7 +349,7 @@ void ModalityPrediction<cv::EM40>::predict(GridMat& predictionsGrid, GridMat& lo
         // remove the nonvalid descriptors (validness == 0) and associated tags
         GridMat validDescriptorsTrainGrid = descriptorsTrainGrid.convertToDense(validnessesTrainGrid);
         GridMat validTagsTrainGrid = tagsTrainGrid.convertToDense(validnessesTrainGrid);
-        
+                
         // Within the valid descriptors in the k-th training partition,
         // index the subject descriptors (tag == 1)
         GridMat validSbjDescriptorsTrainGrid (validDescriptorsTrainGrid, validTagsTrainGrid, 1);
@@ -367,7 +376,7 @@ void ModalityPrediction<cv::EM40>::predict(GridMat& predictionsGrid, GridMat& lo
         // Train with the best parameter combination in average in a model
         // selection procedure within the training partition
         vector<cv::Mat> bestParams;
-        selectBestParameterCombination(gridExpandedParameters, m_hp, m_wp, params.size(), goodness, bestParams);
+        selectBestParameterCombination<float>(gridExpandedParameters, m_hp, m_wp, params.size(), goodness, bestParams);
 
         predictor.setNumOfMixtures(bestParams[0]);
         predictor.setEpsilons(bestParams[1]);
@@ -440,24 +449,25 @@ void ModalityPrediction<cv::EM40>::modelSelection(GridMat descriptors, GridMat t
     {
         // Get fold's data
         cout << k;
-        
+    
         GridMat descriptorsTrainGrid (descriptors, partitions, k, true);
         GridMat descriptorsValidationGrid (descriptors, partitions, k);
+        
         GridMat tagsTrainGrid (tags, partitions, k, true);
         GridMat tagsValidationGrid (tags, partitions, k);
         
         GridMat descriptorsSbjTrainGrid (descriptorsTrainGrid, tagsTrainGrid, 1); // subjects' training sample
         GridMat descriptorsSbjObjValidationGrid (descriptorsValidationGrid, tagsValidationGrid, -1, true);
+        
         GridMat tagsSbjObjValidationGrid (tagsValidationGrid, tagsValidationGrid, -1, true);
         
 //        boost::bind(&ModalityPrediction::_modelSelection<float>, this, _1, _2, _3, _4, _5, _6)(descriptorsSbjTrainGrid, descriptorsSbjObjValidationGrid, tagsSbjObjValidationGrid, k, gridExpandedParams, boost::ref(accuracies));
         tg.add_thread(new boost::thread( boost::bind (&ModalityPrediction::_modelSelection<T>, this,descriptorsSbjTrainGrid, descriptorsSbjObjValidationGrid, tagsSbjObjValidationGrid, k, gridExpandedParams, accuracies) ));
-        
     }
     tg.join_all();
     
     cout << ") " << t.elapsed() << endl;
-    
+
     accuracies.mean(goodnesses, 1);
 }
 
@@ -530,6 +540,8 @@ void ModalityPrediction<cv::EM40>::_modelSelection(GridMat descriptorsSbjTrainGr
             cv::Mat predictions;
             cv::threshold(stdLoglikelihoods, predictions, gridExpandedParams[m][2], 1, CV_THRESH_BINARY);
             predictions.convertTo(predictions, cv::DataType<int>::type);
+            
+
             
             // Compute an accuracy measure
             float acc = accuracy(tagsSbjObjValGrid.at(i,j), predictions);

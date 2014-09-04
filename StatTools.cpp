@@ -454,7 +454,7 @@ void selectBestParameterCombination(vector<vector<T> > expandedParams, int hp, i
     
     GridMat gargmax;
     goodnesses.argmax(gargmax);
-    
+        
     for (int i = 0; i < hp; i++) for (int j = 0; j < wp; j++)
     {
         int rowIdx = gargmax.at(i,j).at<int>(0,0); // maxrow index
@@ -530,10 +530,10 @@ float accuracy(cv::Mat actuals, cv::Mat predictions)
     int nobj = cv::sum(objects).val[0];
     int nsbj = cv::sum(subjects).val[0];
     
-    int objHits = cv::sum(objects & hits).val[0];
-    int sbjHits = cv::sum(subjects & hits).val[0];
+    float objAcc = (nobj > 0) ? (cv::sum(objects & hits).val[0] / nobj) : 0;
+    float sbjAcc = (nsbj > 0) ? (cv::sum(subjects & hits).val[0] / nsbj) : 0;
     
-    return (float(objHits)/nobj + float(sbjHits)/nsbj) / 2;
+    return (objAcc + sbjAcc) / 2.0;
 }
 
 void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies)
