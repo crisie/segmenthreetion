@@ -33,6 +33,7 @@ void ThermalBackgroundSubtractor::getMasks(ModalityData& mdInput, ModalityData& 
         Registrator minReg;
         
         minReg.loadMinCalibrationVars(calibVarDirs[scene]);
+        minReg.toggleUndistortion(false);
         minReg.setUsePrevDepthPoint(true);
     
         //Duplicate depth frames (one duplicated frame per item in that frame, minimum 1 frame -if no item-)
