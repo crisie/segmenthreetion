@@ -2,6 +2,9 @@
 //
 #include "registrator.h"
 
+#include <sys/types.h>
+#include <sys/dir.h>
+
 using namespace std;
 using namespace cv;
 
@@ -221,8 +224,8 @@ void Registrator::computeCorrespondingThermalPointFromRgb(vector<Point2f> vecRgb
 	vector<int> vecDepthInMm, bestHom;
 	vector<double> minDist;
 	vecDepthInMm.resize(0);
-	vector<vector<double>> octantDistances;
-	vector<vector<int>> octantIndices;
+	vector<vector<double> > octantDistances;
+	vector<vector<int> > octantIndices;
 	vector<Point3f> worldCoordPointVector;
 	computeCorrespondingThermalPointFromRgb(vecRgbCoord, vecTCoord, vecDCoord, vecDepthInMm, minDist, 
 											bestHom, octantIndices, octantDistances, worldCoordPointVector);
@@ -235,16 +238,16 @@ void Registrator::computeCorrespondingThermalPointFromRgb(vector<Point2f> vecRgb
 	vector<int> vecDepthInMm;
 	vector<double> minDist;
 	vecDepthInMm.resize(0);
-	vector<vector<double>> octantDistances;
-	vector<vector<int>> octantIndices;
+	vector<vector<double> > octantDistances;
+	vector<vector<int> > octantIndices;
 	vector<Point3f> worldCoordPointVector;
 	computeCorrespondingThermalPointFromRgb(vecRgbCoord, vecTCoord, vecDCoord, vecDepthInMm, minDist, 
 											bestHom, octantIndices, octantDistances, worldCoordPointVector);
 }
 
 void Registrator::computeCorrespondingThermalPointFromRgb(vector<Point2f> vecRgbCoord, vector<Point2f>& vecTCoord, vector<Point2f> vecDCoord, 
-											vector<int> vecDepthInMm, vector<double>& minDist, vector<int> &bestHom, vector<vector<int>> &octantIndices, 
-											vector<vector<double>> &octantDistances, vector<Point3f> &worldCoordPointVector)
+											vector<int> vecDepthInMm, vector<double>& minDist, vector<int> &bestHom, vector<vector<int> > &octantIndices,
+											vector<vector<double> > &octantDistances, vector<Point3f> &worldCoordPointVector)
 {
 	vector<Point2f> vecUndistRgbCoord,vecRecRgbCoord,vecDistRgbCoord,vecRecTCoord, vecUndistTCoord;
 	Point2f tmpPoint;
@@ -276,8 +279,8 @@ void Registrator::computeCorrespondingRgbPointFromThermal(vector<Point2f> vecTCo
 {
 	vector<double> minDist;
 	vector<int> bestHom;
-	vector<vector<int>> octantIndices;
-	vector<vector<double>> octantDistances;
+	vector<vector<int> > octantIndices;
+	vector<vector<double> > octantDistances;
 	vector<Point3f> worldCoordPointVector;
 
 	computeCorrespondingRgbPointFromThermal(vecTCoord, vecRgbCoord, minDist, bestHom, octantIndices, octantDistances, 
@@ -287,7 +290,7 @@ void Registrator::computeCorrespondingRgbPointFromThermal(vector<Point2f> vecTCo
 }
 
 void Registrator::computeCorrespondingRgbPointFromThermal(vector<Point2f> vecTCoord, vector<Point2f>& vecRgbCoord, vector<double>& minDist, 
-											 vector<int> &bestHom, vector<vector<int>> &octantIndices, vector<vector<double>> &octantDistances)
+											 vector<int> &bestHom, vector<vector<int> > &octantIndices, vector<vector<double> > &octantDistances)
 {
 	vector<Point3f> worldCoordPointVector;
 	computeCorrespondingRgbPointFromThermal(vecTCoord, vecRgbCoord, minDist, bestHom, octantIndices, octantDistances, 
@@ -295,7 +298,7 @@ void Registrator::computeCorrespondingRgbPointFromThermal(vector<Point2f> vecTCo
 }
 
 void Registrator::computeCorrespondingRgbPointFromThermal(vector<Point2f> vecTCoord, vector<Point2f>& vecRgbCoord, vector<double>& minDist, 
-											 vector<int> &bestHom, vector<vector<int>> &octantIndices, vector<vector<double>> &octantDistances, 
+											 vector<int> &bestHom, vector<vector<int> > &octantIndices, vector<vector<double> > &octantDistances,
 											 vector<Point3f> &worldCoordPointVector)
 {
 	vector<Point2f> vecUndistTCoord,vecRecTCoord,vecDistTCoord,vecRecRgbCoord, vecUndistRgbCoord,vecDCoord;
@@ -326,8 +329,8 @@ void Registrator::computeCorrespondingRgbPointFromThermal(vector<Point2f> vecTCo
 }
 
 void Registrator::computeHomographyMapping(vector<Point2f>& vecUndistRgbCoord, vector<Point2f>& vecUndistTCoord, vector<Point2f> vecDCoord,
-		vector<int> vecDepthInMm, vector<double>& minDist, vector<int> &bestHom, vector<vector<int>> &octantIndices,
-		vector<vector<double>> &octantDistances, vector<Point3f> &worldCoordPointVector)
+		vector<int> vecDepthInMm, vector<double>& minDist, vector<int> &bestHom, vector<vector<int> > &octantIndices,
+		vector<vector<double> > &octantDistances, vector<Point3f> &worldCoordPointVector)
 {
 
 	double depthInMm, sqDist;
@@ -1400,8 +1403,8 @@ void Registrator::getRegisteredContours(vector<Point> contour, vector<Point> ero
 
     vector<int> homInd, vecDepthInMm;
 	vector<double> minDist;
-	vector<vector<double>> octantDistances;
-	vector<vector<int>> octantIndices;
+	vector<vector<double> > octantDistances;
+	vector<vector<int> > octantIndices;
 	vector<Point3f> worldCoordPointVector;
 
 	this->depthOutlierRemovalLookup(erodedDCoords, vecDepthInMm); // Use the coordinates of the eroded mask to look up the depth
@@ -1455,7 +1458,7 @@ void Registrator::markCorrespondingPointsThermal(Point2f tCoord)
 	
 
 	// Find the corresponding point in RGB coordinates and process the information to markCorrespondingPoints()
-	vector<double> minDist; vector<int> bestHom;  vector<vector<int>> octantIndices; vector<vector<double>> octantDistances;
+	vector<double> minDist; vector<int> bestHom;  vector<vector<int> > octantIndices; vector<vector<double> > octantDistances;
 	computeCorrespondingRgbPointFromThermal(vecTCoord, vecRgbCoord, minDist, bestHom, octantIndices, octantDistances);
 	rgbCoord = vecRgbCoord[0];
 	

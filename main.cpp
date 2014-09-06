@@ -257,6 +257,8 @@ int main(int argc, const char* argv[])
     //
     // Feature extraction
     //
+    
+//    cout << "Feature extraction ... " << endl;
 
 //    // Color description
 //
@@ -288,8 +290,8 @@ int main(int argc, const char* argv[])
 //        mGridData.saveDescription(reader.getScenePath(s), "Motion.yml");
 //	}
     
-    // Thermal description
-    
+//    // Thermal description
+//    
 //    ModalityGridData tGridData;
 //
 //    ThermalFeatureExtractor tFE(tParam);
@@ -327,6 +329,8 @@ int main(int argc, const char* argv[])
     //
     // Cells predictions
     //
+    
+    cout << "Prediction of individual cells ... " << endl;
     
     cv::Mat accuracies;
     GridMat accuraciesGrid;
@@ -441,7 +445,7 @@ int main(int argc, const char* argv[])
     cout << "Thermal" << endl;
     prediction.setData(tGridMetadata);
     
-    prediction.setModelSelection(false);
+    prediction.setModelSelection(true);
     prediction.setTrainMirrored(false);
     
     prediction.predict(tPredictions, tLoglikelihoods, tDistsToMargin);
@@ -548,78 +552,80 @@ int main(int argc, const char* argv[])
     // Grid cells consensus
     //
     
-    mPredictions.load("mPredictions.yml");
-    mDistsToMargin.load("mDistsToMargin.yml");
-    mPredictionsMirrored.load("mPredictionsMirrored.yml");
-    mDistsToMarginMirrored.load("mDistsToMarginMirrored.yml");
-    dPredictions.load("dPredictions.yml");
-    dDistsToMargin.load("dDistsToMargin.yml");
-    dPredictionsMirrored.load("dPredictionsMirrored.yml");
-    dDistsToMarginMirrored.load("dDistsToMarginMirrored.yml");
+    cout << "Consensus of the grid cells ... " << endl;
+
+//    mPredictions.load("mPredictions.yml");
+//    mDistsToMargin.load("mDistsToMargin.yml");
+//    mPredictionsMirrored.load("mPredictionsMirrored.yml");
+//    mDistsToMarginMirrored.load("mDistsToMarginMirrored.yml");
+//    dPredictions.load("dPredictions.yml");
+//    dDistsToMargin.load("dDistsToMargin.yml");
+//    dPredictionsMirrored.load("dPredictionsMirrored.yml");
+//    dDistsToMarginMirrored.load("dDistsToMarginMirrored.yml");
     tPredictions.load("tPredictions.yml");
     tDistsToMargin.load("tDistsToMargin.yml");
     tPredictionsMirrored.load("tPredictionsMirrored.yml");
     tDistsToMarginMirrored.load("tDistsToMarginMirrored.yml");
-    cPredictions.load("cPredictions.yml");
-    cDistsToMargin.load("cDistsToMargin.yml");
-    cPredictionsMirrored.load("cPredictionsMirrored.yml");
-    cDistsToMarginMirrored.load("cDistsToMarginMirrored.yml");
+//    cPredictions.load("cPredictions.yml");
+//    cDistsToMargin.load("cDistsToMargin.yml");
+//    cPredictionsMirrored.load("cPredictionsMirrored.yml");
+//    cDistsToMarginMirrored.load("cDistsToMarginMirrored.yml");
     
-    // Motion
-    
-    prediction.setData(mGridMetadata);
-    
-    prediction.setPredictions(mPredictions);
-    prediction.setDistsToMargin(mDistsToMargin);
-    prediction.computeGridConsensusPredictions(mConsensusPredictions, mConsensusDistsToMargin);
-    prediction.getAccuracy(mConsensusPredictions, accuracies);
-    computeConfidenceInterval(accuracies, &mean, &conf);
-    cout << "Motion modality (c): " << mean << " ± " << conf << endl;
-    
-    aux.setTo(mConsensusPredictions); // predictions map generation purposes
-    aux.save("mGridConsensusPredictions.yml");
-    aux.setTo(mConsensusDistsToMargin);
-    aux.save("mGridConsensusDistsToMargin.yml");
-    
-    prediction.setPredictions(mPredictionsMirrored);
-    prediction.setDistsToMargin(mDistsToMarginMirrored);
-    prediction.computeGridConsensusPredictions(mConsensusPredictionsMirrored, mConsensusDistsToMarginMirrored);
-    prediction.getAccuracy(mConsensusPredictionsMirrored, accuracies);
-    computeConfidenceInterval(accuracies, &mean, &conf);
-    cout << "Motion mirrored modality (c): " << mean << " ± " << conf << endl;
-    
-    aux.setTo(mConsensusPredictionsMirrored); // predictions map generation purposes
-    aux.save("mGridConsensusPredictionsMirrored.yml");
-    aux.setTo(mConsensusDistsToMarginMirrored);
-    aux.save("mGridConsensusDistsToMarginMirrored.yml");
+//    // Motion
+//    
+//    prediction.setData(mGridMetadata);
+//    
+//    prediction.setPredictions(mPredictions);
+//    prediction.setDistsToMargin(mDistsToMargin);
+//    prediction.computeGridConsensusPredictions(mConsensusPredictions, mConsensusDistsToMargin);
+//    prediction.getAccuracy(mConsensusPredictions, accuracies);
+//    computeConfidenceInterval(accuracies, &mean, &conf);
+//    cout << "Motion modality (c): " << mean << " ± " << conf << endl;
+//    
+//    aux.setTo(mConsensusPredictions); // predictions map generation purposes
+//    aux.save("mGridConsensusPredictions.yml");
+//    aux.setTo(mConsensusDistsToMargin);
+//    aux.save("mGridConsensusDistsToMargin.yml");
+//    
+//    prediction.setPredictions(mPredictionsMirrored);
+//    prediction.setDistsToMargin(mDistsToMarginMirrored);
+//    prediction.computeGridConsensusPredictions(mConsensusPredictionsMirrored, mConsensusDistsToMarginMirrored);
+//    prediction.getAccuracy(mConsensusPredictionsMirrored, accuracies);
+//    computeConfidenceInterval(accuracies, &mean, &conf);
+//    cout << "Motion mirrored modality (c): " << mean << " ± " << conf << endl;
+//    
+//    aux.setTo(mConsensusPredictionsMirrored); // predictions map generation purposes
+//    aux.save("mGridConsensusPredictionsMirrored.yml");
+//    aux.setTo(mConsensusDistsToMarginMirrored);
+//    aux.save("mGridConsensusDistsToMarginMirrored.yml");
 
-    // Depth
-    
-    prediction.setData(dGridMetadata);
-    
-    prediction.setPredictions(dPredictions);
-    prediction.setDistsToMargin(dDistsToMargin);
-    prediction.computeGridConsensusPredictions(dConsensusPredictions, dConsensusDistsToMargin);
-    prediction.getAccuracy(dConsensusPredictions, accuracies);
-    computeConfidenceInterval(accuracies, &mean, &conf);
-    cout << "Depth modality (c): " << mean << " ± " << conf << endl;
-    
-    aux.setTo(dConsensusPredictions); // predictions map generation purposes
-    aux.save("dGridConsensusPredictions.yml");
-    aux.setTo(dConsensusDistsToMargin);
-    aux.save("dGridConsensusDistsToMargin.yml");
-
-    prediction.setPredictions(dPredictionsMirrored);
-    prediction.setDistsToMargin(dDistsToMarginMirrored);
-    prediction.computeGridConsensusPredictions(dConsensusPredictionsMirrored, dConsensusDistsToMarginMirrored);
-    prediction.getAccuracy(dConsensusPredictionsMirrored, accuracies);
-    computeConfidenceInterval(accuracies, &mean, &conf);
-    cout << "Depth mirrored modality (c): " << mean << " ± " << conf << endl;
-    
-    aux.setTo(dConsensusPredictionsMirrored); // predictions map generation purposes
-    aux.save("dGridConsensusPredictionsMirrored.yml");
-    aux.setTo(dConsensusDistsToMarginMirrored);
-    aux.save("dGridConsensusDistsToMarginMirrored.yml");
+//    // Depth
+//    
+//    prediction.setData(dGridMetadata);
+//    
+//    prediction.setPredictions(dPredictions);
+//    prediction.setDistsToMargin(dDistsToMargin);
+//    prediction.computeGridConsensusPredictions(dConsensusPredictions, dConsensusDistsToMargin);
+//    prediction.getAccuracy(dConsensusPredictions, accuracies);
+//    computeConfidenceInterval(accuracies, &mean, &conf);
+//    cout << "Depth modality (c): " << mean << " ± " << conf << endl;
+//    
+//    aux.setTo(dConsensusPredictions); // predictions map generation purposes
+//    aux.save("dGridConsensusPredictions.yml");
+//    aux.setTo(dConsensusDistsToMargin);
+//    aux.save("dGridConsensusDistsToMargin.yml");
+//
+//    prediction.setPredictions(dPredictionsMirrored);
+//    prediction.setDistsToMargin(dDistsToMarginMirrored);
+//    prediction.computeGridConsensusPredictions(dConsensusPredictionsMirrored, dConsensusDistsToMarginMirrored);
+//    prediction.getAccuracy(dConsensusPredictionsMirrored, accuracies);
+//    computeConfidenceInterval(accuracies, &mean, &conf);
+//    cout << "Depth mirrored modality (c): " << mean << " ± " << conf << endl;
+//    
+//    aux.setTo(dConsensusPredictionsMirrored); // predictions map generation purposes
+//    aux.save("dGridConsensusPredictionsMirrored.yml");
+//    aux.setTo(dConsensusDistsToMarginMirrored);
+//    aux.save("dGridConsensusDistsToMarginMirrored.yml");
 
     // Thermal
     
@@ -649,37 +655,39 @@ int main(int argc, const char* argv[])
     aux.setTo(tConsensusDistsToMarginMirrored);
     aux.save("tGridConsensusDistsToMarginMirrored.yml");
     
-    // Color
-    
-    prediction.setData(cGridMetadata);
-    
-    prediction.setPredictions(cPredictions);
-    prediction.setDistsToMargin(cDistsToMargin);
-    prediction.computeGridConsensusPredictions(cConsensusPredictions, cConsensusDistsToMargin);
-    prediction.getAccuracy(cConsensusPredictions, accuracies);
-    computeConfidenceInterval(accuracies, &mean, &conf);
-    cout << "Color modality (c): " << mean << " ± " << conf << endl;
-    
-    aux.setTo(cConsensusPredictions); // predictions map generation purposes
-    aux.save("cGridConsensusPredictions.yml");
-    aux.setTo(cConsensusDistsToMargin);
-    aux.save("cGridConsensusDistsToMargin.yml");
-    
-    prediction.setPredictions(cPredictionsMirrored);
-    prediction.setDistsToMargin(cDistsToMarginMirrored);
-    prediction.computeGridConsensusPredictions(cConsensusPredictionsMirrored, cConsensusDistsToMarginMirrored);
-    prediction.getAccuracy(cConsensusPredictionsMirrored, accuracies);
-    computeConfidenceInterval(accuracies, &mean, &conf);
-    cout << "Color mirrored modality (c): " << mean << " ± " << conf << endl;
-
-    aux.setTo(cConsensusPredictionsMirrored); // predictions map generation purposes
-    aux.save("cGridConsensusPredictionsMirrored.yml");
-    aux.setTo(cConsensusDistsToMarginMirrored);
-    aux.save("cGridConsensusDistsToMarginMirrored.yml");
+//    // Color
+//    
+//    prediction.setData(cGridMetadata);
+//    
+//    prediction.setPredictions(cPredictions);
+//    prediction.setDistsToMargin(cDistsToMargin);
+//    prediction.computeGridConsensusPredictions(cConsensusPredictions, cConsensusDistsToMargin);
+//    prediction.getAccuracy(cConsensusPredictions, accuracies);
+//    computeConfidenceInterval(accuracies, &mean, &conf);
+//    cout << "Color modality (c): " << mean << " ± " << conf << endl;
+//    
+//    aux.setTo(cConsensusPredictions); // predictions map generation purposes
+//    aux.save("cGridConsensusPredictions.yml");
+//    aux.setTo(cConsensusDistsToMargin);
+//    aux.save("cGridConsensusDistsToMargin.yml");
+//    
+//    prediction.setPredictions(cPredictionsMirrored);
+//    prediction.setDistsToMargin(cDistsToMarginMirrored);
+//    prediction.computeGridConsensusPredictions(cConsensusPredictionsMirrored, cConsensusDistsToMarginMirrored);
+//    prediction.getAccuracy(cConsensusPredictionsMirrored, accuracies);
+//    computeConfidenceInterval(accuracies, &mean, &conf);
+//    cout << "Color mirrored modality (c): " << mean << " ± " << conf << endl;
+//
+//    aux.setTo(cConsensusPredictionsMirrored); // predictions map generation purposes
+//    aux.save("cGridConsensusPredictionsMirrored.yml");
+//    aux.setTo(cConsensusDistsToMarginMirrored);
+//    aux.save("cGridConsensusDistsToMarginMirrored.yml");
     
 //    //
 //    // Fusion
 //    //
+//    
+//    cout << "Fusion of modalities ... " << endl;
 //
 //    cout << "Computing fusion predictions ... " << endl;
 //    
