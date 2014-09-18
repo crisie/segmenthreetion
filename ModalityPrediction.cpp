@@ -328,7 +328,7 @@ void ModalityPrediction<cv::EM40>::predict(GridMat& predictionsGrid, GridMat& lo
     }
     
     m_PredictionsGrid.setTo(cv::Mat::zeros(tags.rows, tags.cols, cv::DataType<int>::type));
-    m_LoglikelihoodsGrid.setTo(cv::Mat(tags.rows, tags.cols, cv::DataType<float>::type, cv::Scalar(-std::numeric_limits<float>::infinity())));
+    m_LoglikelihoodsGrid.setTo(cv::Mat(tags.rows, tags.cols, cv::DataType<float>::type, cv::Scalar(std::numeric_limits<float>::min())));
     m_DistsToMarginGrid.setTo(cv::Mat::zeros(tags.rows, tags.cols, cv::DataType<float>::type));
     
     for (int k = 0; k < m_testK; k++)
@@ -749,7 +749,7 @@ void ModalityPrediction<cv::Mat>::predict(GridMat& predictionsGrid, GridMat& ram
     cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
     
     m_PredictionsGrid.setTo(cv::Mat::zeros(tags.rows, tags.cols, cv::DataType<int>::type));
-    m_RamananScoresGrid.setTo(cv::Mat(tags.rows, tags.cols, cv::DataType<float>::type, cv::Scalar(-std::numeric_limits<float>::infinity())));
+    m_RamananScoresGrid.setTo(cv::Mat(tags.rows, tags.cols, cv::DataType<float>::type, cv::Scalar(std::numeric_limits<float>::min())));
     m_DistsToMarginGrid.setTo(cv::Mat::zeros(tags.rows, tags.cols, cv::DataType<float>::type));
     
     for (int k = 0; k < m_testK; k++)

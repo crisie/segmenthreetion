@@ -52,7 +52,7 @@ public:
     void getRoiTags(ModalityData& md, bool manualAid);
     
 protected:
-    void getMaximalBoundingBox(vector<cv::Rect> boundingBox, cv::Rect & outputBoundingBox);
+    void getMaximalBoundingBox(vector<cv::Rect> &boundingBox, cv::Size limits, cv::Rect & outputBoundingBox);
     
     void changePixelValue(cv::Mat & mask, int pixelValue);
     

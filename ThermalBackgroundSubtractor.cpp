@@ -129,7 +129,8 @@ void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdInput, Modali
     for(unsigned int f = 0; f < mdOutput.getFrames().size(); f++) {
         
         vector<int> uniqueValuesDepthMask;
-        findUniqueValues(mdInput.getPredictedMask(f), uniqueValuesDepthMask);
+        cv::Mat predMask = mdInput.getPredictedMask(f);
+        findUniqueValues(predMask, uniqueValuesDepthMask);
         uniqueValuesDepthMask.erase(std::remove(uniqueValuesDepthMask.begin(), uniqueValuesDepthMask.end(), 0), uniqueValuesDepthMask.end());
         
         vector<cv::Rect> bbDepth = mdInput.getPredictedBoundingRectsInFrame(f);
@@ -142,11 +143,12 @@ void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdInput, Modali
             
             if(!maskBoundingBoxes.empty())
             {
-                this->getMaximalBoundingBox(maskBoundingBoxes, bigBoundingBox);
+                this->getMaximalBoundingBox(maskBoundingBoxes, predMask.size(), bigBoundingBox);
                 
                 if(!this->checkMinimumBoundingBoxes(bigBoundingBox, 4))
                 {
-                    boundingRects[f].push_back(getMinimumBoundingBox(bigBoundingBox, 4));
+                    if ((bigBoundingBox.x + 4 < predMask.cols) && (bigBoundingBox.y + 4 < predMask.rows))
+                        boundingRects[f].push_back(getMinimumBoundingBox(bigBoundingBox, 4));
                 }
                 else
                 {

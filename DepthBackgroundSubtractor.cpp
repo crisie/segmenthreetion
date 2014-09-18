@@ -97,7 +97,8 @@ void DepthBackgroundSubtractor::getBoundingRects(ModalityData& md) {
     for(unsigned int f = 0; f < md.getFrames().size(); f++)
     {
         vector<int> uniqueValuesMask;
-        findUniqueValues(md.getPredictedMask(f), uniqueValuesMask);
+        cv::Mat predMask = md.getPredictedMask(f);
+        findUniqueValues(predMask, uniqueValuesMask);
         
         for(unsigned int i = 0; i < uniqueValuesMask.size(); i++)
         {
@@ -106,7 +107,7 @@ void DepthBackgroundSubtractor::getBoundingRects(ModalityData& md) {
             this->getMaskBoundingBoxes(md.getPredictedMask(f, i) , maskBoundingBoxes);
             
             if(!maskBoundingBoxes.empty()) {
-                this->getMaximalBoundingBox(maskBoundingBoxes, bigBoundingBox);
+                this->getMaximalBoundingBox(maskBoundingBoxes, predMask.size(), bigBoundingBox);
                 
                 if(!this->checkMinimumBoundingBoxes(bigBoundingBox, 4)) {
                     boundingRects[f].push_back(getMinimumBoundingBox(bigBoundingBox, 4));

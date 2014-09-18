@@ -26,8 +26,8 @@ public:
     ModalityGridData()
     : m_ModalityName(""), m_hp(0), m_wp(0)
     {
-        m_MinVal =  std::numeric_limits<double>::infinity();
-        m_MaxVal = -std::numeric_limits<double>::infinity();
+        m_MinVal = std::numeric_limits<double>::max();
+        m_MaxVal = std::numeric_limits<double>::min();
     }
     
     ModalityGridData(ModalityGridData& other, cv::Mat logicals)

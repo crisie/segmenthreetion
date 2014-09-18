@@ -206,21 +206,21 @@ int main(int argc, const char* argv[])
     // ----------------------
     //
     
-//    ModalityData dData;
+    ModalityData dData;
 //    ModalityData cData;
-//    ModalityData tData;
+    ModalityData tData;
     
     ModalityWriter writer(dataPath);
     
     // Depth
-//    reader.read("Depth", dData);
-    
+    reader.read("Depth", dData);
+//
 //    DepthBackgroundSubtractor dBS(fParam);
 //    dBS.setMasksOffset(masksOffset);
 //    dBS.getMasks(dData);
 //    dBS.getBoundingRects(dData);
 //    dBS.adaptGroundTruthToReg(dData);
-//    dBS.getGroundTruthBoundingRects(dData);
+    //dBS.getGroundTruthBoundingRects(dData);
 //    dBS.getRoiTags(dData, false);
 //    
 //    writer.write("Depth", dData);
@@ -239,21 +239,20 @@ int main(int argc, const char* argv[])
 //    
 //    writer.write("Color", cData);
     
-//    // Thermal
+    // Thermal
 //    // <------
-//    reader.read("Thermal", tData);
-//    
-//    ThermalBackgroundSubtractor tBS;
-//    tBS.setMasksOffset(masksOffset);
+    reader.read("Thermal", tData);
+//
+    ThermalBackgroundSubtractor tBS;
+    tBS.setMasksOffset(masksOffset);
 //    tBS.getMasks(dData, tData);
-//    tBS.getBoundingRects(dData, tData);
+    tBS.getBoundingRects(dData, tData);
 //   // tBS.adaptGroundTruthToReg(tData);
-//    tBS.getRoiTags(dData, tData);
-//    
-//    writer.write("Thermal", tData);
+    tBS.getRoiTags(dData, tData);
+
+    writer.write("Thermal", tData);
 
     
-
     //
     // Feature extraction
     //
@@ -274,7 +273,9 @@ int main(int argc, const char* argv[])
 //		cFE.describe(cGridData);
 //        cGridData.saveDescription(reader.getScenePath(s), "Color.yml");
 //    }
+//    cGridData.clear();
 
+    
 //    // Motion description
 //    
 //    ModalityGridData mGridData;
@@ -289,21 +290,25 @@ int main(int argc, const char* argv[])
 //        mFE.describe(mGridData);
 //        mGridData.saveDescription(reader.getScenePath(s), "Motion.yml");
 //	}
+//    mGridData.clear();
+
     
-//    // Thermal description
-//    
-//    ModalityGridData tGridData;
-//
-//    ThermalFeatureExtractor tFE(tParam);
-//	for (int s = 0; s < reader.getNumOfScenes(); s++)
-//	{
-//        tGridData.clear();
-//        cout << "Reading thermal frames in scene " << s << ".." << endl;
-//		reader.readSceneData(s, "Thermal", "jpg", hp, wp, tGridData);
-//        cout << "Describing thermal..." << endl;
-//		tFE.describe(tGridData);
-//        tGridData.saveDescription(reader.getScenePath(s), "Thermal.yml");
-//	}
+    // Thermal description
+    
+    ModalityGridData tGridData;
+
+    ThermalFeatureExtractor tFE(tParam);
+	for (int s = 0; s < reader.getNumOfScenes(); s++)
+	{
+        tGridData.clear();
+        cout << "Reading thermal frames in scene " << s << ".." << endl;
+		reader.readSceneData(s, "Thermal", "jpg", hp, wp, tGridData);
+        cout << "Describing thermal..." << endl;
+		tFE.describe(tGridData);
+        tGridData.saveDescription(reader.getScenePath(s), "Thermal.yml");
+	}
+    
+    tGridData.clear();
     
 //    // Depth description
 //    
@@ -319,66 +324,63 @@ int main(int argc, const char* argv[])
 //		dFE.describe(dGridData);
 //        dGridData.saveDescription(reader.getScenePath(s), "Depth.yml");
 //	}
-    
-//    cGridData.clear();  
-//    mGridData.clear();
-//    tGridData.clear();
+//    
 //    dGridData.clear();
 
 
-    //
-    // Cells predictions
-    //
-    
-    cout << "Prediction of individual cells ... " << endl;
-    
-    cv::Mat accuracies;
-    GridMat accuraciesGrid;
-    
-    GridMat aux; // auxiliary gridmat, used for several purposes
-
-    ModalityGridData mGridMetadata, dGridMetadata, tGridMetadata, cGridMetadata;
-
+//    //
+//    // Cells predictions
+//    //
+//    
+//    cout << "Prediction of individual cells ... " << endl;
+//    
+//    cv::Mat accuracies;
+//    GridMat accuraciesGrid;
+//    
+//    GridMat aux; // auxiliary gridmat, used for several purposes
+//
+//    ModalityGridData mGridMetadata, dGridMetadata, tGridMetadata, cGridMetadata;
+//
 //    reader.readAllScenesMetadata("Color", "jpg", hp, wp, cGridMetadata);
 //    reader.readAllScenesMetadata("Motion", "jpg", hp, wp, mGridMetadata);
 //    reader.readAllScenesMetadata("Depth", "png", hp, wp, dGridMetadata);
-    reader.readAllScenesMetadata("Thermal", "jpg", hp, wp, tGridMetadata);
+//    reader.readAllScenesMetadata("Thermal", "jpg", hp, wp, tGridMetadata);
 //
 //    reader.loadDescription("Color.yml", cGridMetadata);
 //    reader.loadDescription("Motion.yml", mGridMetadata);
 //    reader.loadDescription("Depth.yml", dGridMetadata);
-    reader.loadDescription("Thermal.yml", tGridMetadata);
+//    reader.loadDescription("Thermal.yml", tGridMetadata);
 //
-    GridMat mPredictions, dPredictions, tPredictions, cPredictions;//, rPredictions;
-    GridMat mLoglikelihoods, dLoglikelihoods, tLoglikelihoods, cLoglikelihoods;//, rScores;
-    GridMat mDistsToMargin, dDistsToMargin, tDistsToMargin, cDistsToMargin;//, rDistsToMargin;
-
-    GridMat mPredictionsMirrored, dPredictionsMirrored, tPredictionsMirrored, cPredictionsMirrored;//, rPredictions;
-    GridMat mLoglikelihoodsMirrored, dLoglikelihoodsMirrored, tLoglikelihoodsMirrored, cLoglikelihoodsMirrored;//, rScores;
-    GridMat mDistsToMarginMirrored, dDistsToMarginMirrored, tDistsToMarginMirrored, cDistsToMarginMirrored;//, rDistsToMargin;
-    
-    cv::Mat mConsensusPredictions, dConsensusPredictions, tConsensusPredictions,
-    cConsensusPredictions;
-    cv::Mat mConsensusDistsToMargin, dConsensusDistsToMargin, tConsensusDistsToMargin,
-    cConsensusDistsToMargin;
-    
-    cv::Mat mConsensusPredictionsMirrored, dConsensusPredictionsMirrored, tConsensusPredictionsMirrored,
-    cConsensusPredictionsMirrored;
-    cv::Mat mConsensusDistsToMarginMirrored, dConsensusDistsToMarginMirrored, tConsensusDistsToMarginMirrored,
-    cConsensusDistsToMarginMirrored;
-    
-
-    ModalityPrediction<cv::EM40> prediction;
-    float mean, conf;
-    cv::Mat means, confs;
-
-    prediction.setNumOfMixtures(nmixtures);
-    prediction.setEpsilons(epsilons);
-    prediction.setLoglikelihoodThresholds(likelicuts);
-
-    prediction.setValidationParameters(kTest);
-    prediction.setModelSelectionParameters(kModelSelec, true);
+//    GridMat mPredictions, dPredictions, tPredictions, cPredictions;//, rPredictions;
+//    GridMat mLoglikelihoods, dLoglikelihoods, tLoglikelihoods, cLoglikelihoods;//, rScores;
+//    GridMat mDistsToMargin, dDistsToMargin, tDistsToMargin, cDistsToMargin;//, rDistsToMargin;
 //
+//    GridMat mPredictionsMirrored, dPredictionsMirrored, tPredictionsMirrored, cPredictionsMirrored;//, rPredictions;
+//    GridMat mLoglikelihoodsMirrored, dLoglikelihoodsMirrored, tLoglikelihoodsMirrored, cLoglikelihoodsMirrored;//, rScores;
+//    GridMat mDistsToMarginMirrored, dDistsToMarginMirrored, tDistsToMarginMirrored, cDistsToMarginMirrored;//, rDistsToMargin;
+//    
+//    cv::Mat mConsensusPredictions, dConsensusPredictions, tConsensusPredictions,
+//    cConsensusPredictions;
+//    cv::Mat mConsensusDistsToMargin, dConsensusDistsToMargin, tConsensusDistsToMargin,
+//    cConsensusDistsToMargin;
+//    
+//    cv::Mat mConsensusPredictionsMirrored, dConsensusPredictionsMirrored, tConsensusPredictionsMirrored,
+//    cConsensusPredictionsMirrored;
+//    cv::Mat mConsensusDistsToMarginMirrored, dConsensusDistsToMarginMirrored, tConsensusDistsToMarginMirrored,
+//    cConsensusDistsToMarginMirrored;
+//    
+//
+//    ModalityPrediction<cv::EM40> prediction;
+//    float mean, conf;
+//    cv::Mat means, confs;
+//
+//    prediction.setNumOfMixtures(nmixtures);
+//    prediction.setEpsilons(epsilons);
+//    prediction.setLoglikelihoodThresholds(likelicuts);
+//
+//    prediction.setValidationParameters(kTest);
+//    prediction.setModelSelectionParameters(kModelSelec, true);
+
 //    // Motion
 //    cout << "Motion" << endl;
 //    prediction.setData(mGridMetadata);
@@ -408,8 +410,8 @@ int main(int argc, const char* argv[])
 //    mPredictionsMirrored.save("mPredictionsMirrored.yml");
 //    mLoglikelihoodsMirrored.save("mLoglikelihoodsMirrored.yml");
 //    mDistsToMarginMirrored.save("mDistsToMarginMirrored.yml");
-//
-//
+
+
 //    // Depth
 //    cout << "Depth" << endl;
 //    prediction.setData(dGridMetadata);
@@ -439,37 +441,37 @@ int main(int argc, const char* argv[])
 //    dPredictionsMirrored.save("dPredictionsMirrored.yml");
 //    dLoglikelihoodsMirrored.save("dLoglikelihoodsMirrored.yml");
 //    dDistsToMarginMirrored.save("dDistsToMarginMirrored.yml");
-//
-//
-     // Thermal
-    cout << "Thermal" << endl;
-    prediction.setData(tGridMetadata);
-    
-    prediction.setModelSelection(true);
-    prediction.setTrainMirrored(false);
-    
-    prediction.predict(tPredictions, tLoglikelihoods, tDistsToMargin);
-    prediction.getAccuracy(tPredictions, accuraciesGrid);
-    computeConfidenceInterval(accuraciesGrid, means, confs);
-    cout << means << endl;
-    cout << confs << endl;
-    
-    tPredictions.save("tPredictions.yml");
-    tLoglikelihoods.save("tLoglikelihoods.yml");
-    tDistsToMargin.save("tDistsToMargin.yml");
-    
-    prediction.setModelSelection(true);
-    prediction.setTrainMirrored(true);
-    
-    prediction.predict(tPredictionsMirrored, tLoglikelihoodsMirrored, tDistsToMarginMirrored);
-    prediction.getAccuracy(tPredictionsMirrored, accuraciesGrid);
-    computeConfidenceInterval(accuraciesGrid, means, confs);
-    cout << means << endl;
-    cout << confs << endl;
-    
-    tPredictionsMirrored.save("tPredictionsMirrored.yml");
-    tLoglikelihoodsMirrored.save("tLoglikelihoodsMirrored.yml");
-    tDistsToMarginMirrored.save("tDistsToMarginMirrored.yml");
+
+
+//     // Thermal
+//    cout << "Thermal" << endl;
+//    prediction.setData(tGridMetadata);
+//    
+//    prediction.setModelSelection(false);
+//    prediction.setTrainMirrored(false);
+//    
+//    prediction.predict(tPredictions, tLoglikelihoods, tDistsToMargin);
+//    prediction.getAccuracy(tPredictions, accuraciesGrid);
+//    computeConfidenceInterval(accuraciesGrid, means, confs);
+//    cout << means << endl;
+//    cout << confs << endl;
+//    
+//    tPredictions.save("tPredictions.yml");
+//    tLoglikelihoods.save("tLoglikelihoods.yml");
+//    tDistsToMargin.save("tDistsToMargin.yml");
+//    
+//    prediction.setModelSelection(false);
+//    prediction.setTrainMirrored(true);
+//    
+//    prediction.predict(tPredictionsMirrored, tLoglikelihoodsMirrored, tDistsToMarginMirrored);
+//    prediction.getAccuracy(tPredictionsMirrored, accuraciesGrid);
+//    computeConfidenceInterval(accuraciesGrid, means, confs);
+//    cout << means << endl;
+//    cout << confs << endl;
+//    
+//    tPredictionsMirrored.save("tPredictionsMirrored.yml");
+//    tLoglikelihoodsMirrored.save("tLoglikelihoodsMirrored.yml");
+//    tDistsToMarginMirrored.save("tDistsToMarginMirrored.yml");
     
 
 //    // Color
@@ -502,8 +504,8 @@ int main(int argc, const char* argv[])
 //    cPredictionsMirrored.save("cPredictionsMirrored.yml");
 //    cLoglikelihoodsMirrored.save("cLoglikelihoodsMirrored.yml");
 //    cDistsToMarginMirrored.save("cDistsToMarginMirrored.yml");
-//    
-//
+    
+
 //////    // Ramanan
 //////
 //////    ModalityGridData rGridData;
@@ -548,12 +550,12 @@ int main(int argc, const char* argv[])
 //////    cout << objDist << endl;
     
     
-    //
-    // Grid cells consensus
-    //
-    
-    cout << "Consensus of the grid cells ... " << endl;
-
+//    //
+//    // Grid cells consensus
+//    //
+//    
+//    cout << "Consensus of the grid cells ... " << endl;
+//
 //    mPredictions.load("mPredictions.yml");
 //    mDistsToMargin.load("mDistsToMargin.yml");
 //    mPredictionsMirrored.load("mPredictionsMirrored.yml");
@@ -562,15 +564,15 @@ int main(int argc, const char* argv[])
 //    dDistsToMargin.load("dDistsToMargin.yml");
 //    dPredictionsMirrored.load("dPredictionsMirrored.yml");
 //    dDistsToMarginMirrored.load("dDistsToMarginMirrored.yml");
-    tPredictions.load("tPredictions.yml");
-    tDistsToMargin.load("tDistsToMargin.yml");
-    tPredictionsMirrored.load("tPredictionsMirrored.yml");
-    tDistsToMarginMirrored.load("tDistsToMarginMirrored.yml");
+//    tPredictions.load("tPredictions.yml");
+//    tDistsToMargin.load("tDistsToMargin.yml");
+//    tPredictionsMirrored.load("tPredictionsMirrored.yml");
+//    tDistsToMarginMirrored.load("tDistsToMarginMirrored.yml");
 //    cPredictions.load("cPredictions.yml");
 //    cDistsToMargin.load("cDistsToMargin.yml");
 //    cPredictionsMirrored.load("cPredictionsMirrored.yml");
 //    cDistsToMarginMirrored.load("cDistsToMarginMirrored.yml");
-    
+//    
 //    // Motion
 //    
 //    prediction.setData(mGridMetadata);
@@ -598,7 +600,7 @@ int main(int argc, const char* argv[])
 //    aux.save("mGridConsensusPredictionsMirrored.yml");
 //    aux.setTo(mConsensusDistsToMarginMirrored);
 //    aux.save("mGridConsensusDistsToMarginMirrored.yml");
-
+//
 //    // Depth
 //    
 //    prediction.setData(dGridMetadata);
@@ -626,35 +628,35 @@ int main(int argc, const char* argv[])
 //    aux.save("dGridConsensusPredictionsMirrored.yml");
 //    aux.setTo(dConsensusDistsToMarginMirrored);
 //    aux.save("dGridConsensusDistsToMarginMirrored.yml");
-
-    // Thermal
-    
-    prediction.setData(tGridMetadata);
-    
-    prediction.setPredictions(tPredictions);
-    prediction.setDistsToMargin(tDistsToMargin);
-    prediction.computeGridConsensusPredictions(tConsensusPredictions, tConsensusDistsToMargin);
-    prediction.getAccuracy(tConsensusPredictions, accuracies);
-    computeConfidenceInterval(accuracies, &mean, &conf);
-    cout << "Thermal modality (c): " << mean << " ± " << conf << endl;
-    
-    aux.setTo(tConsensusPredictionsMirrored); // predictions map generation purposes
-    aux.save("tGridConsensusPredictionsMirrored.yml");
-    aux.setTo(tConsensusDistsToMarginMirrored);
-    aux.save("tGridConsensusDistsToMarginMirrored.yml");
-    
-    prediction.setPredictions(tPredictionsMirrored);
-    prediction.setDistsToMargin(tDistsToMarginMirrored);
-    prediction.computeGridConsensusPredictions(tConsensusPredictionsMirrored, tConsensusDistsToMarginMirrored);
-    prediction.getAccuracy(tConsensusPredictionsMirrored, accuracies);
-    computeConfidenceInterval(accuracies, &mean, &conf);
-    cout << "Thermal modality (c): " << mean << " ± " << conf << endl;
-    
-    aux.setTo(tConsensusPredictionsMirrored); // predictions map generation purposes
-    aux.save("tGridConsensusPredictionsMirrored.yml");
-    aux.setTo(tConsensusDistsToMarginMirrored);
-    aux.save("tGridConsensusDistsToMarginMirrored.yml");
-    
+//
+//    // Thermal
+//    
+//    prediction.setData(tGridMetadata);
+//    
+//    prediction.setPredictions(tPredictions);
+//    prediction.setDistsToMargin(tDistsToMargin);
+//    prediction.computeGridConsensusPredictions(tConsensusPredictions, tConsensusDistsToMargin);
+//    prediction.getAccuracy(tConsensusPredictions, accuracies);
+//    computeConfidenceInterval(accuracies, &mean, &conf);
+//    cout << "Thermal modality (c): " << mean << " ± " << conf << endl;
+//    
+//    aux.setTo(tConsensusPredictionsMirrored); // predictions map generation purposes
+//    aux.save("tGridConsensusPredictions.yml");
+//    aux.setTo(tConsensusDistsToMarginMirrored);
+//    aux.save("tGridConsensusDistsToMargin.yml");
+//    
+//    prediction.setPredictions(tPredictionsMirrored);
+//    prediction.setDistsToMargin(tDistsToMarginMirrored);
+//    prediction.computeGridConsensusPredictions(tConsensusPredictionsMirrored, tConsensusDistsToMarginMirrored);
+//    prediction.getAccuracy(tConsensusPredictionsMirrored, accuracies);
+//    computeConfidenceInterval(accuracies, &mean, &conf);
+//    cout << "Thermal mirrored modality (c): " << mean << " ± " << conf << endl;
+//    
+//    aux.setTo(tConsensusPredictionsMirrored); // predictions map generation purposes
+//    aux.save("tGridConsensusPredictionsMirrored.yml");
+//    aux.setTo(tConsensusDistsToMarginMirrored);
+//    aux.save("tGridConsensusDistsToMarginMirrored.yml");
+//    
 //    // Color
 //    
 //    prediction.setData(cGridMetadata);
@@ -682,7 +684,7 @@ int main(int argc, const char* argv[])
 //    aux.save("cGridConsensusPredictionsMirrored.yml");
 //    aux.setTo(cConsensusDistsToMarginMirrored);
 //    aux.save("cGridConsensusDistsToMarginMirrored.yml");
-    
+//    
 //    //
 //    // Fusion
 //    //
@@ -772,8 +774,8 @@ int main(int argc, const char* argv[])
 //    
 //    aux.setTo(simpleFusionPredictionsMirrored3);
 //    aux.save("simpleFusionPredictionsMirrored3.yml");
-//    
-//    
+    
+    
 //    // Boost
 //    cout << "... Boost approach" << endl;
 //    
