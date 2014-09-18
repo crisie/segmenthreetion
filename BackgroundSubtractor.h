@@ -65,6 +65,7 @@ protected:
     void getMaskBoundingBoxes(cv::Mat mask, vector<cv::Rect> & boundingBoxes);
 
     bool checkMinimumBoundingBoxes(cv::Rect box, int min);
+    bool isBoxWithinMargins(cv::Rect box, cv::Size limits);
     
     cv::Rect getMinimumBoundingBox(cv::Rect box, int min);
     

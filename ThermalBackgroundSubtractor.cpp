@@ -147,12 +147,14 @@ void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdInput, Modali
                 
                 if(!this->checkMinimumBoundingBoxes(bigBoundingBox, 4))
                 {
-                    if ((bigBoundingBox.x + 4 < predMask.cols) && (bigBoundingBox.y + 4 < predMask.rows))
-                        boundingRects[f].push_back(getMinimumBoundingBox(bigBoundingBox, 4));
+                    cv::Rect minBoundingBox = getMinimumBoundingBox(bigBoundingBox, 4);
+                    if ( isBoxWithinMargins(minBoundingBox, predMask.size()) )
+                        boundingRects[f].push_back(minBoundingBox);
                 }
                 else
                 {
-                    boundingRects[f].push_back(bigBoundingBox);
+                    if ( isBoxWithinMargins(bigBoundingBox, predMask.size()) )
+                        boundingRects[f].push_back(bigBoundingBox);
                 }
             }
             else if(maskBoundingBoxes.empty() && !bbDepth.empty())

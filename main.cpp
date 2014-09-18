@@ -207,7 +207,7 @@ int main(int argc, const char* argv[])
     //
     
     ModalityData dData;
-//    ModalityData cData;
+    ModalityData cData;
     ModalityData tData;
     
     ModalityWriter writer(dataPath);
@@ -240,9 +240,9 @@ int main(int argc, const char* argv[])
 //    writer.write("Color", cData);
     
     // Thermal
-//    // <------
+    // <------
     reader.read("Thermal", tData);
-//
+
     ThermalBackgroundSubtractor tBS;
     tBS.setMasksOffset(masksOffset);
 //    tBS.getMasks(dData, tData);

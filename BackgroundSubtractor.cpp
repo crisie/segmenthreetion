@@ -191,6 +191,9 @@ void BackgroundSubtractor::getMaximalBoundingBox(vector<cv::Rect> &boundingBox, 
 		br = getBottomRightPoint(boundingBox[i].br(), br);
 	}
     
+    if (br.x >= limits.width) br.x = limits.width;
+    if (br.y >= limits.height) br.y = limits.height;
+
 	outputBoundingBox = cv::Rect(tl.x, tl.y, br.x - tl.x + 1, br.y - tl.y + 1);
     
 }
@@ -242,6 +245,14 @@ bool BackgroundSubtractor::checkMinimumBoundingBoxes(cv::Rect box, int min)
 {
     if(box.height > min && box.width > min) return true;
     else return false;
+}
+
+bool BackgroundSubtractor::isBoxWithinMargins(cv::Rect box, cv::Size limits)
+{
+    bool bWithinTopLeft = (box.x >= 0) && (box.y >= 0);
+    bool bWithinBottomRight = (box.x + box.width < limits.width) && (box.y + box.height < limits.height);
+    
+    return (bWithinTopLeft && bWithinBottomRight);
 }
 
 cv::Rect BackgroundSubtractor::getMinimumBoundingBox(cv::Rect box, int min)
