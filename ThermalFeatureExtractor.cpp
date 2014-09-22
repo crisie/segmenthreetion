@@ -43,6 +43,7 @@ void ThermalFeatureExtractor::describe(ModalityGridData& data)
 void ThermalFeatureExtractor::describe(GridMat grid, GridMat gmask,
                                        cv::Mat gvalidness, GridMat& gdescriptors)
 {
+    cv::namedWindow("w");
     for (int i = 0; i < grid.crows(); i++) for (int j = 0; j < grid.ccols(); j++)
     {
         cv::Mat tHist (1, m_ThermalParam.ibins + m_ThermalParam.oribins, CV_32F);

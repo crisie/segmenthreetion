@@ -8,7 +8,7 @@
 
 #include "CvExtraTools.h"
 
-#include <matio.h>
+//#include <matio.h>
 
 void cvx::setMat(cv::Mat src, cv::Mat& dst, cv::Mat indices, bool logical)
 {
@@ -289,48 +289,48 @@ void cvx::save(std::string file, cv::Mat mat, int format)
     
 }
 
-template<typename T>
-cv::Mat cvx::matlabread(std::string file)
-{
-    cv::Mat mat;
-    
-    cvx::matlabread<T>(file, mat);
-    
-    return mat;
-}
-
-template<typename T>
-void cvx::matlabread(std::string file, cv::Mat& mat)
-{
-    mat_t *matfp;
-    matvar_t *matvar;
-
-    matfp = Mat_Open(file.c_str(), MAT_ACC_RDONLY);
-    
-    if ( NULL == matfp ) {
-        fprintf(stderr,"Error opening MAT file \"%s\"!\n", file.c_str());
-        return;
-    }
-
-    matvar = Mat_VarRead(matfp,"perMap");
-    if ( NULL == matvar ) {
-        fprintf(stderr, "Variable ’perMap’ not found, or error "
-                "reading MAT file\n");
-    }
-    else
-    {
-        int nrows, ncols;
-        nrows = matvar->dims[0];
-        ncols = matvar->dims[1];
-        
-        cv::Mat rmap (nrows, ncols, cv::DataType<T>::type, matvar->data);
-        mat = rmap.clone();
-        
-        Mat_VarFree(matvar);
-    }
-    
-    Mat_Close(matfp);
-}
+//template<typename T>
+//cv::Mat cvx::matlabread(std::string file)
+//{
+//    cv::Mat mat;
+//    
+//    cvx::matlabread<T>(file, mat);
+//    
+//    return mat;
+//}
+//
+//template<typename T>
+//void cvx::matlabread(std::string file, cv::Mat& mat)
+//{
+//    mat_t *matfp;
+//    matvar_t *matvar;
+//
+//    matfp = Mat_Open(file.c_str(), MAT_ACC_RDONLY);
+//    
+//    if ( NULL == matfp ) {
+//        fprintf(stderr,"Error opening MAT file \"%s\"!\n", file.c_str());
+//        return;
+//    }
+//
+//    matvar = Mat_VarRead(matfp,"perMap");
+//    if ( NULL == matvar ) {
+//        fprintf(stderr, "Variable ’perMap’ not found, or error "
+//                "reading MAT file\n");
+//    }
+//    else
+//    {
+//        int nrows, ncols;
+//        nrows = matvar->dims[0];
+//        ncols = matvar->dims[1];
+//        
+//        cv::Mat rmap (nrows, ncols, cv::DataType<T>::type, matvar->data);
+//        mat = rmap.clone();
+//        
+//        Mat_VarFree(matvar);
+//    }
+//    
+//    Mat_Close(matfp);
+//}
 
 void cvx::computePCA(cv::Mat src, cv::PCA& pca, cv::Mat& dst, int flags, double variance)
 {
@@ -369,10 +369,10 @@ cv::Mat cvx::standardize(cv::Mat m, int dim)
 }
 
 
-template cv::Mat cvx::matlabread<int>(std::string file);
-template cv::Mat cvx::matlabread<float>(std::string file);
-template cv::Mat cvx::matlabread<double>(std::string file);
-
-template void cvx::matlabread<int>(std::string file, cv::Mat& mat);
-template void cvx::matlabread<float>(std::string file, cv::Mat& mat);
-template void cvx::matlabread<double>(std::string file, cv::Mat& mat);
+//template cv::Mat cvx::matlabread<int>(std::string file);
+//template cv::Mat cvx::matlabread<float>(std::string file);
+//template cv::Mat cvx::matlabread<double>(std::string file);
+//
+//template void cvx::matlabread<int>(std::string file, cv::Mat& mat);
+//template void cvx::matlabread<float>(std::string file, cv::Mat& mat);
+//template void cvx::matlabread<double>(std::string file, cv::Mat& mat);

@@ -523,9 +523,9 @@ float accuracy(cv::Mat actuals, cv::Mat predictions)
     actuals.convertTo(actuals, cv::DataType<int>::type);
     predictions.convertTo(predictions, cv::DataType<int>::type);
     
-    cv::Mat objects  = (actuals == 0);
-    cv::Mat subjects = (actuals == 1);
-    cv::Mat hits = (actuals == predictions);
+    cv::Mat objects  = (actuals == 0) / 255;
+    cv::Mat subjects = (actuals > 0) / 255;
+    cv::Mat hits = (actuals == predictions) / 255;
     
     int nobj = cv::sum(objects).val[0];
     int nsbj = cv::sum(subjects).val[0];
@@ -542,23 +542,7 @@ void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies)
     
     for (int i = 0; i < predictions.crows(); i++) for (int j = 0; j < predictions.ccols(); j++)
     {
-        cv::Mat cellActuals;
-        cv::Mat cellPredictions;
-        
-        actuals.at(i,j).convertTo(cellActuals, cv::DataType<int>::type);
-        predictions.at(i,j).convertTo(cellPredictions, cv::DataType<int>::type);
-        
-        cv::Mat objects  = (cellActuals == 0);
-        cv::Mat subjects = (cellActuals == 1);
-        cv::Mat hits = (cellActuals == cellPredictions);
-        
-        int nobj = cv::sum(objects).val[0];
-        int nsbj = cv::sum(subjects).val[0];
-        
-        int objHits = cv::sum(objects & hits).val[0];
-        int sbjHits = cv::sum(subjects & hits).val[0];
-        
-        accuracies.at<float>(i,j) = (float(objHits)/nobj + float(sbjHits)/nsbj) / 2;
+        accuracies.at<float>(i,j) = accuracy(actuals.at(i,j), predictions.at(i,j));
     }
 }
 

@@ -307,8 +307,8 @@ void ModalityReader::readSceneData(unsigned int sid, string modality, const char
         cv::Mat frame;
         if (modality.compare("Ramanan") != 0)
             frame = cv::imread(framePath, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
-        else
-            frame = cvx::matlabread<double>(framePath); // ramanan maps are matlab matrices of doubles
+//        else
+//            frame = cvx::matlabread<double>(framePath); // ramanan maps are matlab matrices of doubles
         
 		cv::Mat mask  = cv::imread(maskPath, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
 
