@@ -124,6 +124,8 @@ void ThermalBackgroundSubtractor::getMasks(ModalityData& mdInput, ModalityData& 
 
 void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdInput, ModalityData& mdOutput) {
     
+    vector<vector<cv::Rect> > filteredBbDepth(mdInput.getFrames().size());
+    
     vector<vector<cv::Rect> > boundingRects(mdOutput.getFrames().size());
     
     for(unsigned int f = 0; f < mdOutput.getFrames().size(); f++) {
@@ -134,7 +136,7 @@ void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdInput, Modali
         uniqueValuesDepthMask.erase(std::remove(uniqueValuesDepthMask.begin(), uniqueValuesDepthMask.end(), 0), uniqueValuesDepthMask.end());
         
         vector<cv::Rect> bbDepth = mdInput.getPredictedBoundingRectsInFrame(f);
-        
+                
         for(unsigned int i = 0; i < uniqueValuesDepthMask.size(); i++)
         {
             cv::Rect bigBoundingBox;
@@ -149,25 +151,34 @@ void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdInput, Modali
                 {
                     cv::Rect minBoundingBox = getMinimumBoundingBox(bigBoundingBox, 4);
                     if ( isBoxWithinMargins(minBoundingBox, predMask.size()) )
+                    {
                         boundingRects[f].push_back(minBoundingBox);
+                        filteredBbDepth[f].push_back(bbDepth[i]);
+                    }
                 }
                 else
                 {
                     if ( isBoxWithinMargins(bigBoundingBox, predMask.size()) )
+                    {
                         boundingRects[f].push_back(bigBoundingBox);
+                        filteredBbDepth[f].push_back(bbDepth[i]);
+                    }
                 }
             }
             else if(maskBoundingBoxes.empty() && !bbDepth.empty())
             {
                 boundingRects[f].push_back(bbDepth[i]);
+                filteredBbDepth[f].push_back(bbDepth[i]);
             }
             
         }
         
     }
     
+    mdInput.setPredictedBoundingRects(filteredBbDepth);
     mdOutput.setPredictedBoundingRects(boundingRects);
     
+    cout << "Filtered depth bounding boxes: " << this->countBoundingBoxes(mdInput.getPredictedBoundingRects() ) << endl;
     cout << "Thermal bounding boxes: " << this->countBoundingBoxes(mdOutput.getPredictedBoundingRects()) << endl;
     
     //Debug purposes
