@@ -220,7 +220,7 @@ int main(int argc, const char* argv[])
     dBS.getMasks(dData);
     dBS.getBoundingRects(dData);
     //dBS.adaptGroundTruthToReg(dData);
-    //dBS.getGroundTruthBoundingRects(dData);
+    dBS.getGroundTruthBoundingRects(dData);
     dBS.getRoiTags(dData, false);
     
     // Thermal
