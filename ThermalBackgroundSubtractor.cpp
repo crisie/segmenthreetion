@@ -122,11 +122,13 @@ void ThermalBackgroundSubtractor::getMasks(ModalityData& mdInput, ModalityData& 
     
 }
 
-void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdInput, ModalityData& mdOutput) {
+void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdInput, ModalityData& mdOutput, vector<vector<int> > &validBb) {
     
     vector<vector<cv::Rect> > filteredBbDepth(mdInput.getFrames().size());
     
     vector<vector<cv::Rect> > boundingRects(mdOutput.getFrames().size());
+    
+    validBb.resize(mdInput.getFrames().size());
     
     for(unsigned int f = 0; f < mdOutput.getFrames().size(); f++) {
         
@@ -154,6 +156,7 @@ void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdInput, Modali
                     {
                         boundingRects[f].push_back(minBoundingBox);
                         filteredBbDepth[f].push_back(bbDepth[i]);
+                        validBb[f].push_back(1);
                     }
                 }
                 else
@@ -162,6 +165,7 @@ void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdInput, Modali
                     {
                         boundingRects[f].push_back(bigBoundingBox);
                         filteredBbDepth[f].push_back(bbDepth[i]);
+                         validBb[f].push_back(1);
                     }
                 }
             }
@@ -169,6 +173,11 @@ void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdInput, Modali
             {
                 boundingRects[f].push_back(bbDepth[i]);
                 filteredBbDepth[f].push_back(bbDepth[i]);
+                validBb[f].push_back(1);
+            }
+            else
+            {
+                validBb[f].push_back(0);
             }
             
         }
@@ -225,7 +234,19 @@ void ThermalBackgroundSubtractor::adaptGroundTruthToReg(ModalityData& md) {
     
 }
 
-void ThermalBackgroundSubtractor::getRoiTags(ModalityData& mdInput, ModalityData& mdOutput) {
+void ThermalBackgroundSubtractor::getRoiTags(ModalityData& mdInput, ModalityData& mdOutput, vector<vector<int> > validBb) {
     
-    mdOutput.setTags(mdInput.getTags());
+    vector< vector<int> > filteredTags(mdInput.getFrames().size());
+    vector< vector<int> > originalTags = mdInput.getTags();
+    
+    for(int f = 0; f < mdInput.getFrames().size(); f++)
+    {
+        for(int i = 0; i < validBb[f].size(); i++)
+        {
+            if(validBb[f][i] == 1) filteredTags[f].push_back(originalTags[f][i]);
+        }
+    }
+    
+    mdInput.setTags(filteredTags);
+    mdOutput.setTags(filteredTags);
 }

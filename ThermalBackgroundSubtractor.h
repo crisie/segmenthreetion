@@ -26,11 +26,11 @@ public:
     
     void getMasks(ModalityData& mdInput, ModalityData& mdOutput);
     
-    void getBoundingRects(ModalityData& mdInput, ModalityData& mdOutput);
+    void getBoundingRects(ModalityData& mdInput, ModalityData& mdOutput, vector<vector<int> > &validBb);
     
     void adaptGroundTruthToReg(ModalityData& md);
     
-    void getRoiTags(ModalityData& mdInput, ModalityData& mdOutput);
+    void getRoiTags(ModalityData& mdInput, ModalityData& mdOutput, vector<vector<int> > validBb);
 };
 
 #endif /* defined(__segmenthreetion__ThermalBackgroundSubtractor__) */

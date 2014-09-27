@@ -83,6 +83,8 @@ int main(int argc, const char* argv[])
     fParam.otsuMinVariance1 = 8.3;
     fParam.otsuMinVariance2 = 12;
     
+    vector<vector<int> > validBoundBoxes;
+    
     // Feature extraction parametrization
     
     const unsigned int hp = 2; // partitions in height
@@ -223,21 +225,21 @@ int main(int argc, const char* argv[])
     dBS.getGroundTruthBoundingRects(dData);
     dBS.getRoiTags(dData, false);
     
-    // Thermal
+    // Thermal: depth-to-thermal registration
     // <------
     reader.read("Thermal", tData);
 
     ThermalBackgroundSubtractor tBS;
     tBS.setMasksOffset(masksOffset);
     tBS.getMasks(dData, tData);
-    tBS.getBoundingRects(dData, tData); //modifies both dData and tData bounding rects
+    tBS.getBoundingRects(dData, tData, validBoundBoxes); //modifies both dData and tData bounding rects
     // tBS.adaptGroundTruthToReg(tData);
-    tBS.getRoiTags(dData, tData);
+    tBS.getRoiTags(dData, tData, validBoundBoxes); //modifies both dData and tData roi tags
 
     writer.write("Thermal", tData);
     writer.write("Depth", dData);
     
-    //Color
+    //Color: copy of depth info
     reader.read("Color", cData);
     
     ColorBackgroundSubtractor cBS;
