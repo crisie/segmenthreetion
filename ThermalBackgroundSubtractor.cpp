@@ -158,6 +158,10 @@ void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdInput, Modali
                         filteredBbDepth[f].push_back(bbDepth[i]);
                         validBb[f].push_back(1);
                     }
+                    else
+                    {
+                        validBb[f].push_back(0);
+                    }
                 }
                 else
                 {
@@ -165,7 +169,12 @@ void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdInput, Modali
                     {
                         boundingRects[f].push_back(bigBoundingBox);
                         filteredBbDepth[f].push_back(bbDepth[i]);
-                         validBb[f].push_back(1);
+                       
+                        validBb[f].push_back(1);
+                    }
+                    else
+                    {
+                        validBb[f].push_back(0);
                     }
                 }
             }
@@ -193,7 +202,7 @@ void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdInput, Modali
     //Debug purposes
     compareNumberBoundingBoxes(mdInput.getPredictedBoundingRects(), mdOutput.getPredictedBoundingRects());
     
-    visualizeBoundingRects("Thermal", mdOutput.getFrames(), mdOutput.getPredictedBoundingRects(), true);
+    //visualizeBoundingRects("Thermal", mdOutput.getFrames(), mdOutput.getPredictedBoundingRects(), true);
     
 }
 

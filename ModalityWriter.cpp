@@ -93,6 +93,57 @@ void ModalityWriter::saveMats(string dir, const char *format, vector<cv::Mat> fr
     
 }
 
+template<typename T>
+void ModalityWriter::serialize(vector<vector<T> > m, vector<T>& s)
+{
+    s.clear();
+    for (int i = 0; i < m.size(); i++)
+    {
+        s.reserve(s.size() + m[i].size());
+        s.insert(s.end(), m[i].begin(), m[i].end());
+    }
+}
+
+void ModalityWriter::saveValidBoundingBoxes(string file, vector<vector<int> > validBbs)
+{
+    cv::FileStorage fs(file, cv::FileStorage::WRITE);
+    
+    //vector<int> srlValidBbs;
+    //serialize(validBbs, srlValidBbs);
+    
+    //fs << "validBbs" << validBbs;
+    fs << "num_frames" << static_cast<int>(validBbs.size());
+    
+    for(unsigned int i=0;i<validBbs.size();i++)
+    {
+        fs << ("frame_" + to_string(i)) << validBbs.at(i);
+    }
+    
+    fs.release();
+}
+
+void ModalityWriter::loadValidBoundingBoxes(string file, vector<vector<int> >& validBbs)
+{
+    cv::FileStorage fs(file, cv::FileStorage::READ);
+    int n;
+    fs["num_frames"] >> n;
+    validBbs.resize(n);
+    for(unsigned int i=0;i<validBbs.size();i++)
+    {
+        fs["frame_" + to_string(i)] >> validBbs[i];
+    }
+    
+    fs.release();
+}
+
+void ModalityWriter::loadValidBoundingBoxes(string file, vector<int> & validBbs)
+{
+    vector<vector<int> > _validBbs;
+    
+    loadValidBoundingBoxes(file, _validBbs);
+    serialize(_validBbs, validBbs);
+}
+
 void ModalityWriter::saveBoundingRects(string file, vector<vector<cv::Rect> > rects, vector<vector<int> > tags)
 {
     vector<vector<int> >  rectsInt(rects.size());

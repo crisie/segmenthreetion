@@ -65,6 +65,8 @@ int main(int argc, const char* argv[])
 	string dataPath = "../../Sequences/";
 #endif
 
+    
+    cout << dataPath + "/validbb.yml";
 	vector<string> sequences;
     sequences += "Scene1/", "Scene2/", "Scene3/";
 	
@@ -213,17 +215,17 @@ int main(int argc, const char* argv[])
     ModalityData tData;
     
     ModalityWriter writer(dataPath);
-    
+
     // Depth
     reader.read("Depth", dData);
 
-    DepthBackgroundSubtractor dBS(fParam);
-    dBS.setMasksOffset(masksOffset);
-    dBS.getMasks(dData);
-    dBS.getBoundingRects(dData);
+    //DepthBackgroundSubtractor dBS(fParam);
+    //dBS.setMasksOffset(masksOffset);
+    //dBS.getMasks(dData);
+    //dBS.getBoundingRects(dData);
     //dBS.adaptGroundTruthToReg(dData);
-    dBS.getGroundTruthBoundingRects(dData);
-    dBS.getRoiTags(dData, false);
+    //dBS.getGroundTruthBoundingRects(dData);
+    //dBS.getRoiTags(dData, false);
     
     // Thermal: depth-to-thermal registration
     // <------
@@ -231,11 +233,13 @@ int main(int argc, const char* argv[])
 
     ThermalBackgroundSubtractor tBS;
     tBS.setMasksOffset(masksOffset);
-    tBS.getMasks(dData, tData);
+    //tBS.getMasks(dData, tData);
     tBS.getBoundingRects(dData, tData, validBoundBoxes); //modifies both dData and tData bounding rects
     // tBS.adaptGroundTruthToReg(tData);
     tBS.getRoiTags(dData, tData, validBoundBoxes); //modifies both dData and tData roi tags
 
+    writer.saveValidBoundingBoxes(dataPath + "validBBs.yml", validBoundBoxes);
+    
     writer.write("Thermal", tData);
     writer.write("Depth", dData);
     
@@ -252,6 +256,9 @@ int main(int argc, const char* argv[])
     
     writer.write("Color", cData);
 
+    
+    //GridMat cDesc, cmDesc, ...;
+    //cDesc.load()
     
     //
     // Feature extraction

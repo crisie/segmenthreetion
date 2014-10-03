@@ -26,6 +26,12 @@ public:
     
     void write(string modality, ModalityData& md);
     
+    void saveValidBoundingBoxes(string file, vector<vector<int> > validBbs);
+    
+    void loadValidBoundingBoxes(string file, vector<vector<int> >& validBbs);
+    
+    void loadValidBoundingBoxes(string file, vector<int> & validBbs);
+    
 private:
     string m_DataPath;
     std::vector<std::string> m_ScenesPaths;
@@ -36,6 +42,9 @@ private:
     void saveBoundingRects(string file, vector< vector<cv::Rect> > rects, vector< vector<int> > tags);
     
     void boundRectsToInt(vector<vector<cv::Rect> > bbModal, vector<vector<int> >& bbModalInt);
+    
+    template<typename T>
+    void serialize(vector<vector<T> > m, vector<T>& s);
 };
 
 
