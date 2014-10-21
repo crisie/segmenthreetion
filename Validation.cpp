@@ -35,6 +35,8 @@ vector<int>& Validation::getDontCareRange()
 
 void Validation::getOverlap(ModalityData& md, cv::Mat& overlapIDs) {
     
+    overlapIDs.release();
+    
     cv::Mat newOverlapIDs(cvSize(m_DontCareRange.size()+1, md.getPredictedMasks().size()), CV_32FC1, NAN);
     this->getOverlap(md.getPredictedMasks(), md.getGroundTruthMasks(), m_DontCareRange, newOverlapIDs);
     if(overlapIDs.empty())
@@ -44,7 +46,6 @@ void Validation::getOverlap(ModalityData& md, cv::Mat& overlapIDs) {
     {
         cv::vconcat(overlapIDs, newOverlapIDs, overlapIDs);
     }
-    
 }
 
 void Validation::getOverlap(vector<cv::Mat>& predictedMasks, vector<cv::Mat>& gtMasks, vector<int>& dcRange, cv::Mat& overlapIDs) {
@@ -110,6 +111,8 @@ void Validation::save(vector<cv::Mat> overlapIDs, cv::Mat meanOverlap, string fi
 
 void Validation::createOverlapPartitions(cv::Mat& partitions, cv::Mat& overlapIDs, vector<cv::Mat>& partitionedOverlapIDs)
 {
+    partitionedOverlapIDs.clear();
+    
     cout << "partitions: " << partitions.cols << " " << partitions.rows << " " << partitions.size() << endl;
     vector<int> folds;
     findUniqueValues(partitions, folds);
@@ -136,6 +139,8 @@ void Validation::createOverlapPartitions(cv::Mat& partitions, cv::Mat& overlapID
 
 void Validation::getMeanOverlap(vector<cv::Mat> partitionedOverlapIDs, cv::Mat& partitionedMeanOverlap)
 {
+    partitionedMeanOverlap.release();
+    
     //cv::reduce(overlapIDs, meanOverlap, 1, CV_REDUCE_AVG, -1);
     //std::accumulate(overlapIDs.begin(), overlapIDs.end(), 0.0)/nBB;
     //meanOverlap(cvSize(1, dontCareRange.size()+1), CV_32FC1);

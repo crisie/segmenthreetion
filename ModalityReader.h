@@ -26,13 +26,12 @@ class ModalityReader
 {
 public:
     ModalityReader();
-    ModalityReader(string dataPath);
     
     unsigned int getNumOfScenes();
     string getScenePath(unsigned int sid);
     
-    void setDataPath(string dataPath);
     void setMasksOffset(unsigned char offset);
+    void setSequences(std::vector<std::string> sequences);
     
     cv::Mat getScenePartition(unsigned int sid);
     vector<cv::Mat> getPartitions();
@@ -45,27 +44,28 @@ public:
     
     // Read and grid all the data
 	void readAllScenesData(string modality, const char* filetype, int hp, int wp, ModalityGridData& mgd);
-    void readSceneData(unsigned int sid, string modality, const char* filetype, int hp, int wp, ModalityGridData& mgd);
+    void readSceneData(std::string scenePath, string modality, const char* filetype, int hp, int wp, ModalityGridData& mgd);
 
     // Read and grid all some data (omit frames and masks)
 	void readAllScenesMetadata(string modality, const char* filetype, int hp, int wp, ModalityGridData& mgd);
-    void readSceneMetadata(unsigned int sid, string modality, const char* filetype, int hp, int wp, ModalityGridData& mgd);
+    void readSceneMetadata(std::string scenePath, string modality, const char* filetype, int hp, int wp, ModalityGridData& mgd);
 
     
     //Read only predicted and gt mask for computing overlap
     void overlapreadScene(string predictionType, string modality, string scenePath, const char* filetype, ModalityData& md);
-    void overlapreadScene(string predictionType, string modality, string dataPath, string scenePath, const char* filetype, ModalityData& md);
+//    void overlapreadScene(string predictionType, string modality, string dataPath, string scenePath, const char* filetype, ModalityData& md);
     
     void agreement(vector<ModalityGridData*> mgds);
     
     void loadDescription(string modality, ModalityGridData& mgd);
     
-    void getBoundingBoxesFromGroundtruthMasks(string modality, vector<string> sceneDirs, vector<vector<cv::Rect> >& boxes);
-    void getBoundingBoxesFromGroundtruthMasks(string modality, string sceneDir, vector<vector<cv::Rect> >& boxes);
+    void getBoundingBoxesFromGroundtruthMasks(string modality, vector<string> scenePaths, vector<vector<cv::Rect> >& boxes);
+    void getBoundingBoxesFromGroundtruthMasks(string modality, string scenePath, vector<vector<cv::Rect> >& boxes);
     
 private:
-    string m_DataPath;
-    vector<string> m_ScenesPaths;
+//    string m_DataPath;
+    std::vector<std::string> m_ScenesPaths;
+//    std::vector<cv::Mat> m_SceneFramesPartitions;
     unsigned char m_MasksOffset;
     unsigned char m_MaxOffset;
     

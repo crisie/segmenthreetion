@@ -93,6 +93,8 @@ public:
     void setValidationParameters(int k);
     void setPartitions(cv::Mat partitions);
     
+    void setTrainMirrored(bool flag);
+    
     void setStackedPrediction(bool flag);
     
     cv::Mat getAccuracies();
@@ -116,6 +118,8 @@ protected:
     int m_testK;
     int m_modelSelecK;
     bool m_bGlobalBest;
+    
+    bool m_bTrainMirrored;
     
     int m_seed;
     cv::Mat m_partitions;

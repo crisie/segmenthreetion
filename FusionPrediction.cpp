@@ -22,6 +22,7 @@ template void ClassifierFusionPredictionBase<cv::EM40,CvBoost>::setData(vector<M
 //template void ClassifierFusionPredictionBase<cv::EM40,CvBoost>::setResponses(cv::Mat);
 template void ClassifierFusionPredictionBase<cv::EM40,CvBoost>::setModelSelection(bool flag);
 template void ClassifierFusionPredictionBase<cv::EM40,CvBoost>::setModelSelectionParameters(int, int, bool);
+template void ClassifierFusionPredictionBase<cv::EM40,CvBoost>::setTrainMirrored(bool flag);
 template void ClassifierFusionPredictionBase<cv::EM40,CvBoost>::setValidationParameters(int);
 template void ClassifierFusionPredictionBase<cv::EM40,CvBoost>::setStackedPrediction(bool flag);
 template cv::Mat ClassifierFusionPredictionBase<cv::EM40,CvBoost>::getAccuracies();
@@ -32,6 +33,7 @@ template void ClassifierFusionPredictionBase<cv::EM40,CvANN_MLP>::setData(vector
 //template void ClassifierFusionPredictionBase<cv::EM40,CvANN_MLP>::setResponses(cv::Mat);
 template void ClassifierFusionPredictionBase<cv::EM40,CvANN_MLP>::setModelSelection(bool flag);
 template void ClassifierFusionPredictionBase<cv::EM40,CvANN_MLP>::setModelSelectionParameters(int, int, bool);
+template void ClassifierFusionPredictionBase<cv::EM40,CvANN_MLP>::setTrainMirrored(bool flag);
 template void ClassifierFusionPredictionBase<cv::EM40,CvANN_MLP>::setValidationParameters(int);
 template void ClassifierFusionPredictionBase<cv::EM40,CvANN_MLP>::setStackedPrediction(bool flag);
 template cv::Mat ClassifierFusionPredictionBase<cv::EM40,CvANN_MLP>::getAccuracies();
@@ -42,6 +44,7 @@ template void ClassifierFusionPredictionBase<cv::EM40,CvSVM>::setData(vector<Mod
 //template void ClassifierFusionPredictionBase<cv::EM40,CvSVM>::setResponses(cv::Mat);
 template void ClassifierFusionPredictionBase<cv::EM40,CvSVM>::setModelSelection(bool flag);
 template void ClassifierFusionPredictionBase<cv::EM40,CvSVM>::setModelSelectionParameters(int, int, bool);
+template void ClassifierFusionPredictionBase<cv::EM40,CvSVM>::setTrainMirrored(bool flag);
 template void ClassifierFusionPredictionBase<cv::EM40,CvSVM>::setValidationParameters(int);
 template void ClassifierFusionPredictionBase<cv::EM40,CvSVM>::setStackedPrediction(bool flag);
 template cv::Mat ClassifierFusionPredictionBase<cv::EM40,CvSVM>::getAccuracies();
@@ -422,6 +425,12 @@ void ClassifierFusionPredictionBase<cv::EM40, ClassifierT>::formatData()
 }
 
 template<typename ClassifierT>
+void ClassifierFusionPredictionBase<cv::EM40,ClassifierT>::setTrainMirrored(bool flag)
+{
+    m_bTrainMirrored = flag;
+}
+
+template<typename ClassifierT>
 void ClassifierFusionPredictionBase<cv::EM40,ClassifierT>::setStackedPrediction(bool flag)
 {
     m_bStackPredictions = flag;
@@ -501,7 +510,7 @@ void ClassifierFusionPrediction<cv::EM40,CvSVM>::predict(cv::Mat& fusionPredicti
             modelSelection(trData, trResponses, coarseExpandedParameters, coarseGoodnesses);
             
             std::stringstream coarsess;
-            coarsess << "svm_" << m_distsToMargin.size() << "_" << m_kernelType << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << ".yml";
+            coarsess << "svm_" << m_distsToMargin.size() << "_" << m_kernelType << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << (m_bTrainMirrored ? "m" : "") << ".yml";
             cv::hconcat(coarseExpandedParameters, coarseGoodnesses, coarseGoodnesses);
             cvx::save(coarsess.str(), coarseGoodnesses);
         }
@@ -513,7 +522,7 @@ void ClassifierFusionPrediction<cv::EM40,CvSVM>::predict(cv::Mat& fusionPredicti
     {
         cv::Mat aux;
         std::stringstream ss;
-        ss << "svm_" << m_distsToMargin.size() << "_" << m_kernelType << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << ".yml";
+        ss << "svm_" << m_distsToMargin.size() << "_" << m_kernelType << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << (m_bTrainMirrored ? "m" : "") << ".yml";
         cvx::load(ss.str(), aux);
         if (coarseGoodnesses.empty()) coarseGoodnesses = aux.col(params.size());
         else cv::hconcat(coarseGoodnesses, aux.col(params.size()), coarseGoodnesses);
@@ -546,7 +555,7 @@ void ClassifierFusionPrediction<cv::EM40,CvSVM>::predict(cv::Mat& fusionPredicti
             modelSelection(trData, trResponses, narrowExpandedParameters, narrowGoodnesses);
             
             std::stringstream narrowss;
-            narrowss << "svm_" << m_distsToMargin.size() << "_" << m_kernelType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << ".yml";
+            narrowss << "svm_" << m_distsToMargin.size() << "_" << m_kernelType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << (m_bTrainMirrored ? "m" : "") << ".yml";
             cv::hconcat(narrowExpandedParameters, narrowGoodnesses, narrowGoodnesses);
             cvx::save(narrowss.str(), narrowGoodnesses);
         }
@@ -558,7 +567,7 @@ void ClassifierFusionPrediction<cv::EM40,CvSVM>::predict(cv::Mat& fusionPredicti
     {
         cv::Mat aux;
         std::stringstream ss;
-        ss << "svm_" << m_distsToMargin.size() << "_" << m_kernelType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << ".yml";
+        ss << "svm_" << m_distsToMargin.size() << "_" << m_kernelType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << (m_bTrainMirrored ? "m" : "") << ".yml";
         cvx::load(ss.str(), aux);
         if (goodnesses.empty()) goodnesses = aux.col(params.size());
         else cv::hconcat(goodnesses, aux.col(params.size()), goodnesses);
@@ -749,7 +758,7 @@ void ClassifierFusionPrediction<cv::EM40,CvBoost>::predict(cv::Mat& fusionPredic
             modelSelection(trData, trResponses, coarseExpandedParameters, coarseGoodnesses);
             
             std::stringstream coarsess;
-            coarsess << "boost_" << m_distsToMargin.size() << "_" << m_boostType << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << ".yml";
+            coarsess << "boost_" << m_distsToMargin.size() << "_" << m_boostType << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << (m_bTrainMirrored ? "m" : "") << ".yml";
             cv::hconcat(coarseExpandedParameters, coarseGoodnesses, coarseGoodnesses);
             cvx::save(coarsess.str(), coarseGoodnesses);
         }
@@ -761,7 +770,7 @@ void ClassifierFusionPrediction<cv::EM40,CvBoost>::predict(cv::Mat& fusionPredic
     {
         cv::Mat aux;
         std::stringstream ss;
-        ss << "boost_" << m_distsToMargin.size() << "_" << m_boostType << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << ".yml";
+        ss << "boost_" << m_distsToMargin.size() << "_" << m_boostType << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << (m_bTrainMirrored ? "m" : "") << ".yml";
         cvx::load(ss.str(), aux);
         if (coarseGoodnesses.empty()) coarseGoodnesses = aux.col(params.size());
         else cv::hconcat(coarseGoodnesses, aux.col(params.size()), coarseGoodnesses);
@@ -793,7 +802,7 @@ void ClassifierFusionPrediction<cv::EM40,CvBoost>::predict(cv::Mat& fusionPredic
             modelSelection(trData, trResponses, narrowExpandedParameters, narrowGoodnesses);
             
             std::stringstream narrowss;
-            narrowss << "boost_" << m_distsToMargin.size() << "_" << m_boostType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << ".yml";
+            narrowss << "boost_" << m_distsToMargin.size() << "_" << m_boostType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << (m_bTrainMirrored ? "m" : "") << ".yml";
             cv::hconcat(narrowExpandedParameters, narrowGoodnesses, narrowGoodnesses);
             cvx::save(narrowss.str(), narrowGoodnesses);
         }
@@ -805,7 +814,7 @@ void ClassifierFusionPrediction<cv::EM40,CvBoost>::predict(cv::Mat& fusionPredic
     {
         cv::Mat aux;
         std::stringstream ss;
-        ss << "boost_" << m_distsToMargin.size() << "_" << m_boostType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << ".yml";
+        ss << "boost_" << m_distsToMargin.size() << "_" << m_boostType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << (m_bTrainMirrored ? "m" : "") << ".yml";
         cvx::load(ss.str(), aux);
         if (goodnesses.empty()) goodnesses = aux.col(params.size());
         else cv::hconcat(goodnesses, aux.col(params.size()), goodnesses);
@@ -1029,7 +1038,7 @@ void ClassifierFusionPrediction<cv::EM40,CvANN_MLP>::predict(cv::Mat& fusionPred
             modelSelection(trData, trResponses, coarseExpandedParameters, coarseGoodnesses);
             
             std::stringstream coarsess;
-            coarsess << "mlp_" << m_distsToMargin.size() << "_" << m_actFcnType << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << ".yml";
+            coarsess << "mlp_" << m_distsToMargin.size() << "_" << m_actFcnType << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << (m_bTrainMirrored ? "m" : "") << ".yml";
             cv::hconcat(coarseExpandedParameters, coarseGoodnesses, coarseGoodnesses);
             cvx::save(coarsess.str(), coarseGoodnesses);
         }
@@ -1041,9 +1050,8 @@ void ClassifierFusionPrediction<cv::EM40,CvANN_MLP>::predict(cv::Mat& fusionPred
     {
         cv::Mat aux;
         std::stringstream ss;
-        ss << "mlp_" << m_distsToMargin.size() << "_" << m_actFcnType << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << ".yml";
+        ss << "mlp_" << m_distsToMargin.size() << "_" << m_actFcnType << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << (m_bTrainMirrored ? "m" : "") << ".yml";
         cvx::load(ss.str(), aux);
-        cout << ss.str() << endl;
         if (coarseGoodnesses.empty()) coarseGoodnesses = aux.col(params.size());
         else cv::hconcat(coarseGoodnesses, aux.col(params.size()), coarseGoodnesses);
     }
@@ -1074,7 +1082,7 @@ void ClassifierFusionPrediction<cv::EM40,CvANN_MLP>::predict(cv::Mat& fusionPred
             modelSelection(trData, trResponses, narrowExpandedParameters, narrowGoodnesses);
             
             std::stringstream narrowss;
-            narrowss << "mlp_" << m_distsToMargin.size() << "_" << m_actFcnType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << ".yml";
+            narrowss << "mlp_" << m_distsToMargin.size() << "_" << m_actFcnType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << (m_bTrainMirrored ? "m" : "") << ".yml";
             cv::hconcat(narrowExpandedParameters, narrowGoodnesses, narrowGoodnesses);
             cvx::save(narrowss.str(), narrowGoodnesses);
         }
@@ -1086,7 +1094,7 @@ void ClassifierFusionPrediction<cv::EM40,CvANN_MLP>::predict(cv::Mat& fusionPred
     {
         cv::Mat aux;
         std::stringstream ss;
-        ss << "mlp_" << m_distsToMargin.size() << "_" << m_actFcnType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << ".yml";
+        ss << "mlp_" << m_distsToMargin.size() << "_" << m_actFcnType << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << (m_bTrainMirrored ? "m" : "") << ".yml";
         cvx::load(ss.str(), aux);
         if (goodnesses.empty()) goodnesses = aux.col(params.size());
         else cv::hconcat(goodnesses, aux.col(params.size()), goodnesses);

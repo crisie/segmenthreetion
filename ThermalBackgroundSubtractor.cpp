@@ -122,8 +122,8 @@ void ThermalBackgroundSubtractor::getMasks(ModalityData& mdInput, ModalityData& 
     
 }
 
-void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdInput, ModalityData& mdOutput, vector<vector<int> > &validBb) {
-    
+void ThermalBackgroundSubtractor::getBoundingRects(ModalityData& mdInput, ModalityData& mdOutput, vector<vector<int> > &validBb)
+{
     vector<vector<cv::Rect> > filteredBbDepth(mdInput.getFrames().size());
     
     vector<vector<cv::Rect> > boundingRects(mdOutput.getFrames().size());
@@ -250,6 +250,8 @@ void ThermalBackgroundSubtractor::getRoiTags(ModalityData& mdInput, ModalityData
     
     for(int f = 0; f < mdInput.getFrames().size(); f++)
     {
+        if (f == 112)
+            int a;
         for(int i = 0; i < validBb[f].size(); i++)
         {
             if(validBb[f][i] == 1) filteredTags[f].push_back(originalTags[f][i]);

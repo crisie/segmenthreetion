@@ -26,7 +26,7 @@ void FeatureExtractor::describe(ModalityGridData& data)
         cv::Mat gvalidness  = data.getValidnesses(k);
         
         GridMat gdescriptors;
-        //describe(grid, gmask, gvalidness, gdescriptors);
+        describe(grid, gmask, gvalidness, gdescriptors);
         
         // Mirrored image description
         
@@ -40,7 +40,7 @@ void FeatureExtractor::describe(ModalityGridData& data)
         describe(gridMirrored, gmaskMirrored, gvalidnessMirrored, gdescriptorsMirrored);
         
         // Add to the descriptors to the data
-        //data.addDescriptors(gdescriptors);
+        data.addDescriptors(gdescriptors);
         data.addDescriptorsMirrored(gdescriptorsMirrored);
 	}
 }

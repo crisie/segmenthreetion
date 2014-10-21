@@ -626,7 +626,7 @@ public:
     
     void saveDescription(string sequencePath, string filename)
     {
-        // m_Descriptors.save(sequencePath + "Description/" + filename); // TODO: uncomment
+        m_Descriptors.save(sequencePath + "Description/" + filename);
         m_DescriptorsMirrored.save(sequencePath + "Description/Mirrored" + filename);
     }
     
