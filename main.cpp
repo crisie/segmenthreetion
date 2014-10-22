@@ -765,9 +765,9 @@ int main(int argc, char** argv)
     computeConfidenceInterval(accuracies, &mean, &conf);
     cout << "Thermal modality (c): " << mean << " ± " << conf << endl;
     
-    aux.setTo(tConsensusPredictionsMirrored); // predictions map generation purposes
+    aux.setTo(tConsensusPredictions); // predictions map generation purposes
     aux.save("tGridConsensusPredictions.yml");
-    aux.setTo(tConsensusDistsToMarginMirrored);
+    aux.setTo(tConsensusDistsToMargin);
     aux.save("tGridConsensusDistsToMargin.yml");
     
     prediction.setPredictions(tPredictionsMirrored);
@@ -1221,120 +1221,128 @@ int main(int argc, char** argv)
         cv::Mat overlapIDs, partitionedMeanOverlap, partitions = reader.getAllScenesPartition();
         vector<cv::Mat> partitionedOverlapIDs;
 
-        //Depth
-        std::cout << "Depth" << std::endl;
-        for (int s = 0; s < sequencesPaths.size(); s++)
-        {
-            boost::timer t;
-            ModalityData depthData;
-            cout << "Reading depth data in scene " << s << ".." << endl;
-            reader.overlapreadScene("Depth_mirrored", "Depth", sequencesPaths[s], "png", depthData);
-            validate.getOverlap(depthData, overlapIDs);
-            cout << "Elapsed time: " << t.elapsed() << endl;
-        }
-        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
-        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
-        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "dGridConsensusOverlapMirrored.yml");
-    
-        
-        //Color
-        std::cout << "Color" << std::endl;
-        for (int s = 0; s < sequencesPaths.size(); s++)
-        {
-            boost::timer t;
-            ModalityData colorData;
-            cout << "Reading color data in scene " << s << ".." << endl;
-            reader.overlapreadScene("Color_mirrored", "Color", sequencesPaths[s], "png", colorData);
-            validate.getOverlap(colorData, overlapIDs);
-            cout << "Elapsed time: " << t.elapsed() << endl;
-        }
-        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
-        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
-        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "cGridConsensusOverlapMirrored.yml");
-       
-        
-        //Motion
-        std::cout << "Motion" << std::endl;
-        for (int s = 0; s < sequencesPaths.size(); s++)
-        {
-            boost::timer t;
-            ModalityData motionData;
-            cout << "Reading motion data in scene " << s << ".." << endl;
-            reader.overlapreadScene("Motion_mirrored", "Color", sequencesPaths[s], "png", motionData);
-            validate.getOverlap(motionData, overlapIDs);
-            cout << "Elapsed time: " << t.elapsed() << endl;
-        }
-        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
-        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
-        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "mGridConsensusOverlapMirrored.yml");
-
-        
-        //Thermal
-        std::cout << "Thermal" << std::endl;
-        for (int s = 0; s < sequencesPaths.size(); s++)
-        {
-            boost::timer t;
-            ModalityData thermalData;
-            cout << "Reading thermal data in scene " << s << ".." << endl;
-            reader.overlapreadScene("Thermal_mirrored", "Thermal", sequencesPaths[s], "png", thermalData);
-            validate.getOverlap(thermalData, overlapIDs);
-            cout << "Elapsed time: " << t.elapsed() << endl;
-        }
-        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
-        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
-        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "tGridConsensusOverlapMirrored.yml");
-        
-        
-        //Simple fusion 1 - color
-        std::cout << "Simple fusion 1 - color" << std::endl;
-        for (int s = 0; s < sequencesPaths.size(); s++)
-        {
-            boost::timer t;
-            ModalityData colorData;
-            cout << "Reading color data in scene " << s << ".." << endl;
-            reader.overlapreadScene("Simple_1_fusion_mirrored", "Color", sequencesPaths[s], "png", colorData);
-            validate.getOverlap(colorData, overlapIDs);
-            cout << "Elapsed time: " << t.elapsed() << endl;
-        }
-        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
-        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
-        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "cSimpleFusionOverlapMirrored1.yml");
-        
-        
-        //Simple fusion 1 - thermal
-        std::cout << "Simple fusion 1 - thermal" << std::endl;
-        for (int s = 0; s < sequencesPaths.size(); s++)
-        {
-            boost::timer t;
-            ModalityData thermalData;
-            cout << "Reading thermal data in scene " << s << ".." << endl;
-            reader.overlapreadScene("Simple_1_fusion_mirrored", "Thermal", sequencesPaths[s], "png", thermalData);
-            validate.getOverlap(thermalData, overlapIDs);
-            cout << "Elapsed time: " << t.elapsed() << endl;
-        }
-        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
-        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
-        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "tSimpleFusionOverlapMirrored1.yml");
-        
-         
-        //Simple fusion 2 - color
-        std::cout << "Simple fusion 2 - color" << std::endl;
-        for (int s = 0; s < sequencesPaths.size(); s++)
-        {
-            boost::timer t;
-            ModalityData colorData;
-            cout << "Reading color data in scene " << s << ".." << endl;
-            reader.overlapreadScene("Simple_2_fusion_mirrored", "Color", sequencesPaths[s], "png", colorData);
-            validate.getOverlap(colorData, overlapIDs);
-            cout << "Elapsed time: " << t.elapsed() << endl;
-        }
-        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
-        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
-        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "cSimpleFusionOverlapMirrored2.yml");
+//        //Depth
+//        std::cout << "Depth" << std::endl;
+//        overlapIDs.release();
+//        for (int s = 0; s < sequencesPaths.size(); s++)
+//        {
+//            boost::timer t;
+//            ModalityData depthData;
+//            cout << "Reading depth data in scene " << s << ".." << endl;
+//            reader.overlapreadScene("Depth_mirrored", "Depth", sequencesPaths[s], "png", depthData);
+//            validate.getOverlap(depthData, overlapIDs);
+//            cout << "Elapsed time: " << t.elapsed() << endl;
+//        }
+//        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
+//        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
+//        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "dGridConsensusOverlapMirrored.yml");
+//    
+//        
+//        //Color
+//        std::cout << "Color" << std::endl;
+//        overlapIDs.release();
+//        for (int s = 0; s < sequencesPaths.size(); s++)
+//        {
+//            boost::timer t;
+//            ModalityData colorData;
+//            cout << "Reading color data in scene " << s << ".." << endl;
+//            reader.overlapreadScene("Color_mirrored", "Color", sequencesPaths[s], "png", colorData);
+//            validate.getOverlap(colorData, overlapIDs);
+//            cout << "Elapsed time: " << t.elapsed() << endl;
+//        }
+//        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
+//        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
+//        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "cGridConsensusOverlapMirrored.yml");
+//       
+//        
+//        //Motion
+//        std::cout << "Motion" << std::endl;
+//        overlapIDs.release();
+//        for (int s = 0; s < sequencesPaths.size(); s++)
+//        {
+//            boost::timer t;
+//            ModalityData motionData;
+//            cout << "Reading motion data in scene " << s << ".." << endl;
+//            reader.overlapreadScene("Motion_mirrored", "Color", sequencesPaths[s], "png", motionData);
+//            validate.getOverlap(motionData, overlapIDs);
+//            cout << "Elapsed time: " << t.elapsed() << endl;
+//        }
+//        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
+//        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
+//        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "mGridConsensusOverlapMirrored.yml");
+//
+//        
+//        //Thermal
+//        std::cout << "Thermal" << std::endl;
+//        overlapIDs.release();
+//        for (int s = 0; s < sequencesPaths.size(); s++)
+//        {
+//            boost::timer t;
+//            ModalityData thermalData;
+//            cout << "Reading thermal data in scene " << s << ".." << endl;
+//            reader.overlapreadScene("Thermal_mirrored", "Thermal", sequencesPaths[s], "png", thermalData);
+//            validate.getOverlap(thermalData, overlapIDs);
+//            cout << "Elapsed time: " << t.elapsed() << endl;
+//        }
+//        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
+//        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
+//        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "tGridConsensusOverlapMirrored.yml");
+//        
+//        
+//        //Simple fusion 1 - color
+//        std::cout << "Simple fusion 1 - color" << std::endl;
+//        overlapIDs.release();
+//        for (int s = 0; s < sequencesPaths.size(); s++)
+//        {
+//            boost::timer t;
+//            ModalityData colorData;
+//            cout << "Reading color data in scene " << s << ".." << endl;
+//            reader.overlapreadScene("Simple_1_fusion_mirrored", "Color", sequencesPaths[s], "png", colorData);
+//            validate.getOverlap(colorData, overlapIDs);
+//            cout << "Elapsed time: " << t.elapsed() << endl;
+//        }
+//        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
+//        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
+//        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "cSimpleFusionOverlapMirrored1.yml");
+//        
+//        
+//        //Simple fusion 1 - thermal
+//        std::cout << "Simple fusion 1 - thermal" << std::endl;
+//        overlapIDs.release();
+//        for (int s = 0; s < sequencesPaths.size(); s++)
+//        {
+//            boost::timer t;
+//            ModalityData thermalData;
+//            cout << "Reading thermal data in scene " << s << ".." << endl;
+//            reader.overlapreadScene("Simple_1_fusion_mirrored", "Thermal", sequencesPaths[s], "png", thermalData);
+//            validate.getOverlap(thermalData, overlapIDs);
+//            cout << "Elapsed time: " << t.elapsed() << endl;
+//        }
+//        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
+//        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
+//        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "tSimpleFusionOverlapMirrored1.yml");
+//        
+//         
+//        //Simple fusion 2 - color
+//        std::cout << "Simple fusion 2 - color" << std::endl;
+//        overlapIDs.release();
+//        for (int s = 0; s < sequencesPaths.size(); s++)
+//        {
+//            boost::timer t;
+//            ModalityData colorData;
+//            cout << "Reading color data in scene " << s << ".." << endl;
+//            reader.overlapreadScene("Simple_2_fusion_mirrored", "Color", sequencesPaths[s], "png", colorData);
+//            validate.getOverlap(colorData, overlapIDs);
+//            cout << "Elapsed time: " << t.elapsed() << endl;
+//        }
+//        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
+//        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
+//        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "cSimpleFusionOverlapMirrored2.yml");
         
         // ERROR
         //Simple fusion 3 - color
         std::cout << "Simple fusion 3 - color" << std::endl;
+        overlapIDs.release();
         for (int s = 0; s < sequencesPaths.size(); s++)
         {
             boost::timer t;
@@ -1351,6 +1359,7 @@ int main(int argc, char** argv)
         
         //Simple fusion 2 - thermal
         std::cout << "Simple fusion 2 - thermal" << std::endl;
+        overlapIDs.release();
         for (int s = 0; s < sequencesPaths.size(); s++)
         {
             boost::timer t;
@@ -1368,6 +1377,7 @@ int main(int argc, char** argv)
         
         //Simple fusion 1 - thermal
         std::cout << "Simple fusion 1 - thermal" << std::endl;
+        overlapIDs.release();
         for (int s = 0; s < sequencesPaths.size(); s++)
         {
             boost::timer t;
@@ -1384,6 +1394,7 @@ int main(int argc, char** argv)
 
         //Simple fusion 3 - thermal
         std::cout << "Simple fusion 3 - thermal" << std::endl;
+        overlapIDs.release();
         for (int s = 0; s < sequencesPaths.size(); s++)
         {
             boost::timer t;
@@ -1400,6 +1411,7 @@ int main(int argc, char** argv)
 
         //Boost fusion - color
         std::cout << "Boost fusion - color" << std::endl;
+        overlapIDs.release();
         for (int s = 0; s < sequencesPaths.size(); s++)
         {
             boost::timer t;
@@ -1416,6 +1428,7 @@ int main(int argc, char** argv)
         
         //Boost fusion - thermal
         std::cout << "Boost fusion - thermal" << std::endl;
+        overlapIDs.release();
         for (int s = 0; s < sequencesPaths.size(); s++)
         {
             boost::timer t;
@@ -1432,6 +1445,7 @@ int main(int argc, char** argv)
 
         //SVM linear fusion - color
         std::cout << "SVM linear fusion - color" << std::endl;
+        overlapIDs.release();
         for (int s = 0; s < sequencesPaths.size(); s++)
         {
             boost::timer t;
@@ -1448,6 +1462,7 @@ int main(int argc, char** argv)
         
         //SVM rbf fusion - color
         std::cout << "SVM rbf fusion - color" << std::endl;
+        overlapIDs.release();
         for (int s = 0; s < sequencesPaths.size(); s++)
         {
             boost::timer t;
@@ -1464,6 +1479,7 @@ int main(int argc, char** argv)
 
         //MLP gaussian fusion - color
         std::cout << "MLP gaussian fusion - color" << std::endl;
+        overlapIDs.release();
         for (int s = 0; s < sequencesPaths.size(); s++)
         {
             boost::timer t;
@@ -1480,6 +1496,7 @@ int main(int argc, char** argv)
         
         //MLP sigmoid fusion - color
         std::cout << "MLP sigmoid fusion - color" << std::endl;
+        overlapIDs.release();
         for (int s = 0; s < sequencesPaths.size(); s++)
         {
             boost::timer t;
@@ -1496,6 +1513,7 @@ int main(int argc, char** argv)
 
         //SVM linear fusion - thermal
         std::cout << "SVM linear fusion - thermal" << std::endl;
+        overlapIDs.release();
         for (int s = 0; s < sequencesPaths.size(); s++)
         {
             boost::timer t;
@@ -1512,6 +1530,7 @@ int main(int argc, char** argv)
         
         //SVM rbf fusion - thermal
         std::cout << "SVM rbf fusion - thermal" << std::endl;
+        overlapIDs.release();
         for (int s = 0; s < sequencesPaths.size(); s++)
         {
             boost::timer t;
@@ -1528,6 +1547,7 @@ int main(int argc, char** argv)
 
         //MLP gaussian fusion - thermal
         std::cout << "MLP gaussian fusion - thermal" << std::endl;
+        overlapIDs.release();
         for (int s = 0; s < sequencesPaths.size(); s++)
         {
             boost::timer t;
@@ -1544,6 +1564,7 @@ int main(int argc, char** argv)
         
         //MLP sigmoid fusion - thermal
         std::cout << "MLP sigmoid fusion - thermal" << std::endl;
+        overlapIDs.release();
         for (int s = 0; s < sequencesPaths.size(); s++)
         {
             boost::timer t;
