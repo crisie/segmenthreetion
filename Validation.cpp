@@ -34,7 +34,7 @@ vector<int>& Validation::getDontCareRange()
 
 
 void Validation::getOverlap(ModalityData& md, cv::Mat& overlapIDs)
-{    
+{
     cv::Mat newOverlapIDs(cvSize(m_DontCareRange.size()+1, md.getPredictedMasks().size()), CV_32FC1, NAN);
     this->getOverlap(md.getPredictedMasks(), md.getGroundTruthMasks(), m_DontCareRange, newOverlapIDs);
     if(overlapIDs.empty())
