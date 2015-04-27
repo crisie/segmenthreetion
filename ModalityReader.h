@@ -53,6 +53,7 @@ public:
     
     //Read only predicted and gt mask for computing overlap
     void overlapreadScene(string predictionType, string modality, string scenePath, const char* filetype, ModalityData& md);
+    void overlapreadShotton(string scenePath, const char* filetype, ModalityData& md);
 //    void overlapreadScene(string predictionType, string modality, string dataPath, string scenePath, const char* filetype, ModalityData& md);
     
     void agreement(vector<ModalityGridData*> mgds);

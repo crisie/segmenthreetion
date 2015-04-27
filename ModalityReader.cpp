@@ -540,7 +540,7 @@ void ModalityReader::readSceneMetadata(string scenePath, string modality, const 
 
 void ModalityReader::overlapreadScene(string predictionType, string modality, string scenePath, const char *filetype, ModalityData &md)
 {
- 
+    
     vector<cv::Mat> predictions;
     vector<cv::Mat> bsMasks;
     vector<cv::Mat> gtMasks;
@@ -580,36 +580,36 @@ void ModalityReader::overlapreadScene(string predictionType, string modality, st
             
             //threshold(predictions[predictionsIndex],predictions[predictionsIndex],1,255,CV_THRESH_BINARY);
             /*
-           vector<int> un;
-            findUniqueValues(predictions[predictionsIndex], un);
-            cout << "Before1: ";
-            for(int a = 0; a < un.size(); a++)
-            {
-                cout << un[a] << " ";
-            }
-            cout << endl;
-            
-            vector<int> tres;
-            findUniqueValues(bsMasks[i], tres);
-            cout << "Before2: ";
-            for(int a = 0; a < tres.size(); a++)
-            {
-                cout << tres[a] << " ";
-            }
-            cout << endl;*/
+             vector<int> un;
+             findUniqueValues(predictions[predictionsIndex], un);
+             cout << "Before1: ";
+             for(int a = 0; a < un.size(); a++)
+             {
+             cout << un[a] << " ";
+             }
+             cout << endl;
+             
+             vector<int> tres;
+             findUniqueValues(bsMasks[i], tres);
+             cout << "Before2: ";
+             for(int a = 0; a < tres.size(); a++)
+             {
+             cout << tres[a] << " ";
+             }
+             cout << endl;*/
             
             cv::Mat auxMask;
             bsMasks[i].copyTo(auxMask, predictions[predictionsIndex]);
             predictionMasks.push_back(auxMask);
             
-           /* vector<int> dos;
-            findUniqueValues(auxMask, dos);
-            cout << "After: ";
-            for(int a = 0; a < dos.size(); a++)
-            {
-                cout << dos[a] << " ";
-            }
-            cout << endl;*/
+            /* vector<int> dos;
+             findUniqueValues(auxMask, dos);
+             cout << "After: ";
+             for(int a = 0; a < dos.size(); a++)
+             {
+             cout << dos[a] << " ";
+             }
+             cout << endl;*/
             
             predictionsIndex++;
         }
@@ -621,14 +621,14 @@ void ModalityReader::overlapreadScene(string predictionType, string modality, st
     
     //debug
     /*
-    for(int i = 0; i < predictionMasks.size(); i++)
-    {
-        imshow("predictedMasks", predictionMasks[i]);
-        imshow("gtMasks", groundTruthMasks[i]);
-        cv::waitKey(10);
-    }
-    cv::destroyAllWindows();
-    */
+     for(int i = 0; i < predictionMasks.size(); i++)
+     {
+     imshow("predictedMasks", predictionMasks[i]);
+     imshow("gtMasks", groundTruthMasks[i]);
+     cv::waitKey(10);
+     }
+     cv::destroyAllWindows();
+     */
     
     md.setPredictedMasks(predictionMasks);
     md.setGroundTruthMasks(groundTruthMasks);
@@ -640,6 +640,47 @@ void ModalityReader::overlapreadScene(string predictionType, string modality, st
     groundTruthMasks.clear();
     predictionFilenames.clear();
     bsMasksFilenames.clear();
+    gtMasksFilenames.clear();
+}
+
+void ModalityReader::overlapreadShotton(string scenePath, const char *filetype, ModalityData &md)
+{
+    
+    vector<cv::Mat> predictions;
+    vector<cv::Mat> gtMasks;
+    
+    vector<string> predictionFilenames;
+    vector<string> gtMasksFilenames;
+    
+    loadDataToMats   (scenePath + "KinectMaps/", filetype, predictions, predictionFilenames);
+    loadDataToMats   (scenePath + "GroundTruth/Depth/", filetype, gtMasks, gtMasksFilenames);
+    
+    vector<cv::Mat> predictionMasks;
+    vector<cv::Mat> groundTruthMasks;
+    
+    for(int i = 0; i < predictionFilenames.size(); i++)
+    {
+        
+        if(gtMasks[i].channels() > 1)
+        {
+            vector<cv::Mat> auxGt;
+            split(gtMasks[i], auxGt);
+            groundTruthMasks.push_back(auxGt[0]);
+        } else {
+            groundTruthMasks.push_back(gtMasks[i]);
+        }
+        
+        predictionMasks.push_back(predictions[i]);
+    }
+    
+    md.setPredictedMasks(predictionMasks);
+    md.setGroundTruthMasks(groundTruthMasks);
+    
+    predictions.clear();
+    gtMasks.clear();
+    predictionMasks.clear();
+    groundTruthMasks.clear();
+    predictionFilenames.clear();
     gtMasksFilenames.clear();
 }
 

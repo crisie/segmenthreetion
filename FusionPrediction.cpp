@@ -50,6 +50,16 @@ template void ClassifierFusionPredictionBase<cv::EM40,CvSVM>::setStackedPredicti
 template cv::Mat ClassifierFusionPredictionBase<cv::EM40,CvSVM>::getAccuracies();
 //template void ClassifierFusionPredictionBase<cv::EM40,CvSVM>::setPartitions(cv::Mat partitions);
 
+template void ClassifierFusionPredictionBase<cv::EM40,CvRTrees>::setData(vector<ModalityGridData> mgds, vector<GridMat> distsToMargin, vector<cv::Mat> predictions);
+//template void ClassifierFusionPredictionBase<cv::EM40,CvRTrees>::setResponses(cv::Mat);
+template void ClassifierFusionPredictionBase<cv::EM40,CvRTrees>::setModelSelection(bool flag);
+template void ClassifierFusionPredictionBase<cv::EM40,CvRTrees>::setModelSelectionParameters(int, int, bool);
+template void ClassifierFusionPredictionBase<cv::EM40,CvRTrees>::setTrainMirrored(bool flag);
+template void ClassifierFusionPredictionBase<cv::EM40,CvRTrees>::setValidationParameters(int);
+template void ClassifierFusionPredictionBase<cv::EM40,CvRTrees>::setStackedPrediction(bool flag);
+template cv::Mat ClassifierFusionPredictionBase<cv::EM40,CvRTrees>::getAccuracies();
+//template void ClassifierFusionPredictionBase<cv::EM40,CvRTrees>::setPartitions(cv::Mat partitions);
+
 // -----------------------------------------------------------------------------
 
 
@@ -487,8 +497,8 @@ void ClassifierFusionPrediction<cv::EM40,CvSVM>::predict(cv::Mat& fusionPredicti
     cv::Mat coarseExpandedParameters;
     expandParameters(params, coarseExpandedParameters);
     
-//    cv::Mat partitions;
-//    cvpartition(m_responses, m_testK, m_seed, partitions);
+    //    cv::Mat partitions;
+    //    cvpartition(m_responses, m_testK, m_seed, partitions);
     
     if (m_bModelSelection)
     {
@@ -572,8 +582,8 @@ void ClassifierFusionPrediction<cv::EM40,CvSVM>::predict(cv::Mat& fusionPredicti
         if (goodnesses.empty()) goodnesses = aux.col(params.size());
         else cv::hconcat(goodnesses, aux.col(params.size()), goodnesses);
     }
-//    cv::reduce(goodnesses, aux, 1, CV_REDUCE_AVG);
-//    cv::hconcat(coarseExpandedParameters, aux, goodnesses);
+    //    cv::reduce(goodnesses, aux, 1, CV_REDUCE_AVG);
+    //    cv::hconcat(coarseExpandedParameters, aux, goodnesses);
     
     
     cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
@@ -697,7 +707,6 @@ void ClassifierFusionPrediction<cv::EM40,CvSVM>::modelSelection(cv::Mat data, cv
     // mean along the horizontal direction
     cvx::hmean(accuracies, goodnesses); // one column of m accuracies evaluation the m combinations is left
 }
-
 
 // CvBoost
 
@@ -1278,6 +1287,256 @@ void ClassifierFusionPrediction<cv::EM40,CvANN_MLP>::modelSelection(cv::Mat data
     
     cout << "(";
     boost::thread_group tg;
+    for (int k = 0; k < m_modelSelecK; k++)
+    {
+        cout << k;
+        
+        // Get fold's data
+        
+        cv::Mat trData = cvx::indexMat(data, partitions != k);
+        cv::Mat valData = cvx::indexMat(data, partitions == k);
+        cv::Mat trResponses = cvx::indexMat(responses, partitions != k);
+        cv::Mat valResponses = cvx::indexMat(responses, partitions == k);
+        
+        cv::Mat trSbjObjData = cvx::indexMat(trData, trResponses >= 0); // ignore unknown category (class -1) in training
+        cv::Mat trSbjObjResponses = cvx::indexMat(trResponses, trResponses >= 0);
+        
+        tg.add_thread(new boost::thread( boost::bind(&ClassifierFusionPrediction::_modelSelection, this, trSbjObjData, trSbjObjResponses, valData, valResponses, k, expandedParams, accuracies) ));
+    }
+    tg.join_all();
+    cout << ") " << endl;
+    
+    // mean along the horizontal direction
+    cvx::hmean(accuracies, goodnesses); // one column of m accuracies evaluation the m combinations is left
+}
+
+//
+// Random trees
+//
+
+ClassifierFusionPrediction<cv::EM40,CvRTrees>::ClassifierFusionPrediction()
+{
+    
+}
+
+void ClassifierFusionPrediction<cv::EM40,CvRTrees>::setMaxDepths(vector<float> depths)
+{
+    m_MaxDepths = depths;
+}
+
+void ClassifierFusionPrediction<cv::EM40,CvRTrees>::setMaxNoTrees(vector<float> n)
+{
+    m_MaxNoTrees = n;
+}
+
+void ClassifierFusionPrediction<cv::EM40,CvRTrees>::predict(cv::Mat& fusionPredictions)
+{
+    formatData();
+    
+    // Prepare parameters' combinations
+    vector<vector<float> > params;
+    params.push_back(m_MaxDepths);
+    params.push_back(m_MaxNoTrees);
+    
+    // create a list of parameters' variations
+    cv::Mat coarseExpandedParameters;
+    expandParameters(params, coarseExpandedParameters);
+    
+    //    cv::Mat partitions;
+    //    cvpartition(m_responses, m_testK, m_seed, partitions);
+    
+    if (m_bModelSelection)
+    {
+        cout << "Coarse model selection CVs [" << m_testK << "]: " << endl;
+        
+        for (int k = 0; k < m_testK; k++)
+        {
+            cout << k << " " << endl;
+            
+            cv::Mat trData = cvx::indexMat(m_data, (m_partitions != k) & (m_partitions != ((k+1) % m_testK)));
+            cv::Mat teData = cvx::indexMat(m_data, m_partitions == k);
+            cv::Mat valData = cvx::indexMat(m_data, m_partitions == ((k+1) % m_testK));
+            cv::Mat trResponses = cvx::indexMat(m_responses, (m_partitions != k) & (m_partitions != ((k+1) % m_testK)));
+            cv::Mat teResponses = cvx::indexMat(m_responses, m_partitions == k);
+            cv::Mat valResponses = cvx::indexMat(m_responses, m_partitions == ((k+1) % m_testK));
+            
+            // Coarse search
+            cv::Mat coarseGoodnesses; // for instance: accuracies
+            modelSelection(trData, trResponses, coarseExpandedParameters, coarseGoodnesses);
+            
+            std::stringstream coarsess;
+            coarsess << "rf_" << m_distsToMargin.size() << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << (m_bTrainMirrored ? "m" : "") << ".yml";
+            cv::hconcat(coarseExpandedParameters, coarseGoodnesses, coarseGoodnesses);
+            cvx::save(coarsess.str(), coarseGoodnesses);
+        }
+        cout << endl;
+    }
+    
+    cv::Mat coarseGoodnesses, aux;
+    for (int k = 0; k < m_testK; k++)
+    {
+        cv::Mat aux;
+        std::stringstream ss;
+        ss << "rf_" << m_distsToMargin.size() << (m_bStackPredictions ? "_s" : "") << "_coarse-goodnesses_" << k << (m_bTrainMirrored ? "m" : "") << ".yml";
+        cvx::load(ss.str(), aux);
+        if (coarseGoodnesses.empty()) coarseGoodnesses = aux.col(params.size());
+        else cv::hconcat(coarseGoodnesses, aux.col(params.size()), coarseGoodnesses);
+    }
+    cv::reduce(coarseGoodnesses, aux, 1, CV_REDUCE_AVG);
+    cv::hconcat(coarseExpandedParameters, aux, coarseGoodnesses);
+    
+    cv::Mat narrowExpandedParameters;
+    int discretes[] = {0,0};
+    narrow<float>(coarseExpandedParameters, coarseGoodnesses, m_narrowSearchSteps, discretes, narrowExpandedParameters);
+    
+    if (m_bModelSelection)
+    {
+        cout << "Narrow model selection CVs [" << m_testK << "]: " << endl;
+        
+        for (int k = 0; k < m_testK; k++)
+        {
+            cout << k << " " << endl;
+            
+            cv::Mat trData = cvx::indexMat(m_data, (m_partitions != k) & (m_partitions != ((k+1) % m_testK)));
+            cv::Mat teData = cvx::indexMat(m_data, m_partitions == k);
+            cv::Mat valData = cvx::indexMat(m_data, m_partitions == ((k+1) % m_testK));
+            cv::Mat trResponses = cvx::indexMat(m_responses, (m_partitions != k) & (m_partitions != ((k+1) % m_testK)));
+            cv::Mat teResponses = cvx::indexMat(m_responses, m_partitions == k);
+            cv::Mat valResponses = cvx::indexMat(m_responses, m_partitions == ((k+1) % m_testK));
+            
+            // Narrow search
+            
+            cv::Mat narrowGoodnesses;
+            modelSelection(trData, trResponses, narrowExpandedParameters, narrowGoodnesses);
+            
+            std::stringstream narrowss;
+            narrowss << "rf_" << m_distsToMargin.size() << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << (m_bTrainMirrored ? "m" : "") << ".yml";
+            cv::hconcat(narrowExpandedParameters, narrowGoodnesses, narrowGoodnesses);
+            cvx::save(narrowss.str(), narrowGoodnesses);
+        }
+        cout << endl;
+    }
+    
+    cv::Mat goodnesses;
+    for (int k = 0; k < m_testK; k++)
+    {
+        cv::Mat aux;
+        std::stringstream ss;
+        ss << "rf_" << m_distsToMargin.size() << (m_bStackPredictions ? "_s" : "") << "_narrow-goodnesses_" << k << (m_bTrainMirrored ? "m" : "") << ".yml";
+        cvx::load(ss.str(), aux);
+        if (goodnesses.empty()) goodnesses = aux.col(params.size());
+        else cv::hconcat(goodnesses, aux.col(params.size()), goodnesses);
+    }
+    //    cv::reduce(goodnesses, aux, 1, CV_REDUCE_AVG);
+    //    cv::hconcat(coarseExpandedParameters, aux, goodnesses);
+    
+    
+    cout << "Out-of-sample CV [" << m_testK << "] : " << endl;
+    
+    fusionPredictions.create(m_responses.rows, 1, cv::DataType<int>::type);
+    
+    for (int k = 0; k < m_testK; k++)
+    {
+        cout << k << " ";
+        
+        cv::Mat trData = cvx::indexMat(m_data, (m_partitions != k) & (m_partitions != ((k+1) % m_testK)));
+        cv::Mat teData = cvx::indexMat(m_data, m_partitions == k);
+        cv::Mat valData = cvx::indexMat(m_data, m_partitions == ((k+1) % m_testK));
+        cv::Mat trResponses = cvx::indexMat(m_responses, (m_partitions != k) & (m_partitions != ((k+1) % m_testK)));
+        cv::Mat teResponses = cvx::indexMat(m_responses, m_partitions == k);
+        cv::Mat valResponses = cvx::indexMat(m_responses, m_partitions == ((k+1) % m_testK));
+        
+        cv::Mat validTrData = cvx::indexMat(trData, trResponses >= 0); // -1 labels not used in training
+        cv::Mat validTrResponses = cvx::indexMat(trResponses, trResponses >= 0);
+        
+        cv::Mat goodness;
+        if (m_bGlobalBest)
+        {
+            GridMat globalMean;
+            cv::reduce(goodnesses, goodness, 1, CV_REDUCE_AVG);
+        }
+        else
+        {
+            goodness = goodnesses.col(k);
+        }
+        
+        // Find best parameters (using goodnesses) to train the final model
+        double minVal, maxVal;
+        cv::Point worst, best;
+        cv::minMaxLoc(goodness, &minVal, &maxVal, &worst, &best);
+        
+        // Training phase
+        float bestMaxDepth   = narrowExpandedParameters.row(best.y).at<float>(0,0);
+        float bestMaxNoTrees = narrowExpandedParameters.row(best.y).at<float>(0,1);
+        
+        CvRTParams params;
+        params.max_depth = bestMaxDepth;
+        params.min_sample_count = validTrData.rows * 0.01f;
+        params.term_crit = cvTermCriteria(CV_TERMCRIT_ITER, bestMaxNoTrees, 0);
+        
+        m_pClassifier->train(validTrData, CV_ROW_SAMPLE, validTrResponses, cv::Mat(), cv::Mat(), cv::Mat(), cv::Mat(), params);
+        
+        // Prediction phase
+        cv::Mat tePredictions (teData.rows, 1, cv::DataType<float>::type);
+        for (int i = 0; i < teData.rows; i++)
+            tePredictions.at<float>(i,0) = m_pClassifier->predict(teData.row(i));
+        
+        cvx::setMat(tePredictions, fusionPredictions, m_partitions == k);
+    }
+    cout << endl;
+    
+    m_fusionPredictions = fusionPredictions;
+}
+
+void ClassifierFusionPrediction<cv::EM40,CvRTrees>::_modelSelection(cv::Mat& descriptorsTr, cv::Mat& responsesTr, cv::Mat& descriptorsVal, cv::Mat& responsesVal, int k, cv::Mat& expandedParams, cv::Mat& accuracies)
+{
+    cv::Mat foldAccs (expandedParams.rows, 1, cv::DataType<float>::type); // results
+    
+    for (int m = 0; m < expandedParams.rows; m++)
+    {
+        // Training phase
+        cv::Mat selectedParams = expandedParams.row(m);
+        
+        float maxDepth = selectedParams.at<float>(0,0);
+        float maxNoTrees = selectedParams.at<float>(0,1); // indeed, gamma not used if not RBF kernel
+        
+        CvRTParams params;
+        params.max_depth = maxDepth;
+        params.min_sample_count = descriptorsTr.rows * 0.01f;
+        params.term_crit = cvTermCriteria(CV_TERMCRIT_ITER, maxNoTrees, 0);
+        
+        CvRTrees classifier;
+        classifier.train(descriptorsTr, CV_ROW_SAMPLE, responsesTr, cv::Mat(), cv::Mat(), cv::Mat(), cv::Mat(), params);
+        
+        // Test phase
+        cv::Mat predictionsVal (descriptorsVal.rows, 1, cv::DataType<float>::type);
+        for (int i = 0; i < descriptorsVal.rows; i++)
+        {
+            float p = classifier.predict(descriptorsVal.row(i));
+            predictionsVal.at<float>(i,0) = p;
+        }
+        
+        // Compute an accuracy measure
+        foldAccs.at<float>(m,0) = accuracy(responsesVal, predictionsVal);
+    }
+    
+    m_mutex.lock();
+    foldAccs.copyTo(accuracies.col(k));
+    m_mutex.unlock();
+}
+
+void ClassifierFusionPrediction<cv::EM40,CvRTrees>::modelSelection(cv::Mat data, cv::Mat responses, cv::Mat expandedParams, cv::Mat& goodnesses)
+{
+    goodnesses.release();
+    
+    // Partitionate the data in folds
+    cv::Mat partitions;
+    cvpartition(responses, m_modelSelecK, m_seed, partitions);
+    
+    cv::Mat accuracies (expandedParams.rows, m_modelSelecK, cv::DataType<float>::type);
+    
+    boost::thread_group tg;
+    cout << "(";
     for (int k = 0; k < m_modelSelecK; k++)
     {
         cout << k;

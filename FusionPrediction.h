@@ -229,6 +229,29 @@ private:
     //vector<float> m_bpMomentScales;
 };
 
+// <cv::EM40,CvSVM> template instantiation
+template<>
+class ClassifierFusionPrediction<cv::EM40,CvRTrees> : public ClassifierFusionPredictionBase<cv::EM40,CvRTrees>
+{
+public:
+    
+    ClassifierFusionPrediction();
+    
+    void setMaxDepths(vector<float> depths);
+    void setMaxNoTrees(vector<float> n);
+    
+    void modelSelection(cv::Mat data, cv::Mat responses, cv::Mat params, cv::Mat& goodnesses);
+    
+    void predict(cv::Mat& fusionPredictions);
+    
+private:
+    void _modelSelection(cv::Mat& descriptorsTr, cv::Mat& responsesTr, cv::Mat& descriptorsVal, cv::Mat& responsesVal, int k, cv::Mat& expandedParams, cv::Mat& accuracies);
+    
+    // Attributes
+    
+    vector<float> m_MaxDepths;
+    vector<float> m_MaxNoTrees;
+};
 
 
 #endif /* defined(__segmenthreetion__FusionPrediction__) */
