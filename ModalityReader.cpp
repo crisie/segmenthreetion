@@ -671,6 +671,11 @@ void ModalityReader::overlapreadShotton(string scenePath, const char *filetype, 
         }
         
         predictionMasks.push_back(predictions[i]);
+        
+        cv::Mat dbgMat;
+        cv::bitwise_xor(groundTruthMasks.back() > 0, predictionMasks.back() > 0, dbgMat);
+        cv::imshow("debug", dbgMat);
+        cv::waitKey();
     }
     
     md.setPredictedMasks(predictionMasks);

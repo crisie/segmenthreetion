@@ -239,6 +239,7 @@ public:
     
     void setMaxDepths(vector<float> depths);
     void setMaxNoTrees(vector<float> n);
+    void setNoVars(vector<float> n);
     
     void modelSelection(cv::Mat data, cv::Mat responses, cv::Mat params, cv::Mat& goodnesses);
     
@@ -251,6 +252,7 @@ private:
     
     vector<float> m_MaxDepths;
     vector<float> m_MaxNoTrees;
+    vector<float> m_NoVars;
 };
 
 

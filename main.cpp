@@ -87,6 +87,7 @@ int main(int argc, char** argv)
 	string dataPath = "../../Sequences/";
 #endif
 	
+    
 	const unsigned char masksOffset = 200;
     
 	// Background subtraction parametrization
@@ -180,13 +181,14 @@ int main(int argc, char** argv)
     //weightTrimRates += 0, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 0.99;
     
     // ... RF params
-    vector<float> maxDepths, maxNoTrees;
+    vector<float> maxDepths, maxNoTrees, noVars;
     maxDepths += 2, 4, 8, 16, 32, 64;
     maxNoTrees += 1, 2, 4, 8, 16, 32, 64, 128;
+    noVars += 0.05, 0.1, 0.2, 0.4, 0.8, 1;
     
     // Validation procedure
     int kTest = 10; // number of folds in the outer cross-validation
-    int kModelSelec = 3 ;
+    int kModelSelec = kTest - 1;
     int seed = 74;
  
     // Overlap params
@@ -338,25 +340,26 @@ int main(int argc, char** argv)
         // -----------------
         // Execute once to create the partition file within each scene directory)
         //
-        
-        vector<vector<cv::Rect> > boxesInFrames;
-        for (int s = 0; s < sequencesPaths.size(); s++)
-        {
-            boxesInFrames.clear();
-            reader.getBoundingBoxesFromGroundtruthMasks("Color", sequencesPaths[s], boxesInFrames);
-            cv::Mat numrects (boxesInFrames.size(), 1, cv::DataType<int>::type);
-            for (int f = 0; f < boxesInFrames.size(); f++)
-            {
-              numrects.at<int>(f,0) = boxesInFrames[f].size();
-            }
-            
-            cv::Mat partition;
-            cvpartition(numrects, kTest, seed, partition);
 
-            cv::FileStorage fs (sequencesPaths[s] + "Partition.yml", cv::FileStorage::WRITE);
-            fs << "partition" << partition;
-            fs.release();
-        }
+        int scenePartitions1[1801] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2};
+        int scenePartitions2[2216] = {3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6};
+        int scenePartitions3[1941] = {7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9};
+        
+        cv::Mat scenePartitionsMat1 (sizeof(scenePartitions1)/sizeof(int), 1, cv::DataType<int>::type, scenePartitions1);
+        cv::Mat scenePartitionsMat2 (sizeof(scenePartitions2)/sizeof(int), 1, cv::DataType<int>::type, scenePartitions2);
+        cv::Mat scenePartitionsMat3 (sizeof(scenePartitions3)/sizeof(int), 1, cv::DataType<int>::type, scenePartitions3);
+        
+        cv::FileStorage fs (dataPath + "Scene1/Partition.yml", cv::FileStorage::WRITE);
+        fs << "partition" << scenePartitionsMat1;
+        fs.release();
+        
+        fs.open(dataPath + "Scene2/Partition.yml", cv::FileStorage::WRITE);
+        fs << "partition" << scenePartitionsMat2;
+        fs.release();
+        
+        fs.open(dataPath + "Scene3/Partition.yml", cv::FileStorage::WRITE);
+        fs << "partition" << scenePartitionsMat3;
+        fs.release();
     }
     
     if (bSubtractBackground)
@@ -1138,6 +1141,7 @@ int main(int argc, char** argv)
         
         rfFusion.setMaxDepths(maxDepths);
         rfFusion.setMaxNoTrees(maxNoTrees);
+        rfFusion.setNoVars(noVars);
         
         rfFusion.setData(mgds, distsToMargin, consensuedPredictions);
         rfFusion.setModelSelection(bRFTraining);
@@ -1173,53 +1177,53 @@ int main(int argc, char** argv)
         GridMapWriter mapWriter;
         GridMat g;
         
-        g.load("mGridConsensusPredictions.yml");
-        std::cout << "Motion/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(mGridMetadata, g, "Motion/Predictions/");
-        
-        g.load("dGridConsensusPredictions.yml");
-        std::cout << "Depth/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(dGridMetadata, g, "Depth/Predictions/");
-        
-        g.load("tGridConsensusPredictions.yml");
-        std::cout << "Thermal/Predictions/"<< std::endl;
-        mapWriter.write<unsigned char>(tGridMetadata, g, "Thermal/Predictions/");
-        
-        g.load("cGridConsensusPredictions.yml");
-        std::cout << "Color/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(cGridMetadata, g, "Color/Predictions/");
-
-        g.load("simpleFusionPredictions1.yml");
-        std::cout << "Simple_1_fusion/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(cGridMetadata, g, "Simple_1_fusion/Predictions/");
-        
-        g.load("simpleFusionPredictions2.yml");
-        std::cout << "Simple_2_fusion/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(cGridMetadata, g, "Simple_2_fusion/Predictions/");
-        
-        g.load("simpleFusionPredictions3.yml");
-        std::cout << "Simple_3_fusion/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(cGridMetadata, g, "Simple_3_fusion/Predictions/");
-        
-        g.load("boostFusionPredictions.yml");
-        std::cout << "Boost_fusion/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(cGridMetadata, g, "Boost_fusion/Predictions/");
-        
-        g.load("mlpSigmoidFusionPredictions.yml");
-        std::cout << "MLP_sigmoid_fusion/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(cGridMetadata, g, "MLP_sigmoid_fusion/Predictions/");
-        
-        g.load("mlpGaussianFusionPredictions.yml");
-        std::cout << "MLP_gaussian_fusion/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(cGridMetadata, g, "MLP_gaussian_fusion/Predictions/");
-        
-        g.load("svmLinearFusionPredictions.yml");
-        std::cout << "SVM_linear_fusion/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(cGridMetadata, g, "SVM_linear_fusion/Predictions/");
-        
-        g.load("svmRBFFusionPredictions.yml");
-        std::cout << "SVM_rbf_fusion/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(cGridMetadata, g, "SVM_rbf_fusion/Predictions/");
+//        g.load("mGridConsensusPredictions.yml");
+//        std::cout << "Motion/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(mGridMetadata, g, "Motion/Predictions/");
+//        
+//        g.load("dGridConsensusPredictions.yml");
+//        std::cout << "Depth/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(dGridMetadata, g, "Depth/Predictions/");
+//        
+//        g.load("tGridConsensusPredictions.yml");
+//        std::cout << "Thermal/Predictions/"<< std::endl;
+//        mapWriter.write<unsigned char>(tGridMetadata, g, "Thermal/Predictions/");
+//        
+//        g.load("cGridConsensusPredictions.yml");
+//        std::cout << "Color/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(cGridMetadata, g, "Color/Predictions/");
+//
+//        g.load("simpleFusionPredictions1.yml");
+//        std::cout << "Simple_1_fusion/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(cGridMetadata, g, "Simple_1_fusion/Predictions/");
+//        
+//        g.load("simpleFusionPredictions2.yml");
+//        std::cout << "Simple_2_fusion/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(cGridMetadata, g, "Simple_2_fusion/Predictions/");
+//        
+//        g.load("simpleFusionPredictions3.yml");
+//        std::cout << "Simple_3_fusion/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(cGridMetadata, g, "Simple_3_fusion/Predictions/");
+//        
+//        g.load("boostFusionPredictions.yml");
+//        std::cout << "Boost_fusion/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(cGridMetadata, g, "Boost_fusion/Predictions/");
+//        
+//        g.load("mlpSigmoidFusionPredictions.yml");
+//        std::cout << "MLP_sigmoid_fusion/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(cGridMetadata, g, "MLP_sigmoid_fusion/Predictions/");
+//        
+//        g.load("mlpGaussianFusionPredictions.yml");
+//        std::cout << "MLP_gaussian_fusion/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(cGridMetadata, g, "MLP_gaussian_fusion/Predictions/");
+//        
+//        g.load("svmLinearFusionPredictions.yml");
+//        std::cout << "SVM_linear_fusion/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(cGridMetadata, g, "SVM_linear_fusion/Predictions/");
+//        
+//        g.load("svmRBFFusionPredictions.yml");
+//        std::cout << "SVM_rbf_fusion/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(cGridMetadata, g, "SVM_rbf_fusion/Predictions/");
         
         g.load("rfFusionPredictions.yml");
         std::cout << "RF_fusion/Predictions/" << std::endl;
@@ -1227,37 +1231,37 @@ int main(int argc, char** argv)
         
         // thermal
         
-        g.load("simpleFusionPredictions1.yml");
-        std::cout << "Simple_1_fusion/Thermal/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(tGridMetadata, g, "Simple_1_fusion/Thermal/Predictions/");
-        
-        g.load("simpleFusionPredictions2.yml");
-        std::cout << "Simple_2_fusion/Thermal/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(tGridMetadata, g, "Simple_2_fusion/Thermal/Predictions/");
-        
-        g.load("simpleFusionPredictions3.yml");
-        std::cout << "Simple_3_fusion/Thermal/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(tGridMetadata, g, "Simple_3_fusion/Thermal/Predictions/");
-        
-        g.load("boostFusionPredictions.yml");
-        std::cout << "Boost_fusion/Thermal/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(tGridMetadata, g, "Boost_fusion/Thermal/Predictions/");
-       
-        g.load("mlpSigmoidFusionPredictions.yml");
-        std::cout << "MLP_sigmoid_fusion/Thermal/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(tGridMetadata, g, "MLP_sigmoid_fusion/Thermal/Predictions/");
-        
-        g.load("mlpGaussianFusionPredictions.yml");
-        std::cout << "MLP_gaussian_fusion/Thermal/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(tGridMetadata, g, "MLP_gaussian_fusion/Thermal/Predictions/");
-        
-        g.load("svmLinearFusionPredictions.yml");
-        std::cout << "SVM_linear_fusion/Thermal/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(tGridMetadata, g, "SVM_linear_fusion/Thermal/Predictions/");
-        
-        g.load("svmRBFFusionPredictions.yml");
-        std::cout << "SVM_rbf_fusion/Thermal/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(tGridMetadata, g, "SVM_rbf_fusion/Thermal/Predictions/");
+//        g.load("simpleFusionPredictions1.yml");
+//        std::cout << "Simple_1_fusion/Thermal/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(tGridMetadata, g, "Simple_1_fusion/Thermal/Predictions/");
+//        
+//        g.load("simpleFusionPredictions2.yml");
+//        std::cout << "Simple_2_fusion/Thermal/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(tGridMetadata, g, "Simple_2_fusion/Thermal/Predictions/");
+//        
+//        g.load("simpleFusionPredictions3.yml");
+//        std::cout << "Simple_3_fusion/Thermal/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(tGridMetadata, g, "Simple_3_fusion/Thermal/Predictions/");
+//        
+//        g.load("boostFusionPredictions.yml");
+//        std::cout << "Boost_fusion/Thermal/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(tGridMetadata, g, "Boost_fusion/Thermal/Predictions/");
+//       
+//        g.load("mlpSigmoidFusionPredictions.yml");
+//        std::cout << "MLP_sigmoid_fusion/Thermal/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(tGridMetadata, g, "MLP_sigmoid_fusion/Thermal/Predictions/");
+//        
+//        g.load("mlpGaussianFusionPredictions.yml");
+//        std::cout << "MLP_gaussian_fusion/Thermal/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(tGridMetadata, g, "MLP_gaussian_fusion/Thermal/Predictions/");
+//        
+//        g.load("svmLinearFusionPredictions.yml");
+//        std::cout << "SVM_linear_fusion/Thermal/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(tGridMetadata, g, "SVM_linear_fusion/Thermal/Predictions/");
+//        
+//        g.load("svmRBFFusionPredictions.yml");
+//        std::cout << "SVM_rbf_fusion/Thermal/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(tGridMetadata, g, "SVM_rbf_fusion/Thermal/Predictions/");
         
         g.load("rfFusionPredictions.yml");
         std::cout << "RF_fusion/Thermal/Predictions/" << std::endl;
@@ -1268,53 +1272,53 @@ int main(int argc, char** argv)
         // Mirrored
         //
         
-        g.load("mGridConsensusPredictionsMirrored.yml");
-        std::cout << "Motion_mirrored/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(mGridMetadata, g, "Motion_mirrored/Predictions/");
-        
-        g.load("dGridConsensusPredictionsMirrored.yml");
-        std::cout << "Depth_mirrored/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(dGridMetadata, g, "Depth_mirrored/Predictions/");
-        
-        g.load("tGridConsensusPredictionsMirrored.yml");
-        std::cout << "Thermal_mirrored/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(tGridMetadata, g, "Thermal_mirrored/Predictions/");
-        
-        g.load("cGridConsensusPredictionsMirrored.yml");
-        std::cout << "Color_mirrored/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(cGridMetadata, g, "Color_mirrored/Predictions/");
-
-        g.load("simpleFusionPredictionsMirrored1.yml");
-        std::cout << "Simple_1_fusion_mirrored/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(cGridMetadata, g, "Simple_1_fusion_mirrored/Predictions/");
-        
-        g.load("simpleFusionPredictionsMirrored2.yml");
-        std::cout << "Simple_2_fusion_mirrored/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(cGridMetadata, g, "Simple_2_fusion_mirrored/Predictions/");
-        
-        g.load("simpleFusionPredictionsMirrored3.yml");
-        std::cout << "Simple_3_fusion_mirrored/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(cGridMetadata, g, "Simple_3_fusion_mirrored/Predictions/");
-        
-        g.load("boostFusionPredictionsMirrored.yml");
-        std::cout << "Boost_fusion_mirrored/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(cGridMetadata, g, "Boost_fusion_mirrored/Predictions/");
-        
-        g.load("mlpSigmoidFusionPredictionsMirrored.yml");
-        std::cout << "MLP_sigmoid_fusion_mirrored/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(cGridMetadata, g, "MLP_sigmoid_fusion_mirrored/Predictions/");
-        
-        g.load("mlpGaussianFusionPredictionsMirrored.yml");
-        std::cout << "MLP_gaussian_fusion_mirrored/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(cGridMetadata, g, "MLP_gaussian_fusion_mirrored/Predictions/");
-        
-        g.load("svmLinearFusionPredictionsMirrored.yml");
-        std::cout << "SVM_linear_fusion_mirrored/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(cGridMetadata, g, "SVM_linear_fusion_mirrored/Predictions/");
-        
-        g.load("svmRBFFusionPredictionsMirrored.yml");
-        std::cout << "SVM_rbf_fusion_mirrored/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(cGridMetadata, g, "SVM_rbf_fusion_mirrored/Predictions/");
+//        g.load("mGridConsensusPredictionsMirrored.yml");
+//        std::cout << "Motion_mirrored/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(mGridMetadata, g, "Motion_mirrored/Predictions/");
+//        
+//        g.load("dGridConsensusPredictionsMirrored.yml");
+//        std::cout << "Depth_mirrored/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(dGridMetadata, g, "Depth_mirrored/Predictions/");
+//        
+//        g.load("tGridConsensusPredictionsMirrored.yml");
+//        std::cout << "Thermal_mirrored/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(tGridMetadata, g, "Thermal_mirrored/Predictions/");
+//        
+//        g.load("cGridConsensusPredictionsMirrored.yml");
+//        std::cout << "Color_mirrored/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(cGridMetadata, g, "Color_mirrored/Predictions/");
+//
+//        g.load("simpleFusionPredictionsMirrored1.yml");
+//        std::cout << "Simple_1_fusion_mirrored/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(cGridMetadata, g, "Simple_1_fusion_mirrored/Predictions/");
+//        
+//        g.load("simpleFusionPredictionsMirrored2.yml");
+//        std::cout << "Simple_2_fusion_mirrored/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(cGridMetadata, g, "Simple_2_fusion_mirrored/Predictions/");
+//        
+//        g.load("simpleFusionPredictionsMirrored3.yml");
+//        std::cout << "Simple_3_fusion_mirrored/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(cGridMetadata, g, "Simple_3_fusion_mirrored/Predictions/");
+//        
+//        g.load("boostFusionPredictionsMirrored.yml");
+//        std::cout << "Boost_fusion_mirrored/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(cGridMetadata, g, "Boost_fusion_mirrored/Predictions/");
+//        
+//        g.load("mlpSigmoidFusionPredictionsMirrored.yml");
+//        std::cout << "MLP_sigmoid_fusion_mirrored/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(cGridMetadata, g, "MLP_sigmoid_fusion_mirrored/Predictions/");
+//        
+//        g.load("mlpGaussianFusionPredictionsMirrored.yml");
+//        std::cout << "MLP_gaussian_fusion_mirrored/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(cGridMetadata, g, "MLP_gaussian_fusion_mirrored/Predictions/");
+//        
+//        g.load("svmLinearFusionPredictionsMirrored.yml");
+//        std::cout << "SVM_linear_fusion_mirrored/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(cGridMetadata, g, "SVM_linear_fusion_mirrored/Predictions/");
+//        
+//        g.load("svmRBFFusionPredictionsMirrored.yml");
+//        std::cout << "SVM_rbf_fusion_mirrored/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(cGridMetadata, g, "SVM_rbf_fusion_mirrored/Predictions/");
         
         g.load("rfFusionPredictionsMirrored.yml");
         std::cout << "RF_fusion_mirrored/Predictions/" << std::endl;
@@ -1322,37 +1326,37 @@ int main(int argc, char** argv)
         
         // thermal
         
-        g.load("simpleFusionPredictionsMirrored1.yml");
-        std::cout << "Simple_1_fusion_mirrored/Thermal/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(tGridMetadata, g, "Simple_1_fusion_mirrored/Thermal/Predictions/");
-        
-        g.load("simpleFusionPredictionsMirrored2.yml");
-        std::cout << "Simple_2_fusion_mirrored/Thermal/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(tGridMetadata, g, "Simple_2_fusion_mirrored/Thermal/Predictions/");
-        
-        g.load("simpleFusionPredictionsMirrored3.yml");
-        std::cout << "Simple_3_fusion_mirrored/Thermal/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(tGridMetadata, g, "Simple_3_fusion_mirrored/Thermal/Predictions/");
-        
-        g.load("boostFusionPredictionsMirrored.yml");
-        std::cout << "Boost_fusion_mirrored/Thermal/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(tGridMetadata, g, "Boost_fusion_mirrored/Thermal/Predictions/");
-        
-        g.load("mlpSigmoidFusionPredictionsMirrored.yml");
-        std::cout << "MLP_sigmoid_fusion_mirrored/Thermal/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(tGridMetadata, g, "MLP_sigmoid_fusion_mirrored/Thermal/Predictions/");
-        
-        g.load("mlpGaussianFusionPredictionsMirrored.yml");
-        std::cout << "MLP_gaussian_fusion_mirrored/Thermal/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(tGridMetadata, g, "MLP_gaussian_fusion_mirrored/Thermal/Predictions/");
-        
-        g.load("svmLinearFusionPredictionsMirrored.yml");
-        std::cout << "SVM_linear_fusion_mirrored/Thermal/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(tGridMetadata, g, "SVM_linear_fusion_mirrored/Thermal/Predictions/");
-        
-        g.load("svmRBFFusionPredictionsMirrored.yml");
-        std::cout << "SVM_rbf_fusion_mirrored/Thermal/Predictions/" << std::endl;
-        mapWriter.write<unsigned char>(tGridMetadata, g, "SVM_rbf_fusion_mirrored/Thermal/Predictions/");
+//        g.load("simpleFusionPredictionsMirrored1.yml");
+//        std::cout << "Simple_1_fusion_mirrored/Thermal/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(tGridMetadata, g, "Simple_1_fusion_mirrored/Thermal/Predictions/");
+//        
+//        g.load("simpleFusionPredictionsMirrored2.yml");
+//        std::cout << "Simple_2_fusion_mirrored/Thermal/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(tGridMetadata, g, "Simple_2_fusion_mirrored/Thermal/Predictions/");
+//        
+//        g.load("simpleFusionPredictionsMirrored3.yml");
+//        std::cout << "Simple_3_fusion_mirrored/Thermal/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(tGridMetadata, g, "Simple_3_fusion_mirrored/Thermal/Predictions/");
+//        
+//        g.load("boostFusionPredictionsMirrored.yml");
+//        std::cout << "Boost_fusion_mirrored/Thermal/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(tGridMetadata, g, "Boost_fusion_mirrored/Thermal/Predictions/");
+//        
+//        g.load("mlpSigmoidFusionPredictionsMirrored.yml");
+//        std::cout << "MLP_sigmoid_fusion_mirrored/Thermal/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(tGridMetadata, g, "MLP_sigmoid_fusion_mirrored/Thermal/Predictions/");
+//        
+//        g.load("mlpGaussianFusionPredictionsMirrored.yml");
+//        std::cout << "MLP_gaussian_fusion_mirrored/Thermal/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(tGridMetadata, g, "MLP_gaussian_fusion_mirrored/Thermal/Predictions/");
+//        
+//        g.load("svmLinearFusionPredictionsMirrored.yml");
+//        std::cout << "SVM_linear_fusion_mirrored/Thermal/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(tGridMetadata, g, "SVM_linear_fusion_mirrored/Thermal/Predictions/");
+//        
+//        g.load("svmRBFFusionPredictionsMirrored.yml");
+//        std::cout << "SVM_rbf_fusion_mirrored/Thermal/Predictions/" << std::endl;
+//        mapWriter.write<unsigned char>(tGridMetadata, g, "SVM_rbf_fusion_mirrored/Thermal/Predictions/");
         
         g.load("rfFusionPredictionsMirrored.yml");
         std::cout << "RF_fusion_mirrored/Predictions/" << std::endl;
@@ -1665,21 +1669,21 @@ int main(int argc, char** argv)
 //        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
 //        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "cMlpSigmoidFusionOverlap.yml");
 //        
-//        //RF fusion - color
-//        std::cout << "RF fusion - color" << std::endl;
-//        overlapIDs.release();
-//        for (int s = 0; s < sequencesPaths.size(); s++)
-//        {
-//            boost::timer t;
-//            ModalityData colorData;
-//            cout << "Reading color data in scene " << s << ".." << endl;
-//            reader.overlapreadScene("RF_fusion", "Color", sequencesPaths[s], "png", colorData);
-//            validate.getOverlap(colorData, overlapIDs);
-//            cout << "Elapsed time: " << t.elapsed() << endl;
-//        }
-//        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
-//        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
-//        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "cRFFusionOverlap.yml");
+        //RF fusion - color
+        std::cout << "RF fusion - color" << std::endl;
+        overlapIDs.release();
+        for (int s = 0; s < sequencesPaths.size(); s++)
+        {
+            boost::timer t;
+            ModalityData colorData;
+            cout << "Reading color data in scene " << s << ".." << endl;
+            reader.overlapreadScene("RF_fusion", "Color", sequencesPaths[s], "png", colorData);
+            validate.getOverlap(colorData, overlapIDs);
+            cout << "Elapsed time: " << t.elapsed() << endl;
+        }
+        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
+        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
+        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "cRFFusionOverlap.yml");
   
         
 //        //SVM linear fusion - thermal
@@ -1749,21 +1753,21 @@ int main(int argc, char** argv)
 //        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
 //        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "tMlpSigmoidFusionOverlap.yml");
 //        
-//        //RF fusion - thermal
-//        std::cout << "RF fusion - thermal" << std::endl;
-//        overlapIDs.release();
-//        for (int s = 0; s < sequencesPaths.size(); s++)
-//        {
-//            boost::timer t;
-//            ModalityData thermalData;
-//            cout << "Reading thermal data in scene " << s << ".." << endl;
-//            reader.overlapreadScene("RF_fusion/Thermal", "Thermal", sequencesPaths[s], "png", thermalData);
-//            validate.getOverlap(thermalData, overlapIDs);
-//            cout << "Elapsed time: " << t.elapsed() << endl;
-//        }
-//        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
-//        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
-//        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "tRFFusionOverlap.yml");
+        //RF fusion - thermal
+        std::cout << "RF fusion - thermal" << std::endl;
+        overlapIDs.release();
+        for (int s = 0; s < sequencesPaths.size(); s++)
+        {
+            boost::timer t;
+            ModalityData thermalData;
+            cout << "Reading thermal data in scene " << s << ".." << endl;
+            reader.overlapreadScene("RF_fusion/Thermal", "Thermal", sequencesPaths[s], "png", thermalData);
+            validate.getOverlap(thermalData, overlapIDs);
+            cout << "Elapsed time: " << t.elapsed() << endl;
+        }
+        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
+        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
+        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "tRFFusionOverlap.yml");
     
         //
         // Mirrored
@@ -2058,21 +2062,21 @@ int main(int argc, char** argv)
 //        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
 //        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "cMlpSigmoidFusionOverlapMirrored.yml");
 //        
-//        //RF fusion - color
-//        std::cout << "RF fusion - color" << std::endl;
-//        overlapIDs.release();
-//        for (int s = 0; s < sequencesPaths.size(); s++)
-//        {
-//            boost::timer t;
-//            ModalityData colorData;
-//            cout << "Reading color data in scene " << s << ".." << endl;
-//            reader.overlapreadScene("RF_fusion_mirrored", "Color", sequencesPaths[s], "png", colorData);
-//            validate.getOverlap(colorData, overlapIDs);
-//            cout << "Elapsed time: " << t.elapsed() << endl;
-//        }
-//        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
-//        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
-//        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "cRFFusionOverlapMirrored.yml");
+        //RF fusion - color
+        std::cout << "RF fusion - color" << std::endl;
+        overlapIDs.release();
+        for (int s = 0; s < sequencesPaths.size(); s++)
+        {
+            boost::timer t;
+            ModalityData colorData;
+            cout << "Reading color data in scene " << s << ".." << endl;
+            reader.overlapreadScene("RF_fusion_mirrored", "Color", sequencesPaths[s], "png", colorData);
+            validate.getOverlap(colorData, overlapIDs);
+            cout << "Elapsed time: " << t.elapsed() << endl;
+        }
+        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
+        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
+        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "cRFFusionOverlapMirrored.yml");
         
         
 //        //SVM linear fusion - thermal
@@ -2142,37 +2146,44 @@ int main(int argc, char** argv)
 //        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
 //        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "tMlpSigmoidFusionOverlapMirrored.yml");
 //        
-//        //RF fusion - thermal
-//        std::cout << "RF fusion - thermal" << std::endl;
-//        overlapIDs.release();
-//        for (int s = 0; s < sequencesPaths.size(); s++)
-//        {
-//            boost::timer t;
-//            ModalityData thermalData;
-//            cout << "Reading thermal data in scene " << s << ".." << endl;
-//            reader.overlapreadScene("RF_fusion_mirrored/Thermal", "Thermal", sequencesPaths[s], "png", thermalData);
-//            validate.getOverlap(thermalData, overlapIDs);
-//            cout << "Elapsed time: " << t.elapsed() << endl;
-//        }
-//        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
-//        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
-//        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "tRFFusionOverlapMirrored.yml");
-        
-        //Shotton
-        std::cout << "Shotton" << std::endl;
+        //RF fusion - thermal
+        std::cout << "RF fusion - thermal" << std::endl;
         overlapIDs.release();
         for (int s = 0; s < sequencesPaths.size(); s++)
         {
             boost::timer t;
-            ModalityData shottonData;
-            cout << "Reading color data in scene " << s << ".." << endl;
-            reader.overlapreadShotton(sequencesPaths[s], "png", shottonData);
-            validate.getOverlap(shottonData, overlapIDs);
+            ModalityData thermalData;
+            cout << "Reading thermal data in scene " << s << ".." << endl;
+            reader.overlapreadScene("RF_fusion_mirrored/Thermal", "Thermal", sequencesPaths[s], "png", thermalData);
+            validate.getOverlap(thermalData, overlapIDs);
             cout << "Elapsed time: " << t.elapsed() << endl;
         }
         validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
         validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
-        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "shottonOverlap.yml");
+        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "tRFFusionOverlapMirrored.yml");
+        
+        
+        // This can be done here also :)
+        
+//        //Shotton
+//        std::cout << "Shotton" << std::endl;
+//        overlapIDs.release();
+//        for (int s = 1; s < sequencesPaths.size(); s++)
+//        {
+//            boost::timer t;
+//            ModalityData shottonData;
+//            cout << "Reading color data in scene " << s << ".." << endl;
+//            reader.overlapreadShotton(sequencesPaths[s], "png", shottonData); // note this is different from above
+//            validate.getOverlap(shottonData, overlapIDs);
+//            cout << "Elapsed time: " << t.elapsed() << endl;
+//        }
+//        validate.createOverlapPartitions(partitions, overlapIDs, partitionedOverlapIDs);
+//        validate.getMeanOverlap(partitionedOverlapIDs, partitionedMeanOverlap);
+//        validate.save(partitionedOverlapIDs, partitionedMeanOverlap, "shottonOverlap.yml");
+        
+        
+        
+        
     }
     
     return 0;

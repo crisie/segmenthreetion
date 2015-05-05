@@ -1329,6 +1329,11 @@ void ClassifierFusionPrediction<cv::EM40,CvRTrees>::setMaxNoTrees(vector<float> 
     m_MaxNoTrees = n;
 }
 
+void ClassifierFusionPrediction<cv::EM40,CvRTrees>::setNoVars(vector<float> n)
+{
+    m_NoVars = n;
+}
+
 void ClassifierFusionPrediction<cv::EM40,CvRTrees>::predict(cv::Mat& fusionPredictions)
 {
     formatData();
@@ -1337,6 +1342,7 @@ void ClassifierFusionPrediction<cv::EM40,CvRTrees>::predict(cv::Mat& fusionPredi
     vector<vector<float> > params;
     params.push_back(m_MaxDepths);
     params.push_back(m_MaxNoTrees);
+    params.push_back(m_NoVars);
     
     // create a list of parameters' variations
     cv::Mat coarseExpandedParameters;
@@ -1468,10 +1474,12 @@ void ClassifierFusionPrediction<cv::EM40,CvRTrees>::predict(cv::Mat& fusionPredi
         // Training phase
         float bestMaxDepth   = narrowExpandedParameters.row(best.y).at<float>(0,0);
         float bestMaxNoTrees = narrowExpandedParameters.row(best.y).at<float>(0,1);
+        float bestNoVars = narrowExpandedParameters.row(best.y).at<float>(0,2);
         
         CvRTParams params;
         params.max_depth = bestMaxDepth;
         params.min_sample_count = validTrData.rows * 0.01f;
+        params.nactive_vars = bestNoVars * validTrData.cols;
         params.term_crit = cvTermCriteria(CV_TERMCRIT_ITER, bestMaxNoTrees, 0);
         
         m_pClassifier->train(validTrData, CV_ROW_SAMPLE, validTrResponses, cv::Mat(), cv::Mat(), cv::Mat(), cv::Mat(), params);
@@ -1499,10 +1507,12 @@ void ClassifierFusionPrediction<cv::EM40,CvRTrees>::_modelSelection(cv::Mat& des
         
         float maxDepth = selectedParams.at<float>(0,0);
         float maxNoTrees = selectedParams.at<float>(0,1); // indeed, gamma not used if not RBF kernel
+        float noVars = selectedParams.at<float>(0,2);
         
         CvRTParams params;
         params.max_depth = maxDepth;
         params.min_sample_count = descriptorsTr.rows * 0.01f;
+        params.nactive_vars = noVars * descriptorsTr.cols;
         params.term_crit = cvTermCriteria(CV_TERMCRIT_ITER, maxNoTrees, 0);
         
         CvRTrees classifier;
