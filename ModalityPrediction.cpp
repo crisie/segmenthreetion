@@ -245,6 +245,7 @@ void ModalityPrediction<cv::EM40>::predict(GridMat& predictionsGrid, GridMat& lo
     
     GridMat tagsGrid;
     tagsGrid.setTo(tags);
+    
     GridMat descriptorsGrid = m_data.getDescriptors();
     GridMat validnessesGrid = m_data.getValidnesses();
     
@@ -505,8 +506,8 @@ void ModalityPrediction<cv::EM40>::_modelSelection(GridMat descriptorsSbjTrainGr
             }
             
             // Test
-            cv::Mat_<int> labels;
-            cv::Mat_<float> loglikelihoods;
+            cv::Mat_<int> labels (descriptorsSbjObjValGrid.at(i,j).rows, 1);
+            cv::Mat_<float> loglikelihoods (descriptorsSbjObjValGrid.at(i,j).rows, 1);
             for (int d = 0; d < descriptorsSbjObjValGrid.at(i,j).rows; d++)
             {
                 cv::Mat descriptor = descriptorsSbjObjValGrid.at(i,j).row(d);
@@ -516,8 +517,8 @@ void ModalityPrediction<cv::EM40>::_modelSelection(GridMat descriptorsSbjTrainGr
                 
                 cv::Vec3d res = predictor.predict(descriptor);
                 
-                labels.push_back(res.val[2]);
-                loglikelihoods.push_back(res.val[1]);
+                labels.at<int>(d,0) = res.val[2];
+                loglikelihoods.at<float>(d,0) = res.val[1];
             }
             
             // Standardized loglikelihoods

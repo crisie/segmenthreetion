@@ -530,10 +530,17 @@ float accuracy(cv::Mat actuals, cv::Mat predictions)
     int nobj = cv::sum(objects).val[0];
     int nsbj = cv::sum(subjects).val[0];
     
-    float objAcc = (nobj > 0) ? (cv::sum(objects & hits).val[0] / nobj) : 0;
-    float sbjAcc = (nsbj > 0) ? (cv::sum(subjects & hits).val[0] / nsbj) : 0;
+    float objAcc = cv::sum(objects & hits).val[0] / nobj;
+    float sbjAcc = cv::sum(subjects & hits).val[0] / nsbj;
     
-    return (objAcc + sbjAcc) / 2.0;
+    if (nobj > 0 && nsbj > 0)
+        return (objAcc + sbjAcc) / 2.f;
+    else if (nobj > 0)
+        return objAcc;
+    else if (nsbj > 0)
+        return sbjAcc;
+    else
+        return 0.f;
 }
 
 void accuracy(GridMat actuals, GridMat predictions, cv::Mat& accuracies)
